@@ -166,6 +166,8 @@ export function renderShell() {
       </div>
     </div>`;
 
+    const search = qs(".topbar-search input", topbar);
+    if (search && page === "search") {
     const query = new URLSearchParams(location.search).get("q") || "";
     search.value = query;
   }
