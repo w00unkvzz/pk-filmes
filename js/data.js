@@ -77,23 +77,44 @@ function normalizeCatalogItem(raw, index) {
   };
 }
 
+const CACHE_KEY = "w00filmes.catalog_cache";
+const CACHE_TTL = 60 * 60 * 1000; // 1 hour
+
+function readCache() {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const { ts, items } = JSON.parse(raw);
+    if (Date.now() - ts > CACHE_TTL) { localStorage.removeItem(CACHE_KEY); return null; }
+    return Array.isArray(items) ? items : null;
+  } catch { return null; }
+}
+
+function writeCache(items) {
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), items })); } catch { /* quota */ }
+}
+
 async function loadRemoteCatalog() {
   if (typeof fetch !== "function") return null;
+
+  // Serve from cache on subsequent page loads — avoids fetching + normalising
+  // 2886 items on every navigation.
   const cached = readCache();
   if (cached) return cached;
+
   try {
-    // In the browser, resolve against the page so the file is fetched over
-    // HTTP from the site root. In Node-based tests, document.baseURI is set
-    // by the harness to the same local server.
     const base = typeof document !== "undefined" && document.baseURI ? document.baseURI : import.meta.url;
     const url = new URL("catalog.json", base);
-    const response = await fetch(url, { cache: "no-cache" });
+    const response = await fetch(url, { cache: "default" });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const payload = await response.json();
     const items = Array.isArray(payload) ? payload : payload?.items;
     if (!Array.isArray(items)) throw new Error("payload sem array items");
+<<<<<<< HEAD
     // A valid but empty catalog is intentional: the site shows its empty
     // state instead of silently showing placeholder titles.
+=======
+>>>>>>> 902a4fa (perf: service worker, preload catalog, lazy rows)
     const normalized = items
       .map((item, index) => normalizeCatalogItem(item, index))
       .filter((item) => item.id && item.title);

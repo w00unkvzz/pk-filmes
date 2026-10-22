@@ -303,11 +303,34 @@ export function posterCard(item, options = {}) {
   </article>`;
 }
 
+// Rows above the fold render immediately; rows below render when they scroll
+// into view. This cuts initial paint time for pages with many rows.
+const _rowObserver = typeof IntersectionObserver !== "undefined"
+  ? new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        const row = entry.target;
+        const pending = row.__pendingCards;
+        if (!pending?.length) return;
+        _rowObserver.unobserve(row);
+        pending.forEach((html) => {
+          const wrap = document.createElement("div");
+          wrap.innerHTML = html;
+          while (wrap.firstChild) row.appendChild(wrap.firstChild);
+        });
+        delete row.__pendingCards;
+      });
+    }, { rootMargin: "200px" })
+  : null;
+
 export function mediaRow(title, items, options = {}) {
   if (!items.length) return "";
   const rowId = options.id || `row-${Math.random().toString(36).slice(2)}`;
   const progressMap = options.progressMap || {};
-  return `<section class="page-section ${options.tight ? "tight" : ""}">
+  const EAGER = 12; // cards rendered immediately
+  const eager = items.slice(0, EAGER);
+  const lazy = items.slice(EAGER);
+  const html = `<section class="page-section ${options.tight ? "tight" : ""}">
     <div class="section-head">
       <div>${options.kicker ? `<div class="section-kicker">${options.kicker}</div>` : ""}<h2>${title}</h2></div>
       <a class="section-link" href="${options.href || "catalogo.html"}">Ver tudo <i class="fa-solid fa-arrow-right"></i></a>
@@ -315,11 +338,23 @@ export function mediaRow(title, items, options = {}) {
     <div class="media-row-wrap">
       <button class="row-arrow left" data-row-scroll="left" data-target="${rowId}" type="button" aria-label="Rolar para a esquerda"><i class="fa-solid fa-chevron-left"></i></button>
       <div class="media-row" id="${rowId}">
-        ${items.map((item) => posterCard(item, { progress: progressMap[item.id] || 0, remove: options.remove })).join("")}
+        ${eager.map((item) => posterCard(item, { progress: progressMap[item.id] || 0, remove: options.remove })).join("")}
       </div>
       <button class="row-arrow right" data-row-scroll="right" data-target="${rowId}" type="button" aria-label="Rolar para a direita"><i class="fa-solid fa-chevron-right"></i></button>
     </div>
   </section>`;
+  if (lazy.length && _rowObserver) {
+    // Schedule lazy injection after this section is in the DOM.
+    requestAnimationFrame(() => {
+      const rowEl = document.getElementById(rowId);
+      if (!rowEl) return;
+      rowEl.__pendingCards = lazy.map((item) =>
+        posterCard(item, { progress: progressMap[item.id] || 0, remove: options.remove })
+      );
+      _rowObserver.observe(rowEl);
+    });
+  }
+  return html;
 }
 
 export function top10Row(items) {
@@ -531,9 +566,7 @@ export function openPlayer(item, options = {}) {
       ? `<iframe id="player-frame" src="${escapeHTML(stream)}" title="${escapeHTML(displayTitle)}" allow="autoplay; fullscreen; picture-in-picture; encrypted-media" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`
       : `<video id="player-video" controls autoplay playsinline preload="metadata" src="${escapeHTML(stream)}"></video>`}</div>
     <div class="player-next">
-      <div class="poster ${item.poster ? "has-image" : ""}" style="--c1:${item.colors?.[0] || "#1e1b4b"};--c2:${item.colors?.[1] || "#6a5acd"}">
-        ${item?.poster ? `<img class="poster-img" src="${escapeHTML(item.poster)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">` : `<span class="poster-title">${escapeHTML(item.title)}</span>`}
-      </div>
+      <div class="poster ${item.poster ? "has-image" : ""}" style="--c1:${item.colors?.[0] || "#1e1b4b"};--c2:${item.colors?.[1] || "#6a5acd"}">${item.poster ? `<img class="poster-img" src="${escapeHTML(item.poster)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">` : `<span class="poster-title">${escapeHTML(item.title)}</span>`}</div>
       <div class="grow"><strong style="display:block;font-size:11px">Você está assistindo</strong><span class="tiny muted">${escapeHTML(displayTitle)}</span></div>
       <button class="btn btn-sm btn-ghost" data-close-modal type="button">Fechar</button>
     </div>`;
