@@ -114,7 +114,7 @@
 }
 .card-grid.wide { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 24px 18px; }
 
-.title-card { position: relative; min-width: 0; content-visibility: auto; contain-intrinsic-size: 172px 300px; }
+.title-card { position: relative; min-width: 0; }
 .title-card .poster-wrap { position: relative; border-radius: 12px; overflow: hidden; background: #15151e; aspect-ratio: 2 / 3; box-shadow: 0 10px 30px rgba(0,0,0,.28); }
 .poster {
   position: absolute;

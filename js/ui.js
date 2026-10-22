@@ -260,7 +260,13 @@ export function closeModal() {
 /* Cards and rows */
 function posterImage(item) {
   if (!item?.poster) return "";
-  return `<img class="poster-img" src="${escapeHTML(item.poster)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">`;
+  // Cards are ~172px wide (2x DPR ≈ 344px), so w342 is enough. Using the
+  // w500 original wasted bandwidth/memory and made fast scrolling heavier.
+  const src = String(item.poster)
+    .replace("/t/p/w500/", "/t/p/w342/")
+    .replace("/t/p/w780/", "/t/p/w342/")
+    .replace("/t/p/original/", "/t/p/w342/");
+  return `<img class="poster-img" src="${escapeHTML(src)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">`;
 }
 
 function cardMeta(item) {
@@ -428,10 +434,16 @@ export function setupRowArrows() {
     const left = qs(".row-arrow.left", wrap);
     const right = qs(".row-arrow.right", wrap);
     if (!row || !left || !right) return;
+    let ticking = false;
     const update = () => {
-      const max = row.scrollWidth - row.clientWidth - 2;
-      left.disabled = row.scrollLeft <= 2;
-      right.disabled = row.scrollLeft >= max;
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        ticking = false;
+        const max = row.scrollWidth - row.clientWidth - 2;
+        left.disabled = row.scrollLeft <= 2;
+        right.disabled = row.scrollLeft >= max;
+      });
     };
     row.addEventListener("scroll", update, { passive: true });
     update();
