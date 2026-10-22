@@ -161,5 +161,5 @@ vercel.json               configuração de deploy
 
 - Ligar lista, histórico, amigos e salas ao Supabase (o schema já está pronto).
 - Upload de avatar no bucket `avatars`.
-- Página de redefinição de senha (`/perfil.html` após o link).
+- Realtime do chat de sala usando `room_messages`.
 - Player HLS para arquivos `.m3u8` (hoje o navegador decide o suporte).

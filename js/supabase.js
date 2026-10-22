@@ -95,10 +95,20 @@ export async function signInWithGoogle() {
 export async function sendPasswordReset(email) {
   const sb = getClient();
   if (!sb) throw new Error("Supabase não configurado.");
+  const redirect = new URL(authRedirectUrl("/perfil.html"));
+  redirect.searchParams.set("recovery", "1");
   const { error } = await sb.auth.resetPasswordForEmail(String(email || "").trim(), {
-    redirectTo: authRedirectUrl("/perfil.html")
+    redirectTo: redirect.toString()
   });
   if (error) throw error;
+}
+
+export async function updatePassword(password) {
+  const sb = getClient();
+  if (!sb) throw new Error("Supabase não configurado.");
+  const { data, error } = await sb.auth.updateUser({ password: String(password || "") });
+  if (error) throw error;
+  return data;
 }
 
 export async function signOutCloud() {

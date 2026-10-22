@@ -3,7 +3,7 @@ import { CONFIG } from "./config.js";
 import { byId, getGenreMeta } from "./data.js";
 import * as store from "./store.js";
 import { authEnabled, logout as authLogout } from "./auth.js";
-import { signIn, signUp, signInWithGitHub, sendPasswordReset } from "./supabase.js";
+import { signIn, signUp, signInWithGitHub, sendPasswordReset, updatePassword } from "./supabase.js";
 import { SUPABASE_CONFIG } from "./supabase-config.js";
 
 export const qs = (selector, root = document) => root.querySelector(selector);
@@ -647,10 +647,75 @@ function accountModal(user) {
       <span class="badge ${cloud ? "badge-live" : "badge-soft"}">${cloud ? "online" : "local"}</span>
     </div>
     <form class="auth-body">
+      ${cloud ? `<button class="btn btn-primary btn-block" data-password-change type="button"><i class="fa-solid fa-key"></i>Alterar senha</button>` : ""}
       <button class="btn btn-ghost btn-block" data-logout type="button"><i class="fa-solid fa-right-from-bracket"></i>Sair da conta</button>
       <p class="auth-note">${cloud ? "Seus dados estão no seu projeto Supabase." : "Configure o Supabase para ativar contas reais e sincronização."}</p>
     </form>`;
-  openModal(content, { className: "modal-sm", label: "Sua conta" });
+  openModal(content, {
+    className: "modal-sm",
+    label: "Sua conta",
+    onMount: () => {
+      qs("[data-password-change]")?.addEventListener("click", () => {
+        closeModal();
+        openPasswordModal();
+      });
+    }
+  });
+}
+
+export function openPasswordModal() {
+  const content = `
+    <button class="modal-close" data-close-modal type="button" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
+    <div class="auth-head">
+      <div class="brand-mark">${escapeHTML(CONFIG.brandShort)}</div>
+      <h2>Definir nova senha</h2>
+      <p>Escolha uma senha com pelo menos 6 caracteres.</p>
+    </div>
+    <form class="auth-body" id="password-form" novalidate>
+      <div class="field"><label for="new-password">Nova senha</label><input class="input" id="new-password" type="password" minlength="6" required autocomplete="new-password" placeholder="Mínimo de 6 caracteres"></div>
+      <div class="field"><label for="confirm-password">Confirmar senha</label><input class="input" id="confirm-password" type="password" minlength="6" required autocomplete="new-password" placeholder="Repita a senha"></div>
+      <p class="auth-error hidden" id="password-error" role="alert"></p>
+      <button class="btn btn-primary btn-block" id="password-submit" type="submit"><i class="fa-solid fa-key"></i>Salvar nova senha</button>
+    </form>`;
+
+  openModal(content, {
+    className: "modal-sm",
+    label: "Definir nova senha",
+    onMount: () => {
+      const form = qs("#password-form");
+      const errorBox = qs("#password-error");
+      const submit = qs("#password-submit");
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        errorBox.classList.add("hidden");
+        const password = qs("#new-password").value;
+        const confirm = qs("#confirm-password").value;
+        if (password.length < 6) {
+          errorBox.textContent = "A senha precisa ter pelo menos 6 caracteres.";
+          errorBox.classList.remove("hidden");
+          return;
+        }
+        if (password !== confirm) {
+          errorBox.textContent = "As senhas não coincidem.";
+          errorBox.classList.remove("hidden");
+          return;
+        }
+        submit.disabled = true;
+        submit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>Salvando...';
+        try {
+          await updatePassword(password);
+          closeModal();
+          toast("Senha atualizada com sucesso.", "success", "Tudo certo");
+        } catch (error) {
+          errorBox.textContent = authErrorMessage(error.message);
+          errorBox.classList.remove("hidden");
+        } finally {
+          submit.disabled = false;
+          submit.innerHTML = '<i class="fa-solid fa-key"></i>Salvar nova senha';
+        }
+      });
+    }
+  });
 }
 
 function bindCloudAuth() {

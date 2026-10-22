@@ -1,5 +1,5 @@
 // Application entry: shell, route selection and cross-page events.
-import { renderShell, renderFooter, bindGlobalEvents, refreshShell, setupRowArrows, openDetailsFromUrl } from "./ui.js";
+import { renderShell, renderFooter, bindGlobalEvents, refreshShell, setupRowArrows, openDetailsFromUrl, openPasswordModal } from "./ui.js";
 import { CONFIG } from "./config.js";
 import * as store from "./store.js";
 import { initAuth } from "./auth.js";
@@ -56,6 +56,15 @@ async function boot() {
   bindGlobalEvents();
   renderCurrent();
   openDetailsFromUrl();
+
+  // Password recovery links land on /perfil.html?recovery=1. Supabase has
+  // already exchanged the code for a session by this point.
+  if (page === "perfil" && new URLSearchParams(location.search).has("recovery")) {
+    const url = new URL(location.href);
+    url.searchParams.delete("recovery");
+    history.replaceState({}, "", url);
+    setTimeout(() => openPasswordModal(), 0);
+  }
 
   window.addEventListener("pk:auth-changed", () => {
     refreshShell();
