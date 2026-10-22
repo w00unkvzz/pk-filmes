@@ -267,3 +267,29 @@ export function clearChat(code) {
   ]);
 }
 
+/* Search history */
+export function getSearchHistory() {
+  return read("searchHistory", []);
+}
+
+export function addSearchHistory(term) {
+  const clean = String(term || "").trim();
+  if (!clean) return getSearchHistory();
+  const history = getSearchHistory().filter((item) => item.toLowerCase() !== clean.toLowerCase());
+  const next = [clean, ...history].slice(0, 8);
+  return write("searchHistory", next);
+}
+
+export function clearSearchHistory() {
+  return write("searchHistory", []);
+}
+
+/* Settings */
+export function getSettings() {
+  return read("settings", { autoSkipIntro: false, reduceMotion: false, notifications: true });
+}
+
+export function saveSettings(patch) {
+  return write("settings", { ...getSettings(), ...patch });
+}
+
