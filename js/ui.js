@@ -530,10 +530,11 @@ export function openPlayer(item, options = {}) {
     <div class="player-stage">${embed
       ? `<iframe id="player-frame" src="${escapeHTML(stream)}" title="${escapeHTML(displayTitle)}" allow="autoplay; fullscreen; picture-in-picture; encrypted-media" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`
       : `<video id="player-video" controls autoplay playsinline preload="metadata" src="${escapeHTML(stream)}"></video>`}</div>
-    <div class="player-note"><i class="fa-solid fa-circle-info"></i><span>${embed ? "Player incorporado do provedor. O progresso não pode ser sincronizado neste modo." : "Reprodução direta do endereço configurado no campo player. O progresso fica salvo neste navegador."}</span></div>
     <div class="player-next">
-      <div class="poster" style="--c1:${item.colors?.[0] || "#1e1b4b"};--c2:${item.colors?.[1] || "#6a5acd"}"><span class="poster-title">${escapeHTML(item.title)}</span></div>
-      <div class="grow"><strong style="display:block;font-size:11px">Você está assistindo</strong><span class="tiny muted">O progresso fica salvo neste navegador.</span></div>
+      <div class="poster ${item.poster ? "has-image" : ""}" style="--c1:${item.colors?.[0] || "#1e1b4b"};--c2:${item.colors?.[1] || "#6a5acd"}">
+        ${item?.poster ? `<img class="poster-img" src="${escapeHTML(item.poster)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">` : `<span class="poster-title">${escapeHTML(item.title)}</span>`}
+      </div>
+      <div class="grow"><strong style="display:block;font-size:11px">Você está assistindo</strong><span class="tiny muted">${escapeHTML(displayTitle)}</span></div>
       <button class="btn btn-sm btn-ghost" data-close-modal type="button">Fechar</button>
     </div>`;
 

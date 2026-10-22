@@ -79,6 +79,8 @@ function normalizeCatalogItem(raw, index) {
 
 async function loadRemoteCatalog() {
   if (typeof fetch !== "function") return null;
+  const cached = readCache();
+  if (cached) return cached;
   try {
     // In the browser, resolve against the page so the file is fetched over
     // HTTP from the site root. In Node-based tests, document.baseURI is set
@@ -92,13 +94,36 @@ async function loadRemoteCatalog() {
     if (!Array.isArray(items)) throw new Error("payload sem array items");
     // A valid but empty catalog is intentional: the site shows its empty
     // state instead of silently showing placeholder titles.
-    return items
+    const normalized = items
       .map((item, index) => normalizeCatalogItem(item, index))
       .filter((item) => item.id && item.title);
+    writeCache(normalized);
+    return normalized;
   } catch (error) {
     console.warn(`[catalog] catálogo vazio ou indisponível: ${error.message}`);
     return null;
   }
+}
+
+const CACHE_KEY = "w00filmes.catalog_cache";
+const CACHE_TTL = 60 * 60 * 1000;
+
+function readCache() {
+  try {
+    if (typeof localStorage === "undefined") return null;
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const { ts, items } = JSON.parse(raw);
+    if (Date.now() - ts > CACHE_TTL) { localStorage.removeItem(CACHE_KEY); return null; }
+    return Array.isArray(items) ? items : null;
+  } catch { return null; }
+}
+
+function writeCache(items) {
+  try {
+    if (typeof localStorage === "undefined") return;
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), items }));
+  } catch { /* quota ou indisponível */ }
 }
 
 const remoteCatalog = await loadRemoteCatalog();
