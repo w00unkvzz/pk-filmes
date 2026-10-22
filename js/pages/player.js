@@ -7,6 +7,7 @@ import { openWatchPartyModal } from "../watchparty.js";
 
 const DIRECT_VIDEO = /\.(mp4|m4v|webm|ogv|ogg|mov|m3u8)(\?|#|$)/i;
 const EMBED_HOST = /youtube\.com|youtu\.be|vimeo\.com|dailymotion\.com|\/embed\/|player\./i;
+let stripRequest = 0;
 
 function streamFor(item) {
   return String(item?.player || item?.stream || "").trim().replace(/^http:\/\//i, "https://");
@@ -178,9 +179,15 @@ function mountPlayer({ item, group, show, current }) {
     renderEpisodeStrip(group, show, current.season, activeItem.id);
   }
 
-  qs("#player-party")?.addEventListener("click", () => {
-    openWatchPartyModal(show, { episodeId: activeItem.id, title: show.title, poster: show.poster });
-  });
+  const partyButton = qs("#player-party");
+  if (partyButton && !partyButton.dataset.bound) {
+    partyButton.dataset.bound = "1";
+    partyButton.addEventListener("click", () => {
+      const activeId = qs("#player-page")?.dataset.activeId;
+      const active = group?.items.find((entry) => entry.item.id === activeId)?.item || activeItem;
+      openWatchPartyModal(show, { episodeId: active.id, title: show.title, poster: show.poster });
+    });
+  }
 
   const seasonSelect = qs("#player-season");
   if (seasonSelect && !seasonSelect.dataset.bound) {
@@ -201,6 +208,9 @@ function nextEpisode(group, current) {
 }
 
 function selectEpisode({ group, show, entry }) {
+  if (!qs("#player-page")) return;
+  const previousVideo = qs("#player-video");
+  if (previousVideo && !previousVideo.paused) previousVideo.pause();
   const url = new URL(location.href);
   url.searchParams.set("id", entry.item.id);
   url.searchParams.set("temporada", String(entry.season));
@@ -232,6 +242,7 @@ function renderEpisodeStrip(group, show, seasonNumber, activeId) {
   const root = qs("#player-episodes");
   const season = group.seasons.find((entry) => entry.number === seasonNumber) || group.seasons[0];
   if (!root || !season) return;
+  const request = ++stripRequest;
   root.innerHTML = season.episodes.map((entry) => episodeCard(entry, show, activeId, null)).join("");
   root.querySelectorAll("[data-player-episode]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -241,7 +252,7 @@ function renderEpisodeStrip(group, show, seasonNumber, activeId) {
   });
   const id = tmdbIdFromItem(group.first.item);
   getSeasonDetails(id, season.number).then((tmdbSeason) => {
-    if (!tmdbSeason || !root.isConnected) return;
+    if (!tmdbSeason || !root.isConnected || request !== stripRequest) return;
     const byNumber = new Map((tmdbSeason.episodes || []).map((episode) => [episode.episode_number, episode]));
     root.innerHTML = season.episodes.map((entry) => episodeCard(entry, show, activeId, byNumber.get(entry.episode))).join("");
     root.querySelectorAll("[data-player-episode]").forEach((button) => {

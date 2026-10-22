@@ -11,6 +11,8 @@ import {
 } from "../tmdb.js";
 import { openWatchPartyModal } from "../watchparty.js";
 
+let seasonRequest = 0;
+
 function starsMarkup(rating) {
   const value = Number(rating) || 0;
   if (!value) {
@@ -28,9 +30,9 @@ function starsMarkup(rating) {
 function metaMarkup({ year, runtime, genres, seasons, episodes, age }) {
   const bits = [];
   if (year) bits.push(`<span>${escapeHTML(String(year))}</span>`);
+  if (runtime) bits.push(`<span>${escapeHTML(formatDuration(runtime))}</span>`);
   if (seasons) bits.push(`<span>${seasons} temporada${seasons > 1 ? "s" : ""}</span>`);
   if (episodes) bits.push(`<span>${episodes} episódio${episodes > 1 ? "s" : ""}</span>`);
-  if (!seasons && runtime) bits.push(`<span>${escapeHTML(formatDuration(runtime))}</span>`);
   if (age) bits.push(`<span class="details-age-inline">${escapeHTML(age)}</span>`);
   if (genres?.length) bits.push(`<span>${escapeHTML(genres.slice(0, 3).join(" · "))}</span>`);
   return bits.join('<span class="dot"></span>');
@@ -277,10 +279,11 @@ async function renderSeason(group, show, seasonNumber, tvId = null) {
   const root = qs("#details-episodes");
   const season = group?.seasons.find((entry) => entry.number === seasonNumber);
   if (!root || !season) return;
+  const request = ++seasonRequest;
   root.innerHTML = season.episodes.map((entry) => episodeCard(entry, show, null)).join("");
   const id = tvId || tmdbIdFromItem(group.first.item);
   const tmdbSeason = await getSeasonDetails(id, seasonNumber);
-  if (!tmdbSeason || !root.isConnected) return;
+  if (!tmdbSeason || !root.isConnected || request !== seasonRequest) return;
   const byNumber = new Map((tmdbSeason.episodes || []).map((episode) => [episode.episode_number, episode]));
   root.innerHTML = season.episodes.map((entry) => episodeCard(entry, show, byNumber.get(entry.episode))).join("");
 }
