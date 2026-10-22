@@ -54,6 +54,10 @@ Em **Authentication → Providers → Email**:
 - Para testar sem caixa de entrada, desative **Confirm email**.
 - Para produção, mantenha a confirmação ativada.
 
+> Neste projeto a confirmação de e-mail está desativada (`mailer_autoconfirm`)
+> para o cadastro funcionar imediatamente. Antes de abrir para o público,
+> configure um SMTP próprio e reative a confirmação.
+
 ### Login com GitHub (opcional)
 
 1. GitHub → **Settings → Developer settings → OAuth Apps → New OAuth App**.
@@ -63,8 +67,9 @@ Em **Authentication → Providers → Email**:
 4. Copie **Client ID** e **Client Secret** para
    **Supabase → Authentication → Providers → GitHub**.
 5. Ative o provider.
+6. Em `js/supabase-config.js`, mude `githubOAuth: false` para `true`.
 
-O botão “Continuar com GitHub” já está na tela de login.
+O botão “Continuar com GitHub” aparece na tela de login quando essa opção está ativa.
 
 ## 3. Rodar localmente
 

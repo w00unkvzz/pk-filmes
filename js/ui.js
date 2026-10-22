@@ -4,6 +4,7 @@ import { byId, getGenreMeta } from "./data.js";
 import * as store from "./store.js";
 import { authEnabled, logout as authLogout } from "./auth.js";
 import { signIn, signUp, signInWithGitHub, sendPasswordReset } from "./supabase.js";
+import { SUPABASE_CONFIG } from "./supabase-config.js";
 
 export const qs = (selector, root = document) => root.querySelector(selector);
 export const qsa = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -135,7 +136,7 @@ export function renderShell() {
     <div class="sidebar-foot">
       ${user.authed
         ? `<a class="sidebar-user" href="perfil.html">${avatar(user, "sm")}<div><strong>${escapeHTML(user.name)}</strong><span>${escapeHTML(user.plan)}</span></div></a>`
-        : `<button class="sidebar-user" data-auth-open type="button">${avatar(user, "sm")}<div><strong>Entrar</strong><span>Modo demonstração</span></div></button>`}
+        : `<button class="sidebar-user" data-auth-open type="button">${avatar(user, "sm")}<div><strong>Entrar</strong><span>Sua conta</span></div></button>`}
     </div>`;
 
   topbar.innerHTML = `
@@ -161,7 +162,7 @@ export function renderShell() {
                <a href="mascote.html"><i class="fa-solid fa-paw"></i>Mascote</a>
                <div class="sep"></div>
                <button data-logout type="button"><i class="fa-solid fa-right-from-bracket"></i>Sair</button>`
-            : `<button data-auth-open type="button"><i class="fa-solid fa-right-to-bracket"></i>Entrar no modo demo</button>
+            : `<button data-auth-open type="button"><i class="fa-solid fa-right-to-bracket"></i>Entrar</button>
                <a href="vip.html"><i class="fa-solid fa-crown"></i>Ver planos</a>`}
         </div>
       </div>
@@ -787,7 +788,7 @@ export function openAuthModal() {
       </div>
       <p class="auth-error hidden" id="auth-error" role="alert"></p>
       <button class="btn btn-primary btn-block" id="auth-submit" type="submit"><i class="fa-solid fa-right-to-bracket"></i>Entrar</button>
-      <button class="btn btn-ghost btn-block" id="auth-github" type="button"><i class="fa-brands fa-github"></i>Continuar com GitHub</button>
+      ${SUPABASE_CONFIG.githubOAuth ? `<button class="btn btn-ghost btn-block" id="auth-github" type="button"><i class="fa-brands fa-github"></i>Continuar com GitHub</button>` : ""}
       <button class="btn btn-link btn-block" id="auth-reset" type="button">Esqueci minha senha</button>
       <p class="auth-note">Conta real via Supabase · seus dados ficam no seu projeto.</p>
     </form>` : `
