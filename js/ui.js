@@ -112,8 +112,7 @@ export function renderShell() {
   const requestCount = store.getFriendRequests().length;
   const sidebar = qs("#sidebar");
   const topbar = qs("#topbar");
-  const mobileNav = qs("#mobile-nav");
-  if (!sidebar || !topbar || !mobileNav) return;
+  if (!sidebar || !topbar) return;
 
   const sections = [...new Set(CONFIG.nav.map((item) => item.section))];
   sidebar.innerHTML = `
@@ -167,13 +166,6 @@ export function renderShell() {
       </div>
     </div>`;
 
-  mobileNav.innerHTML = CONFIG.mobileNav.map((item) => {
-    const active = page === item.page;
-    return `<a class="${active ? "active" : ""}" href="${item.href}" ${active ? 'aria-current="page"' : ""}><i class="fa-solid ${item.icon}"></i><span>${escapeHTML(item.label)}</span></a>`;
-  }).join("");
-
-  const search = qs(".topbar-search input", topbar);
-  if (search && page === "search") {
     const query = new URLSearchParams(location.search).get("q") || "";
     search.value = query;
   }

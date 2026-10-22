@@ -95,7 +95,7 @@
 .sidebar-user span { display: block; color: var(--muted-2); font-size: 10px; }
 
 .page-shell { margin-left: var(--sidebar-w); min-height: 100vh; display: flex; flex-direction: column; }
-.page-content { flex: 1; padding-bottom: 80px; outline: 0; }
+.page-content { flex: 1; padding-bottom: 24px; outline: 0; }
 
 /* Topbar */
 .topbar {
@@ -162,7 +162,7 @@
 .profile-menu .sep { height: 1px; background: var(--line); margin: 5px 0; }
 
 /* Mobile navigation */
-.mobile-nav { display: none; }
+
 .mobile-top-logo { display: none; }
 .mobile-menu-btn { display: none; }
 
@@ -205,24 +205,12 @@
   .mobile-top-logo { display: flex; align-items: center; gap: 9px; }
   .mobile-top-logo .brand-mark { width: 30px; height: 30px; border-radius: 8px; font-size: 11px; flex-basis: 30px; }
   .mobile-top-logo strong { font-family: "Space Grotesk", sans-serif; font-size: 13px; letter-spacing: .08em; }
-  .page-content { padding-bottom: 92px; }
-  .mobile-nav {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 950;
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    padding: 7px 6px calc(7px + env(safe-area-inset-bottom));
-    background: rgba(8,8,12,.96);
-    border-top: 1px solid var(--line);
-    backdrop-filter: blur(20px);
-  }
-  .mobile-nav a { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 5px 0; color: var(--muted-2); font-size: 9px; font-weight: 650; }
-  .mobile-nav a i { font-size: 17px; }
-  .mobile-nav a.active { color: var(--accent-bright); }
-  .site-footer { padding-bottom: 100px; }
+  .page-content { padding-bottom: 24px; }
+  
+  
+  
+  
+  .site-footer { padding-bottom: 24px; }
   .site-footer .row-between { flex-direction: column; align-items: flex-start; }
 }
 

@@ -204,13 +204,8 @@ p { color: var(--muted); }
 .profile-menu a:hover, .profile-menu button:hover { background: rgba(255,79,163,.1); }
 
 /* Mobile */
-.mobile-nav {
-  background: rgba(12, 6, 10, .93);
-  border-top: 1px solid rgba(255,139,195,.14);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-}
-.mobile-nav a.active { color: var(--accent-bright); }
+
+
 .mobile-menu-btn { border: 1px solid rgba(255,139,195,.12); background: rgba(255,139,195,.05); }
 
 /* --------------------------------------------------------------------------
@@ -567,10 +562,10 @@ select option { background: #1b0c15; color: #fff; }
   .sidebar { width: min(290px, 86vw) !important; --sidebar-w: 0px; transform: translateX(-100%); }
   .sidebar.open { transform: none; }
   .page-shell { margin-left: 0; }
-  .page-content { padding-bottom: 96px; }
+  .page-content { padding-bottom: 24px; }
   .topbar { padding: 0 15px; background: rgba(7,4,7,.88); }
   .topbar-search { display: none; }
-  .mobile-nav { display: grid; }
+  
   .mobile-top-logo strong { font-family: var(--font-display); font-weight: 700; }
   .hero { margin: 0; border-radius: 0 0 24px 24px; min-height: 540px; }
   .hero-content { width: 100%; padding: 50px 22px 78px; }
