@@ -110,11 +110,6 @@ async function loadRemoteCatalog() {
     const payload = await response.json();
     const items = Array.isArray(payload) ? payload : payload?.items;
     if (!Array.isArray(items)) throw new Error("payload sem array items");
-<<<<<<< HEAD
-    // A valid but empty catalog is intentional: the site shows its empty
-    // state instead of silently showing placeholder titles.
-=======
->>>>>>> 902a4fa (perf: service worker, preload catalog, lazy rows)
     const normalized = items
       .map((item, index) => normalizeCatalogItem(item, index))
       .filter((item) => item.id && item.title);
