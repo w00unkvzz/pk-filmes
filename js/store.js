@@ -1,6 +1,6 @@
 // Local-first cache. Cloud-backed social data is mirrored by js/social.js.
 import { CONFIG } from "./config.js";
-import { DEFAULT_USER, DEFAULT_PET, byId } from "./data.js";
+import { DEFAULT_USER, byId } from "./data.js";
 
 const P = CONFIG.storagePrefix;
 const bus = new EventTarget();
@@ -267,100 +267,3 @@ export function clearChat(code) {
   ]);
 }
 
-/* Pet */
-export function getPet() {
-  return { ...structuredClone(DEFAULT_PET), ...read("pet", {}) };
-}
-
-export function savePet(patch) {
-  return write("pet", { ...getPet(), ...patch });
-}
-
-export function petLevelProgress(pet) {
-  const span = pet.xpNext || 400;
-  return Math.min(100, Math.round((pet.xp / span) * 100));
-}
-
-const careRules = {
-  feed: { label: "Alimentar", cooldown: 45, hunger: 18, happiness: 4, energy: 3, xp: 18 },
-  love: { label: "Carinho", cooldown: 20, hunger: 0, happiness: 14, energy: 2, xp: 12 },
-  play: { label: "Brincar", cooldown: 60, hunger: -4, happiness: 18, energy: -12, xp: 24 },
-  rest: { label: "Descansar", cooldown: 90, hunger: -2, happiness: 3, energy: 26, xp: 10 }
-};
-
-export function carePet(action) {
-  const rule = careRules[action];
-  if (!rule) return { ok: false, reason: "Ação inválida." };
-  const pet = getPet();
-  const last = pet.lastCare?.[action] || 0;
-  const remaining = Math.ceil((last + rule.cooldown * 1000 - Date.now()) / 1000);
-  if (remaining > 0) return { ok: false, reason: `Aguarde ${remaining}s para repetir.` };
-
-  const clamp = (value) => Math.max(0, Math.min(100, Math.round(value)));
-  let xp = pet.xp + rule.xp;
-  let level = pet.level;
-  let xpNext = pet.xpNext;
-  while (xp >= xpNext) {
-    xp -= xpNext;
-    level += 1;
-    xpNext = Math.round(xpNext * 1.22);
-  }
-  const next = {
-    ...pet,
-    level,
-    xp,
-    xpNext,
-    hunger: clamp(pet.hunger + rule.hunger),
-    happiness: clamp(pet.happiness + rule.happiness),
-    energy: clamp(pet.energy + rule.energy),
-    lastCare: { ...pet.lastCare, [action]: Date.now() },
-    log: [
-      { at: Date.now(), text: `Você usou ${rule.label.toLowerCase()}. Faísca ganhou +${rule.xp} XP.` },
-      ...(pet.log || [])
-    ].slice(0, 20)
-  };
-  savePet(next);
-  return { ok: true, pet: next, rule };
-}
-
-export function renamePet(name) {
-  const clean = String(name || "").trim().slice(0, 18);
-  if (!clean) return getPet();
-  return savePet({ name: clean, log: [{ at: Date.now(), text: `O mascote agora se chama ${clean}.` }, ...(getPet().log || [])].slice(0, 20) });
-}
-
-export function careCooldowns(pet = getPet()) {
-  const now = Date.now();
-  const result = {};
-  for (const [key, rule] of Object.entries(careRules)) {
-    const last = pet.lastCare?.[key] || 0;
-    result[key] = Math.max(0, Math.ceil((last + rule.cooldown * 1000 - now) / 1000));
-  }
-  return result;
-}
-
-/* Search history */
-export function getSearchHistory() {
-  return read("searchHistory", []);
-}
-
-export function addSearchHistory(term) {
-  const clean = String(term || "").trim();
-  if (!clean) return getSearchHistory();
-  const history = getSearchHistory().filter((item) => item.toLowerCase() !== clean.toLowerCase());
-  const next = [clean, ...history].slice(0, 8);
-  return write("searchHistory", next);
-}
-
-export function clearSearchHistory() {
-  return write("searchHistory", []);
-}
-
-/* Settings */
-export function getSettings() {
-  return read("settings", { autoSkipIntro: false, reduceMotion: false, notifications: true });
-}
-
-export function saveSettings(patch) {
-  return write("settings", { ...getSettings(), ...patch });
-}

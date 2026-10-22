@@ -30,41 +30,7 @@ export function avatar(user, size = "sm", extra = "") {
   return `<span class="avatar ${size} ${extra}" aria-hidden="true"><span class="avatar-initials">${escapeHTML(initials(name))}</span>${photo ? `<img src="${escapeHTML(photo)}" alt="" loading="lazy" onerror="this.remove()">` : ""}</span>`;
 }
 
-export function petSVG(id = "pet") {
-  const safe = String(id).replace(/[^a-zA-Z0-9_-]/g, "");
-  return `<svg viewBox="0 0 200 200" role="img" aria-label="Mascote Faísca">
-    <defs>
-      <radialGradient id="pet-body-${safe}" cx="35%" cy="25%" r="80%">
-        <stop offset="0%" stop-color="#ffc4dd"/>
-        <stop offset="55%" stop-color="#ff5aa8"/>
-        <stop offset="100%" stop-color="#a30f56"/>
-      </radialGradient>
-      <linearGradient id="pet-ear-${safe}" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stop-color="#ffe0ee"/>
-        <stop offset="100%" stop-color="#d61a70"/>
-      </linearGradient>
-    </defs>
-    <ellipse cx="100" cy="172" rx="55" ry="10" fill="#000" opacity=".28"/>
-    <path d="M48 68 C30 27 37 13 58 28 L78 48 Z" fill="url(#pet-ear-${safe})"/>
-    <path d="M152 68 C170 27 163 13 142 28 L122 48 Z" fill="url(#pet-ear-${safe})"/>
-    <path d="M54 64 C43 38 47 30 59 41 L74 52 Z" fill="#f9a8d4" opacity=".6"/>
-    <path d="M146 64 C157 38 153 30 141 41 L126 52 Z" fill="#f9a8d4" opacity=".6"/>
-    <circle cx="100" cy="111" r="59" fill="url(#pet-body-${safe})"/>
-    <ellipse cx="100" cy="123" rx="35" ry="30" fill="#ede9fe" opacity=".2"/>
-    <circle cx="79" cy="103" r="8" fill="#171122"/>
-    <circle cx="121" cy="103" r="8" fill="#171122"/>
-    <circle cx="81.5" cy="100" r="2.8" fill="#fff"/>
-    <circle cx="118.5" cy="100" r="2.8" fill="#fff"/>
-    <ellipse cx="65" cy="119" rx="9" ry="5" fill="#f9a8d4" opacity=".6"/>
-    <ellipse cx="135" cy="119" rx="9" ry="5" fill="#f9a8d4" opacity=".6"/>
-    <path d="M92 121 Q100 129 108 121" fill="none" stroke="#3b0764" stroke-width="3" stroke-linecap="round"/>
-    <path d="M100 129 Q94 136 88 132" fill="none" stroke="#3b0764" stroke-width="2.4" stroke-linecap="round"/>
-    <path d="M100 129 Q106 136 112 132" fill="none" stroke="#3b0764" stroke-width="2.4" stroke-linecap="round"/>
-    <path d="M47 143 Q30 152 39 162 Q49 170 56 157" fill="none" stroke="#8b7cf6" stroke-width="8" stroke-linecap="round"/>
-    <path d="M153 143 Q170 152 161 162 Q151 170 144 157" fill="none" stroke="#8b7cf6" stroke-width="8" stroke-linecap="round"/>
-    <path d="M83 58 Q100 48 117 58" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".4"/>
-  </svg>`;
-}
+
 
 export function formatDuration(minutes) {
   if (!minutes) return "—";
@@ -158,7 +124,6 @@ export function renderShell() {
             ? `<a href="perfil.html"><i class="fa-solid fa-user"></i>Meu perfil</a>
                <a href="perfil.html#minha-lista"><i class="fa-solid fa-bookmark"></i>Minha lista</a>
                <a href="amigos.html"><i class="fa-solid fa-user-group"></i>Amigos</a>
-               <a href="mascote.html"><i class="fa-solid fa-paw"></i>Mascote</a>
                <div class="sep"></div>
                <button data-logout type="button"><i class="fa-solid fa-right-from-bracket"></i>Sair</button>`
             : `<button data-auth-open type="button"><i class="fa-solid fa-right-to-bracket"></i>Entrar</button>`}

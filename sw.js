@@ -32,7 +32,6 @@ const STATIC_ASSETS = [
   "/js/pages/perfil.js",
   "/js/pages/amigos.js",
   "/js/pages/pkparty.js",
-  "/js/pages/mascote.js",
   "/js/pages/cartaz.js",
 ];
 

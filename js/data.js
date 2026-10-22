@@ -154,20 +154,7 @@ export const byId = (id) => ID_INDEX.get(id) || null;
 // own release list, so no placeholder film appears in the catalog.
 export const UPCOMING = [];
 
-export const DEFAULT_PET = {
-  name: "Faísca",
-  level: 3,
-  xp: 240,
-  xpNext: 400,
-  hunger: 72,
-  happiness: 81,
-  energy: 64,
-  lastCare: { feed: 0, love: 0, play: 0, rest: 0 },
-  log: [
-    { at: Date.now() - 1000 * 60 * 22, text: "Faísca encontrou um lugar quentinho no sofá." },
-    { at: Date.now() - 1000 * 60 * 95, text: "Você deu um petisco. Faísca ficou radiante." }
-  ]
-};
+
 
 export const POPULAR_SEARCHES = CATALOG.slice(0, 8).map((item) => item.title);
 

@@ -631,37 +631,19 @@ select option { background: #1b0c15; color: #fff; }
 .site-footer a { color: #ad8999; }
 .footer-brand { color: #d8b4c5; }
 .footer-brand .brand-mark { box-shadow: 0 6px 18px rgba(255,79,163,.2), inset 0 1px 0 rgba(255,255,255,.4); }
-.pet-stage {
-  background:
-    radial-gradient(circle at 50% 42%, rgba(255, 79, 163, .25), transparent 55%),
-    linear-gradient(160deg, #12070e, #240b1a 58%, #2f0a20);
-  border-color: rgba(255, 139, 195, .16);
-}
-.pet-stage::after {
-  border-color: rgba(255, 139, 195, .1);
-  box-shadow: 0 0 0 30px rgba(255, 139, 195, .035), 0 0 0 60px rgba(255, 139, 195, .02);
-}
-.pet-level {
-  background: rgba(255, 79, 163, .14);
-  border-color: rgba(255, 139, 195, .3);
-  color: #ffc4dd;
-}
-.pet-care-card {
-  background: linear-gradient(150deg, rgba(46, 20, 36, .46), rgba(20, 10, 16, .42));
-  border-color: rgba(255, 139, 195, .12);
-}
-.pet-action {
-  background: rgba(255, 139, 195, .045);
-  border-color: rgba(255, 139, 195, .12);
-}
-.pet-action:hover { background: rgba(255, 79, 163, .1); border-color: rgba(255, 139, 195, .26); }
-.pet-mood { color: #d9b8c8; }
-.pet-stat { background: rgba(10, 5, 8, .34); border-color: rgba(255,139,195,.1); }
-.pet-name-row button { color: var(--accent-bright); }
+
+
+
+
+
+
+
+
+
 .profile-tab-panel .card-grid { margin-top: 2px; }
 @media (max-width: 760px) {
-  .pet-page { padding-inline: 12px; }
-  .pet-stage { padding: 20px 14px; min-height: 470px; }
+  
+  
   .site-footer { padding-bottom: 104px; }
 }
 

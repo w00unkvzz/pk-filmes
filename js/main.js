@@ -9,7 +9,6 @@ import { renderSearch } from "./pages/search.js";
 import { renderPerfil } from "./pages/perfil.js";
 import { renderAmigos } from "./pages/amigos.js";
 import { renderPkparty } from "./pages/pkparty.js";
-import { renderMascote } from "./pages/mascote.js";
 import { renderCartaz } from "./pages/cartaz.js";
 
 const routes = {
@@ -19,7 +18,6 @@ const routes = {
   perfil: renderPerfil,
   amigos: renderAmigos,
   pkparty: renderPkparty,
-  mascote: renderMascote,
   cartaz: renderCartaz
 };
 

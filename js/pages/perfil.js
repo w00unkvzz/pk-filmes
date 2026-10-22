@@ -5,7 +5,7 @@ import * as store from "../store.js";
 import { logout as authLogout } from "../auth.js";
 import { uploadAvatar, updateProfile, syncSocialCache } from "../social.js";
 import {
-  qs, qsa, avatar, petSVG, posterCard, emptyState, formatDuration, formatDate,
+  qs, qsa, avatar, posterCard, emptyState, formatDuration, formatDate,
   escapeHTML, openModal, closeModal, toast
 } from "../ui.js";
 
@@ -31,14 +31,13 @@ function historyItem(entry) {
   </article>`;
 }
 
-function achievements(watchlist, history, friends, pet) {
+function achievements(watchlist, history, friends) {
   return [
     { icon: "fa-seedling", title: "Primeiro play", text: "Assista a um título", unlocked: history.length > 0 },
     { icon: "fa-bookmark", title: "Colecionador", text: "3 títulos na lista", unlocked: watchlist.length >= 3 },
     { icon: "fa-user-group", title: "Conectado", text: "Tenha um amigo", unlocked: friends.length > 0 },
     { icon: "fa-fire", title: "Maratonista", text: "5 títulos iniciados", unlocked: history.length >= 5 },
     { icon: "fa-tower-broadcast", title: "Sessão aberta", text: "Crie uma sala no w00 Party", unlocked: false },
-    { icon: "fa-paw", title: "Cuidador", text: "Faísca no nível 3", unlocked: pet.level >= 3 }
   ];
 }
 
@@ -50,10 +49,9 @@ export async function renderPerfil() {
   const watchlist = store.getWatchlist().map(byId).filter(Boolean);
   const history = store.getHistory();
   const friends = store.getFriends();
-  const pet = store.getPet();
   const hours = Math.round(history.reduce((total, entry) => total + (entry.progress || 0), 0) / 3600);
   const tab = currentTab();
-  const badgeList = achievements(watchlist, history, friends, pet);
+  const badgeList = achievements(watchlist, history, friends);
 
   qs("#page-content").innerHTML = `
     <section class="profile-cover">
@@ -111,11 +109,7 @@ export async function renderPerfil() {
       </div>
 
       <aside class="profile-side">
-        <a class="profile-pet-card" href="mascote.html">
-          <div class="pet-mini small">${petSVG("profile-pet")}</div>
-          <div><h3>${escapeHTML(pet.name)} · nível ${pet.level}</h3><p>${pet.happiness}% de felicidade</p></div>
-          <i class="fa-solid fa-chevron-right muted"></i>
-        </a>
+        
 
         <div class="profile-panel">
           <div class="panel-head"><h3>Conta</h3><i class="fa-solid fa-shield-halved muted"></i></div>

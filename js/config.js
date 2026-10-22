@@ -12,7 +12,6 @@ export const CONFIG = {
     { page: "cartaz", href: "cartaz.html", label: "Em breve", icon: "fa-calendar-days", section: "Explorar" },
     { page: "pkparty", href: "pkparty.html", label: "w00 Party", icon: "fa-tower-broadcast", section: "Social" },
     { page: "amigos", href: "amigos.html", label: "Amigos", icon: "fa-user-group", section: "Social", badge: "requests" },
-    { page: "mascote", href: "mascote.html", label: "Faísca", icon: "fa-paw", section: "Social" },
     { page: "perfil", href: "perfil.html", label: "Perfil", icon: "fa-user", section: "Conta" }
   ],
   mobileNav: [
