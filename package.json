@@ -1,8 +1,8 @@
 {
-  "name": "pk-filmes",
-  "version": "1.0.0",
+  "name": "w00filmes",
+  "version": "2.0.0",
   "private": true,
-  "description": "Catálogo de streaming com login Supabase e deploy estático no Vercel",
+  "description": "w00filmes — streaming, amigos e sessões sincronizadas com Supabase",
   "scripts": {
     "dev": "node serve.js",
     "start": "node serve.js"

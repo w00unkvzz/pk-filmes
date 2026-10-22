@@ -25,7 +25,7 @@ export function renderMascote() {
     <div class="pet-page">
       <div class="page-hero" style="padding:0 0 18px">
         <div class="section-kicker"><i class="fa-solid fa-paw"></i> Companheiro digital</div>
-        <div class="row-between wrap"><div><h1 style="font-size:clamp(1.8rem,4vw,3rem)">Cuide do Faísca.</h1><p>Alimente, brinque e descanse com o mascote do PK Filmes. Cada ação rende XP e desbloqueia níveis.</p></div><span class="badge badge-vip"><i class="fa-solid fa-star"></i> Nível ${pet.level}</span></div>
+        <div class="row-between wrap"><div><h1 style="font-size:clamp(1.8rem,4vw,3rem)">Cuide do Faísca.</h1><p>Alimente, brinque e descanse com o mascote do w00filmes. Cada ação rende XP e desbloqueia níveis.</p></div><span class="badge badge-accent"><i class="fa-solid fa-star"></i> Nível ${pet.level}</span></div>
       </div>
 
       <div class="pet-layout">
@@ -107,14 +107,13 @@ function mountMascote() {
     });
   }, 1000);
 
-  window.addEventListener("pk:auth-changed", () => renderMascote(), { once: true });
 }
 
 function openRename() {
   const pet = store.getPet();
   const content = `
     <button class="modal-close" data-close-modal type="button" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
-    <div class="auth-head"><div class="brand-mark">PK</div><h2>Renomear mascote</h2><p>Escolha um nome de até 18 caracteres.</p></div>
+    <div class="auth-head"><div class="brand-mark">w00</div><h2>Renomear mascote</h2><p>Escolha um nome de até 18 caracteres.</p></div>
     <form class="auth-body" id="rename-form">
       <div class="field"><label for="pet-name">Nome do mascote</label><input class="input" id="pet-name" name="name" maxlength="18" required value="${escapeHTML(pet.name)}"></div>
       <button class="btn btn-primary btn-block" type="submit"><i class="fa-solid fa-check"></i>Salvar nome</button>

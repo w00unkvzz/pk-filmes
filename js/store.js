@@ -1,6 +1,6 @@
-// Local-first persistence. No external backend: everything lives in localStorage.
+// Local-first cache. Cloud-backed social data is mirrored by js/social.js.
 import { CONFIG } from "./config.js";
-import { DEFAULT_USER, DEFAULT_PET, DEMO_FRIENDS, DEMO_REQUESTS, DEMO_ROOMS, byId } from "./data.js";
+import { DEFAULT_USER, DEFAULT_PET, byId } from "./data.js";
 
 const P = CONFIG.storagePrefix;
 const bus = new EventTarget();
@@ -58,9 +58,8 @@ export function login(name, email) {
   return saveUser({
     ...current,
     name: (name || "").trim() || "Visitante",
-    email: (email || "").trim() || "visitante@demo.local",
-    authed: true,
-    color: current.color || CONFIG.defaultAvatarColors[0]
+    email: (email || "").trim() || "",
+    authed: true
   });
 }
 
@@ -70,16 +69,11 @@ export function logout() {
   write("user", { ...DEFAULT_USER, authed: false });
   write("watchlist", watchlist);
   write("history", history);
+  setSocialCache([], []);
 }
 
 export function isLoggedIn() {
   return Boolean(getUser().authed);
-}
-
-export function activatePlan(planId) {
-  const plan = CONFIG.plans.find((item) => item.id === planId);
-  if (!plan) return getUser();
-  return saveUser({ plan: plan.name, planId: plan.id });
 }
 
 /* Watchlist */
@@ -156,13 +150,20 @@ export function progressPercent(entry) {
   return Math.min(100, Math.round((entry.progress / entry.duration) * 100));
 }
 
-/* Friends */
+/* Friends (cached from Supabase by js/social.js) */
 export function getFriends() {
-  return read("friends", DEMO_FRIENDS);
+  return read("friends", []);
 }
 
 export function getFriendRequests() {
-  return read("requests", DEMO_REQUESTS);
+  return read("requests", []);
+}
+
+export function setSocialCache(friends = [], requests = []) {
+  write("friends", friends, true);
+  write("requests", requests, true);
+  listeners.forEach((fn) => fn("social", { friends, requests }));
+  return { friends, requests };
 }
 
 export function addFriend(user) {
@@ -174,7 +175,6 @@ export function addFriend(user) {
     id: user.id || `friend-${Date.now()}`,
     name: user.name || "Novo amigo",
     email: user.email || "",
-    color: user.color || CONFIG.defaultAvatarColors[Math.floor(Math.random() * CONFIG.defaultAvatarColors.length)],
     status: user.status || "offline",
     since: String(new Date().getFullYear())
   };
@@ -208,7 +208,7 @@ export function getCustomRooms() {
 }
 
 export function getRooms() {
-  return [...getCustomRooms(), ...DEMO_ROOMS];
+  return getCustomRooms();
 }
 
 export function getRoom(code) {
@@ -341,15 +341,7 @@ export function clearSearchHistory() {
   return write("searchHistory", []);
 }
 
-/* Onboarding and settings */
-export function hasOnboarded() {
-  return Boolean(read("onboarded", false));
-}
-
-export function setOnboarded(value = true) {
-  return write("onboarded", value);
-}
-
+/* Settings */
 export function getSettings() {
   return read("settings", { autoSkipIntro: false, reduceMotion: false, notifications: true });
 }

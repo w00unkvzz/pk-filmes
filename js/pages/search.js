@@ -92,7 +92,7 @@ function genresMarkup() {
 function recommendMarkup() {
   const recommended = [...CATALOG].sort((a, b) => b.rating - a.rating).slice(0, 12);
   return `<section class="page-section tight">
-    <div class="section-head"><div><div class="section-kicker"><i class="fa-solid fa-wand-magic-sparkles"></i> Para você</div><h2>Recomendados</h2></div><span class="badge badge-soft">Baseado no catálogo demo</span></div>
+    <div class="section-head"><div><div class="section-kicker"><i class="fa-solid fa-wand-magic-sparkles"></i> Para você</div><h2>Recomendados</h2></div><span class="badge badge-soft">Baseado no seu catálogo</span></div>
     <div class="card-grid">${recommended.map((item) => posterCard(item)).join("")}</div>
   </section>`;
 }
@@ -114,9 +114,9 @@ export function renderSearch() {
 
     <div id="search-discovery">
       ${historyMarkup()}
-      ${popularMarkup()}
+      ${POPULAR_SEARCHES.length ? popularMarkup() : ""}
       ${genresMarkup()}
-      ${recommendMarkup()}
+      ${CATALOG.length ? recommendMarkup() : ""}
     </div>
 
     <section class="page-section" id="search-results-section" hidden>

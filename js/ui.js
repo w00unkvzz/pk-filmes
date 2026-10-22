@@ -20,14 +20,14 @@ export function escapeHTML(value = "") {
 
 export function initials(name = "") {
   const parts = String(name).trim().split(/\s+/).filter(Boolean);
-  if (!parts.length) return "PK";
+  if (!parts.length) return "W";
   return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
 }
 
 export function avatar(user, size = "sm", extra = "") {
   const name = typeof user === "string" ? user : user?.name || "Visitante";
-  const color = typeof user === "object" ? user?.color : null;
-  return `<span class="avatar ${size} ${extra}" style="${color ? `background:${escapeHTML(color)}` : ""}" aria-hidden="true">${escapeHTML(initials(name))}</span>`;
+  const photo = typeof user === "object" ? user?.avatar_url || user?.avatarUrl || "" : "";
+  return `<span class="avatar ${size} ${extra}" aria-hidden="true"><span class="avatar-initials">${escapeHTML(initials(name))}</span>${photo ? `<img src="${escapeHTML(photo)}" alt="" loading="lazy" onerror="this.remove()">` : ""}</span>`;
 }
 
 export function petSVG(id = "pet") {
@@ -35,13 +35,13 @@ export function petSVG(id = "pet") {
   return `<svg viewBox="0 0 200 200" role="img" aria-label="Mascote Faísca">
     <defs>
       <radialGradient id="pet-body-${safe}" cx="35%" cy="25%" r="80%">
-        <stop offset="0%" stop-color="#c4b5fd"/>
-        <stop offset="55%" stop-color="#8b7cf6"/>
-        <stop offset="100%" stop-color="#5b21b6"/>
+        <stop offset="0%" stop-color="#ffc4dd"/>
+        <stop offset="55%" stop-color="#ff5aa8"/>
+        <stop offset="100%" stop-color="#a30f56"/>
       </radialGradient>
       <linearGradient id="pet-ear-${safe}" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stop-color="#f9a8d4"/>
-        <stop offset="100%" stop-color="#8b5cf6"/>
+        <stop offset="0%" stop-color="#ffe0ee"/>
+        <stop offset="100%" stop-color="#d61a70"/>
       </linearGradient>
     </defs>
     <ellipse cx="100" cy="172" rx="55" ry="10" fill="#000" opacity=".28"/>
@@ -135,7 +135,7 @@ export function renderShell() {
     </nav>
     <div class="sidebar-foot">
       ${user.authed
-        ? `<a class="sidebar-user" href="perfil.html">${avatar(user, "sm")}<div><strong>${escapeHTML(user.name)}</strong><span>${escapeHTML(user.plan)}</span></div></a>`
+        ? `<a class="sidebar-user" href="perfil.html">${avatar(user, "sm")}<div><strong>${escapeHTML(user.name)}</strong><span>online</span></div></a>`
         : `<button class="sidebar-user" data-auth-open type="button">${avatar(user, "sm")}<div><strong>Entrar</strong><span>Sua conta</span></div></button>`}
     </div>`;
 
@@ -148,7 +148,6 @@ export function renderShell() {
     </form>
     <div class="topbar-spacer"></div>
     <div class="topbar-actions">
-      <a class="topbar-vip" href="vip.html"><i class="fa-solid fa-crown"></i><span>Seja VIP</span></a>
       <a class="topbar-icon" href="amigos.html" aria-label="Amigos e pedidos" title="Amigos">
         <i class="fa-regular fa-bell"></i>${requestCount ? '<span class="dot-badge"></span>' : ""}
       </a>
@@ -159,11 +158,11 @@ export function renderShell() {
           ${user.authed
             ? `<a href="perfil.html"><i class="fa-solid fa-user"></i>Meu perfil</a>
                <a href="perfil.html#minha-lista"><i class="fa-solid fa-bookmark"></i>Minha lista</a>
+               <a href="amigos.html"><i class="fa-solid fa-user-group"></i>Amigos</a>
                <a href="mascote.html"><i class="fa-solid fa-paw"></i>Mascote</a>
                <div class="sep"></div>
                <button data-logout type="button"><i class="fa-solid fa-right-from-bracket"></i>Sair</button>`
-            : `<button data-auth-open type="button"><i class="fa-solid fa-right-to-bracket"></i>Entrar</button>
-               <a href="vip.html"><i class="fa-solid fa-crown"></i>Ver planos</a>`}
+            : `<button data-auth-open type="button"><i class="fa-solid fa-right-to-bracket"></i>Entrar</button>`}
         </div>
       </div>
     </div>`;
@@ -187,15 +186,15 @@ export function renderFooter() {
   content.insertAdjacentHTML("beforeend", `
     <footer class="site-footer">
       <div class="row-between">
-        <div class="footer-brand"><span class="brand-mark">${escapeHTML(CONFIG.brandShort)}</span>${escapeHTML(CONFIG.brand)} <span class="badge badge-soft">demo</span></div>
+        <div class="footer-brand"><span class="brand-mark">${escapeHTML(CONFIG.brandShort)}</span>${escapeHTML(CONFIG.brand)}</div>
         <div class="footer-links">
           <a href="catalogo.html">Catálogo</a>
           <a href="cartaz.html">Em breve</a>
-          <a href="pkparty.html">PK Party</a>
-          <a href="vip.html">VIP</a>
+          <a href="pkparty.html">w00 Party</a>
+          <a href="amigos.html">Amigos</a>
           <a href="perfil.html">Perfil</a>
         </div>
-        <span>Catálogo fictício · vídeos Creative Commons</span>
+        <span>© ${new Date().getFullYear()} w00filmes</span>
       </div>
     </footer>`);
 }
@@ -264,6 +263,15 @@ function posterImage(item) {
   return `<img class="poster-img" src="${escapeHTML(item.poster)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">`;
 }
 
+function cardMeta(item) {
+  const bits = [];
+  if (item.year) bits.push(`<span>${escapeHTML(String(item.year))}</span>`);
+  if (Number(item.rating) > 0) bits.push(`<span class="star"><i class="fa-solid fa-star"></i> ${Number(item.rating).toFixed(1)}</span>`);
+  if (item.type === "series") bits.push("<span>Série</span>");
+  else if (item.duration) bits.push(`<span>${escapeHTML(formatDuration(item.duration))}</span>`);
+  return bits.length ? `<span class="card-meta">${bits.join('<span class="dot"></span>')}</span>` : "";
+}
+
 export function posterCard(item, options = {}) {
   if (!item) return "";
   const inList = store.isInWatchlist(item.id);
@@ -289,7 +297,7 @@ export function posterCard(item, options = {}) {
     </div>
     <div class="card-info">
       <span class="card-title">${escapeHTML(item.title)}</span>
-      <span class="card-meta"><span>${item.year || ""}</span><span class="dot"></span><span class="star"><i class="fa-solid fa-star"></i> ${Number(item.rating || 0).toFixed(1)}</span><span class="dot"></span><span>${isSeries ? "Série" : formatDuration(item.duration)}</span></span>
+      ${cardMeta(item)}
       ${progress ? `<div class="card-progress"><span style="width:${Math.min(100, progress)}%"></span></div>` : ""}
     </div>
   </article>`;
@@ -387,6 +395,20 @@ function syncWatchlistButtons(id) {
   });
 }
 
+function detailMeta(item) {
+  const bits = [];
+  if (Number(item.rating) > 0) bits.push(`<span class="rating"><i class="fa-solid fa-star"></i>${Number(item.rating).toFixed(1)}</span>`);
+  const year = item.year || (item.releaseDate ? new Date(item.releaseDate).getFullYear() : "");
+  if (year) bits.push(`<span>${escapeHTML(String(year))}</span>`);
+  const seasons = item.seasons?.length || 1;
+  const length = item.type === "series"
+    ? `${seasons} temporada${seasons > 1 ? "s" : ""}`
+    : (item.duration ? formatDuration(item.duration) : "");
+  if (length) bits.push(`<span>${escapeHTML(length)}</span>`);
+  if (item.age) bits.push(`<span class="badge-age">${escapeHTML(item.age)}</span>`);
+  return bits.join('<span class="dot"></span>');
+}
+
 /* Details */
 export function openDetails(item) {
   if (!item) return;
@@ -411,14 +433,9 @@ export function openDetails(item) {
           </div>
         </div>
         <div class="modal-head-info">
-          <div class="hero-badges">${upcoming ? '<span class="badge badge-vip">Em breve</span>' : `<span class="badge ${item.isNew ? "badge-new" : "badge-soft"}">${item.isNew ? "Novo" : "Catálogo demo"}</span>`}</div>
+          <div class="hero-badges">${upcoming ? '<span class="badge badge-accent">Em breve</span>' : `<span class="badge ${item.isNew ? "badge-new" : "badge-soft"}">${item.isNew ? "Novo" : "Catálogo"}</span>`}</div>
           <h2>${escapeHTML(item.title)}</h2>
-          <div class="meta">
-            <span class="rating"><i class="fa-solid fa-star"></i>${Number(item.rating || 0).toFixed(1)}</span>
-            <span class="dot"></span><span>${item.year || (item.releaseDate ? new Date(item.releaseDate).getFullYear() : "—")}</span>
-            <span class="dot"></span><span>${isSeries ? `${item.seasons?.length || 1} temporada${(item.seasons?.length || 1) > 1 ? "s" : ""}` : formatDuration(item.duration)}</span>
-            <span class="dot"></span><span class="badge-age">${escapeHTML(item.age || "L")}</span>
-          </div>
+          <div class="meta">${detailMeta(item)}</div>
           <div class="modal-actions">
             ${upcoming
               ? `<button class="btn btn-primary" data-watchlist-detail="${escapeHTML(item.id)}" type="button"><i class="fa-solid ${inList ? "fa-check" : "fa-plus"}"></i>${inList ? "Na minha lista" : "Lembrar-me"}</button>`
@@ -442,8 +459,8 @@ export function openDetails(item) {
           ${history ? `<div class="row" style="margin-top:22px"><div class="progress grow" style="max-width:260px"><span style="width:${store.progressPercent(history)}%"></span></div><span class="tiny muted">${store.progressPercent(history)}% assistido</span></div>` : ""}
         </div>
         <div class="modal-facts">
-          <div class="modal-fact"><span>Direção</span><strong>${escapeHTML(item.director || "Equipe PK")}</strong></div>
-          <div class="modal-fact"><span>Elenco</span><strong>${escapeHTML((item.cast || []).join(", ") || "Elenco de demonstração")}</strong></div>
+          <div class="modal-fact"><span>Direção</span><strong>${escapeHTML(item.director || "Equipe w00")}</strong></div>
+          <div class="modal-fact"><span>Elenco</span><strong>${escapeHTML((item.cast || []).join(", ") || "Elenco não informado")}</strong></div>
           <div class="modal-fact"><span>Gêneros</span><strong>${escapeHTML((item.genres || []).join(" · "))}</strong></div>
           <div class="modal-fact"><span>${upcoming ? "Estreia" : "Disponível em"}</span><strong>${formatDate(item.releaseDate || item.addedAt || "2026-10-22")}</strong></div>
           ${upcoming ? `<div class="modal-fact"><span>Contagem</span><strong>${daysUntil(item.releaseDate)} dias</strong></div>` : ""}
@@ -507,7 +524,7 @@ export function openPlayer(item, options = {}) {
   const displayTitle = episode ? `${item.title} · T${episode.season} E${episode.number}` : item.title;
   const content = `
     <div class="player-top">
-      <div class="grow"><h3>${escapeHTML(displayTitle)}</h3><div class="meta"><span>${episode ? escapeHTML(episode.title) : typeLabel(item)}</span><span class="dot"></span><span>${formatDuration(episode?.duration || item.duration)}</span><span class="dot"></span><span class="badge badge-soft">demo</span></div></div>
+      <div class="grow"><h3>${escapeHTML(displayTitle)}</h3><div class="meta"><span>${episode ? escapeHTML(episode.title) : typeLabel(item)}</span><span class="dot"></span><span>${formatDuration(episode?.duration || item.duration)}</span><span class="dot"></span><span class="badge badge-soft">w00filmes</span></div></div>
       <button class="btn-icon" data-close-modal type="button" aria-label="Fechar player"><i class="fa-solid fa-xmark"></i></button>
     </div>
     <div class="player-stage">${embed
@@ -554,7 +571,8 @@ export function openPlayer(item, options = {}) {
         store.addHistory(item, duration, duration, episode ? { episode: { season: episode.season, number: episode.number, title: episode.title, id: episode.id } } : {});
         toast("Você concluiu este título. Bom filme!", "success", "Sessão concluída");
       });
-      video.play().catch(() => {});
+      const started = video.play();
+      if (started && typeof started.catch === "function") started.catch(() => {});
       cleanup = () => { try { video.pause(); save(true); video.removeAttribute("src"); video.load(); } catch { /* noop */ } };
     },
     onClose: () => {
@@ -831,8 +849,8 @@ export function openAuthModal() {
     <button class="modal-close" data-close-modal type="button" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
     <div class="auth-head">
       <div class="brand-mark">${escapeHTML(CONFIG.brandShort)}</div>
-      <h2>Entrar no PK Filmes</h2>
-      <p>Sua conta sincroniza perfil, lista, histórico, amigos e salas.</p>
+      <h2>Entrar no w00filmes</h2>
+      <p>Sua conta sincroniza perfil, foto, amigos e salas do w00 Party.</p>
     </div>
     <div class="auth-tabs" role="tablist" aria-label="Entrar ou criar conta">
       <button class="auth-tab active" data-auth-mode="login" type="button" role="tab" aria-selected="true">Entrar</button>
@@ -860,7 +878,7 @@ export function openAuthModal() {
     <button class="modal-close" data-close-modal type="button" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
     <div class="auth-head">
       <div class="brand-mark">${escapeHTML(CONFIG.brandShort)}</div>
-      <h2>Entrar no PK Filmes</h2>
+      <h2>Entrar no w00filmes</h2>
       <p>Modo local enquanto o Supabase não está configurado.</p>
     </div>
     <form class="auth-body" id="auth-form">

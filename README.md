@@ -1,96 +1,84 @@
-# PK Filmes
+# w00filmes
 
-Clone funcional do catálogo de streaming, com login real via Supabase, player
-por URL e deploy estático no Vercel.
+Streaming com catálogo próprio, login real, amigos e salas de watch party
+sincronizadas. Frontend estático (HTML/CSS/JS) + **Supabase** para autenticação,
+banco, Realtime e Storage. Deploy no **Vercel**.
 
-## O que já está pronto
+## Recursos
 
-- 10 páginas estáticas: início, catálogo, busca, em breve, PK Party, amigos,
-  VIP, mascote, perfil e onboarding.
-- Catálogo carregado de `catalog.json` (schema próprio, sem backend).
-- Player para MP4/WebM/OGV/MOV e iframe (YouTube, Vimeo, etc.).
-- Login e criação de conta com e-mail/senha via Supabase.
-- Login OAuth com GitHub (opcional, configurado no Supabase).
-- Perfil persistido em `public.profiles`.
-- Sessão restaurada automaticamente e sincronizada entre abas.
-- Modo local automático enquanto o Supabase não estiver configurado.
-- SQL completo com RLS para perfis, lista, histórico, amizades e salas.
+- Catálogo próprio carregado de `catalog.json`.
+- Player para MP4/WebM/OGV/MOV e iframe (YouTube, Vimeo etc.).
+- Login, cadastro, recuperação de senha e sessão persistente via Supabase Auth.
+- Perfil com foto ou GIF enviado para o bucket `avatars` do Supabase.
+- Amigos reais: busca por nome/e-mail, pedidos, aceite, recusa e remoção.
+- **w00 Party** com salas públicas/privadas, código, convites e chat persistente.
+- Reprodução sincronizada: só o anfitrião controla play/pause/seek. Os convidados
+  recebem o estado em tempo real e o player corrige atraso automaticamente.
+- Sem botão de “sincronizar”.
+- Layout responsivo, preto com painéis rosa translúcidos.
+- Lista e histórico continuam locais; perfil, foto, amigos, salas e chat usam Supabase.
 
-## 1. Configurar o Supabase
+## Páginas
 
-1. Crie um projeto em <https://supabase.com/dashboard>.
-2. Abra **SQL Editor → New query**, cole o conteúdo de
-   [`supabase/schema.sql`](supabase/schema.sql) e clique em **Run**.
-3. Abra **Project Settings → API** e copie:
-   - **Project URL** (ex.: `https://abcd1234.supabase.co`)
-   - **anon public key**
-4. Preencha [`js/supabase-config.js`](js/supabase-config.js):
+`index.html` · `catalogo.html` · `search.html` · `cartaz.html` ·
+`pkparty.html` · `amigos.html` · `mascote.html` · `perfil.html`
 
-```js
-export const SUPABASE_CONFIG = {
-  url: "https://SEU-PROJETO.supabase.co",
-  anonKey: "SUA_ANON_KEY",
-  redirectTo: ""
-};
-```
+## 1. Supabase
 
-A `anon key` é pública por design. Quem protege os dados é o RLS do schema.
+No **SQL Editor**, execute nesta ordem:
+
+1. [`supabase/schema.sql`](supabase/schema.sql) — perfis, lista, histórico, amizades, salas e mensagens.
+2. [`supabase/002_social.sql`](supabase/002_social.sql) — avatar, convites de sala, RPCs de amigos/salas e colunas de sincronização.
+
+O segundo arquivo é idempotente e pode ser executado novamente.
+
+### Configuração do frontend
+
+[`js/supabase-config.js`](js/supabase-config.js) já contém a URL e a `anon key`
+do projeto. A `anon key` é pública por design; a proteção vem do RLS.
 **Nunca** coloque a `service_role key` no frontend.
 
-## 2. Configurar autenticação
+### Autenticação
 
 Em **Authentication → URL Configuration**:
 
-- **Site URL**: `https://SEU-DOMINIO.vercel.app`
+- **Site URL**: `https://SEU-DOMINIO`
 - **Redirect URLs**:
   - `http://127.0.0.1:4173`
   - `http://localhost:4173`
-  - `https://SEU-DOMINIO.vercel.app`
-  - `https://SEU-DOMINIO.vercel.app/perfil.html`
+  - `https://SEU-DOMINIO`
+  - `https://SEU-DOMINIO/perfil.html`
 
-Em **Authentication → Providers → Email**:
+O cadastro está com confirmação de e-mail desativada para testes. Antes de abrir
+ao público, configure SMTP e reative a confirmação.
 
-- Ative **Enable Email provider**.
-- Para testar sem caixa de entrada, desative **Confirm email**.
-- Para produção, mantenha a confirmação ativada.
+### GitHub OAuth (opcional)
 
-> Neste projeto a confirmação de e-mail está desativada (`mailer_autoconfirm`)
-> para o cadastro funcionar imediatamente. Antes de abrir para o público,
-> configure um SMTP próprio e reative a confirmação.
+1. Crie um OAuth App no GitHub.
+2. Callback: `https://SEU-PROJETO.supabase.co/auth/v1/callback`.
+3. Ative o provider GitHub no Supabase.
+4. Em `js/supabase-config.js`, mude `githubOAuth: false` para `true`.
 
-### Login com GitHub (opcional)
-
-1. GitHub → **Settings → Developer settings → OAuth Apps → New OAuth App**.
-2. **Homepage URL**: `https://SEU-DOMINIO.vercel.app`
-3. **Authorization callback URL**:
-   `https://SEU-PROJETO.supabase.co/auth/v1/callback`
-4. Copie **Client ID** e **Client Secret** para
-   **Supabase → Authentication → Providers → GitHub**.
-5. Ative o provider.
-6. Em `js/supabase-config.js`, mude `githubOAuth: false` para `true`.
-
-O botão “Continuar com GitHub” aparece na tela de login quando essa opção está ativa.
-
-## 3. Rodar localmente
+## 2. Rodar localmente
 
 ```bash
 cd pk_filmes_demo
-./serve.sh
+bash serve.sh
 # http://127.0.0.1:4173
 ```
 
-Não abra os HTMLs com `file://`; o catálogo e o Supabase precisam de HTTP.
+Não abra via `file://`: catálogo, módulos ES e Supabase precisam de HTTP.
 
-## 4. Catálogo
+## 3. Catálogo
 
-Edite `catalog.json`. Campos obrigatórios:
+Edite `catalog.json`:
 
 ```json
 {
   "items": [
     {
       "nome": "Nome do filme",
-      "capa": "https://.../capa.jpg",
+      "capa": "https://image.tmdb.org/t/p/w500/capa.jpg",
       "categoria": "Ação",
       "idade": "14",
       "player": "https://.../filme.mp4"
@@ -99,67 +87,44 @@ Edite `catalog.json`. Campos obrigatórios:
 }
 ```
 
-Opcionais: `ano`, `tipo` (`filme` ou `serie`), `sinopse`, `duracao` (minutos),
-`nota`, `generos`, `destaque`, `tendencia`, `top10`, `novo`, `elenco`,
-`direcao`, `trailer`.
+Opcionais: `ano`, `tipo`, `sinopse`, `duracao`, `nota`, `generos`, `destaque`,
+`tendencia`, `top10`, `novo`, `elenco`, `direcao`, `trailer`.
 
-Capas do TMDB podem ser usadas no formato
-`https://image.tmdb.org/t/p/w500/CAMINHO.jpg`.
+Para o modo sincronizado do w00 Party, use link direto de vídeo (`.mp4`,
+`.webm`, `.ogv`, `.mov`). Players incorporados continuam funcionando, mas não
+podem ser controlados pelo anfitrião por serem de outro domínio.
 
-## 5. Deploy no Vercel
+## 4. Deploy
 
-O projeto é 100% estático, sem build.
+O projeto é estático, sem build.
 
-1. Suba o repositório no GitHub.
-2. Em <https://vercel.com/new>, importe o repositório.
-3. Framework preset: **Other**.
-4. Build command: vazio.
-5. Output directory: `.` (raiz do projeto).
-6. Deploy.
+- Framework preset: **Other**
+- Build command: vazio
+- Output directory: `.`
+- `vercel.json` já define URLs limpas e headers.
 
-O arquivo `vercel.json` já configura URLs limpas e headers básicos.
-
-## 6. Estrutura
+## 5. Estrutura
 
 ```text
-catalog.json              catálogo
-index.html                início
-catalogo.html             catálogo
-search.html               busca
-cartaz.html               em breve
-pkparty.html              watch party
-amigos.html               amigos
-vip.html                  planos
-mascote.html              mascote
-perfil.html               perfil
-onboarding.html           tour
-css/                      estilos
-js/config.js              marca, navegação, planos, gêneros
-js/data.js                loader e normalização do catálogo
-js/store.js               estado local
-js/ui.js                  shell, cards, modais, player, auth
-js/auth.js                ponte Supabase ↔ estado local
+catalog.json              catálogo do operador
+css/theme.css             tema preto + rosa translúcido
+js/social.js              amigos, salas, chat, convites e avatar
 js/supabase.js            cliente, auth e perfil
-js/supabase-config.js     URL + anon key
-js/vendor/supabase.js     SDK vendorizado
-supabase/schema.sql       tabelas, RLS, triggers
-serve.js / serve.sh       servidor local
-vercel.json               configuração de deploy
+js/auth.js                sessão Supabase ↔ estado local
+js/store.js               cache local (usuário, lista, histórico, mascote)
+js/ui.js                  shell, cards, modais, player e login
+js/pages/pkparty.js       lobby, sala, chat e sincronização do player
+js/pages/amigos.js        busca e amizades reais
+js/pages/perfil.js        perfil, upload de foto/GIF, lista e histórico
+supabase/schema.sql       001 — base
+supabase/002_social.sql   002 — social/realtime/avatar
 ```
 
-## 7. Segurança
+## 6. Segurança
 
-- RLS ativo em todas as tabelas.
-- Perfis só podem ser lidos/escritos pelo próprio usuário.
-- Lista e histórico são privados por usuário.
-- Amizades e salas têm policies por participante.
-- A `anon key` pode ficar pública; a `service_role key` nunca.
-- Para produção, mantenha a confirmação de e-mail ativada e configure
-  Rate Limits no Supabase.
-
-## 8. Próximos passos
-
-- Ligar lista, histórico, amigos e salas ao Supabase (o schema já está pronto).
-- Upload de avatar no bucket `avatars`.
-- Realtime do chat de sala usando `room_messages`.
-- Player HLS para arquivos `.m3u8` (hoje o navegador decide o suporte).
+- RLS ativo em perfis, amizades, salas, membros, convites e mensagens.
+- Apenas o anfitrião pode atualizar o estado de reprodução da sala.
+- Convites de sala e amizades são validados por funções `SECURITY DEFINER`.
+- Upload de avatar só é permitido dentro da pasta do próprio usuário.
+- Para produção: confirmação de e-mail, SMTP próprio, rate limits e rotação
+  das chaves usadas no deploy.

@@ -1,8 +1,13 @@
-// Profile: local identity, watchlist, history, friends, achievements, pet and settings.
+// Profile: Supabase identity, avatar upload, watchlist, history and friends.
 import { CONFIG } from "../config.js";
 import { byId, DEFAULT_USER } from "../data.js";
 import * as store from "../store.js";
-import { qs, qsa, avatar, petSVG, posterCard, emptyState, formatDuration, formatDate, escapeHTML, openModal, closeModal, toast, refreshShell } from "../ui.js";
+import { logout as authLogout } from "../auth.js";
+import { uploadAvatar, updateProfile, syncSocialCache } from "../social.js";
+import {
+  qs, qsa, avatar, petSVG, posterCard, emptyState, formatDuration, formatDate,
+  escapeHTML, openModal, closeModal, toast
+} from "../ui.js";
 
 const validTabs = ["minha-lista", "historico", "amigos", "conquistas"];
 
@@ -26,45 +31,48 @@ function historyItem(entry) {
   </article>`;
 }
 
-function achievements(user, watchlist, history, friends, pet) {
+function achievements(watchlist, history, friends, pet) {
   return [
     { icon: "fa-seedling", title: "Primeiro play", text: "Assista a um título", unlocked: history.length > 0 },
     { icon: "fa-bookmark", title: "Colecionador", text: "3 títulos na lista", unlocked: watchlist.length >= 3 },
     { icon: "fa-user-group", title: "Conectado", text: "Tenha um amigo", unlocked: friends.length > 0 },
     { icon: "fa-fire", title: "Maratonista", text: "5 títulos iniciados", unlocked: history.length >= 5 },
-    { icon: "fa-crown", title: "VIP demo", text: "Ative um plano", unlocked: user.planId !== "free" },
+    { icon: "fa-tower-broadcast", title: "Sessão aberta", text: "Crie uma sala no w00 Party", unlocked: false },
     { icon: "fa-paw", title: "Cuidador", text: "Faísca no nível 3", unlocked: pet.level >= 3 }
   ];
 }
 
-export function renderPerfil() {
+export async function renderPerfil() {
   const user = store.getUser();
+  if (user.cloud) {
+    try { await syncSocialCache(); } catch {}
+  }
   const watchlist = store.getWatchlist().map(byId).filter(Boolean);
   const history = store.getHistory();
   const friends = store.getFriends();
   const pet = store.getPet();
   const hours = Math.round(history.reduce((total, entry) => total + (entry.progress || 0), 0) / 3600);
   const tab = currentTab();
-  const plan = CONFIG.plans.find((entry) => entry.id === user.planId) || CONFIG.plans[0];
-  const badgeList = achievements(user, watchlist, history, friends, pet);
-  const coverColor = user.color || "#6a5acd";
+  const badgeList = achievements(watchlist, history, friends, pet);
 
   qs("#page-content").innerHTML = `
-    <section class="profile-cover" style="background:linear-gradient(130deg, ${escapeHTML(coverColor)}, #4c1d95 50%, #831843)">
-      <div style="position:absolute;right:8%;top:14%;width:170px;height:170px;border-radius:50%;border:1px solid rgba(255,255,255,.2);box-shadow:0 0 0 22px rgba(255,255,255,.04),0 0 0 44px rgba(255,255,255,.025)"></div>
+    <section class="profile-cover">
+      <div class="profile-cover-glow"></div>
     </section>
     <div class="profile-head">
       <div class="profile-avatar-wrap">
-        ${avatar(user, "xl")}
-        <button class="edit-dot" id="profile-avatar-edit" type="button" aria-label="Editar perfil"><i class="fa-solid fa-pen"></i></button>
+        <button class="profile-avatar-btn" id="profile-avatar-edit" type="button" aria-label="Alterar foto ou GIF">
+          ${avatar(user, "xl")}
+          <span class="edit-dot"><i class="fa-solid fa-camera"></i></span>
+        </button>
+        <input type="file" id="avatar-file" class="hidden" accept="image/png,image/jpeg,image/webp,image/gif">
       </div>
       <div class="profile-identity">
-        <div class="row" style="gap:9px"><h1>${escapeHTML(user.name)}</h1><span class="badge ${user.planId !== "free" ? "badge-vip" : "badge-soft"}"><i class="fa-solid fa-${user.planId !== "free" ? "crown" : "user"}"></i>${escapeHTML(user.plan)}</span></div>
-        <div class="meta"><span>${escapeHTML(user.email)}</span><span class="dot"></span><span>Desde ${formatDate(user.joined)}</span><span class="dot"></span><span>${escapeHTML(user.bio)}</span></div>
+        <div class="row wrap" style="gap:9px"><h1>${escapeHTML(user.name)}</h1>${user.cloud ? '<span class="badge badge-live"><i class="fa-solid fa-cloud"></i>supabase</span>' : '<span class="badge badge-soft">local</span>'}</div>
+        <div class="meta"><span>${escapeHTML(user.email || "sem e-mail")}</span><span class="dot"></span><span>Desde ${formatDate(user.joined)}</span><span class="dot"></span><span>${escapeHTML(user.bio)}</span></div>
       </div>
       <div class="profile-actions">
-        ${user.authed ? `<button class="btn btn-ghost" id="edit-profile" type="button"><i class="fa-solid fa-pen"></i>Editar perfil</button>` : `<button class="btn btn-primary" data-auth-open type="button"><i class="fa-solid fa-right-to-bracket"></i>Entrar</button>`}
-        <a class="btn btn-outline" href="vip.html"><i class="fa-solid fa-crown"></i>Planos</a>
+        ${user.authed ? `<button class="btn btn-primary" id="edit-profile" type="button"><i class="fa-solid fa-pen"></i>Editar perfil</button>` : `<button class="btn btn-primary" data-auth-open type="button"><i class="fa-solid fa-right-to-bracket"></i>Entrar</button>`}
       </div>
     </div>
 
@@ -89,11 +97,11 @@ export function renderPerfil() {
               ${watchlist.length ? `<div class="card-grid">${watchlist.map((item) => posterCard(item)).join("")}</div>` : emptyState("fa-bookmark", "Sua lista está vazia", "Toque no + em qualquer pôster para guardar um título aqui.")}
             </div>
             <div class="profile-tab-panel ${tab === "historico" ? "active" : ""}" id="profile-panel-historico">
-              <div class="row-between" style="margin-bottom:12px"><span class="tiny muted">${history.length} título${history.length === 1 ? "" : "s"} no histórico local</span>${history.length ? '<button class="section-link" id="clear-history" type="button">Limpar histórico <i class="fa-solid fa-trash-can"></i></button>' : ""}</div>
+              <div class="row-between" style="margin-bottom:12px"><span class="tiny muted">${history.length} título${history.length === 1 ? "" : "s"} no histórico</span>${history.length ? '<button class="section-link" id="clear-history" type="button">Limpar histórico <i class="fa-solid fa-trash-can"></i></button>' : ""}</div>
               ${history.length ? `<div class="continue-grid">${history.map(historyItem).join("")}</div>` : emptyState("fa-clock-rotate-left", "Nada assistido ainda", "Quando você abrir um player, o progresso aparece aqui automaticamente.")}
             </div>
             <div class="profile-tab-panel ${tab === "amigos" ? "active" : ""}" id="profile-panel-amigos">
-              ${friends.length ? `<div class="my-friends-list">${friends.map((friend) => `<div class="friend-mini">${avatar(friend, "sm")}<div class="grow"><strong>${escapeHTML(friend.name)}</strong><span>${escapeHTML(friend.email)}</span></div><span class="status-dot ${friend.status === "offline" ? "off" : ""}"></span></div>`).join("")}</div><a class="btn btn-ghost btn-sm" href="amigos.html" style="margin-top:13px"><i class="fa-solid fa-user-group"></i>Gerenciar amigos</a>` : emptyState("fa-user-group", "Conecte-se com alguém", "Adicione amigos para compartilhar sessões e salas do PK Party.")}
+              ${friends.length ? `<div class="my-friends-list">${friends.map((friend) => `<div class="friend-mini">${avatar(friend, "sm")}<div class="grow"><strong>${escapeHTML(friend.name)}</strong><span>${escapeHTML(friend.favoriteGenre || "amigo")}</span></div><span class="status-dot"></span></div>`).join("")}</div><a class="btn btn-ghost btn-sm" href="amigos.html" style="margin-top:13px"><i class="fa-solid fa-user-group"></i>Gerenciar amigos</a>` : emptyState("fa-user-group", "Conecte-se com alguém", "Adicione amigos para compartilhar sessões e salas do w00 Party.")}
             </div>
             <div class="profile-tab-panel ${tab === "conquistas" ? "active" : ""}" id="profile-panel-conquistas">
               <div class="badge-grid">${badgeList.map((badge) => `<div class="achievement ${badge.unlocked ? "" : "locked"}"><i class="fa-solid ${badge.icon}"></i><strong>${escapeHTML(badge.title)}</strong><span>${escapeHTML(badge.text)}</span></div>`).join("")}</div>
@@ -110,11 +118,12 @@ export function renderPerfil() {
         </a>
 
         <div class="profile-panel">
-          <div class="panel-head"><h3>Seu plano</h3><span class="badge ${user.planId !== "free" ? "badge-vip" : "badge-soft"}">${escapeHTML(plan.name)}</span></div>
-          <div class="panel-body">
-            <div class="row-between"><div><strong style="font-size:17px">${escapeHTML(plan.price)}</strong><span class="tiny muted" style="display:block">${escapeHTML(plan.period)}</span></div><a class="btn btn-sm ${user.planId === "free" ? "btn-primary" : "btn-ghost"}" href="vip.html">${user.planId === "free" ? "Conhecer VIP" : "Gerenciar"}</a></div>
-            <div class="divider" style="margin:14px 0"></div>
-            <ul class="stack" style="gap:7px">${plan.features.slice(0, 3).map((feature) => `<li class="tiny ${feature.on ? "" : "muted"}"><i class="fa-solid ${feature.on ? "fa-check" : "fa-xmark"}" style="color:${feature.on ? "var(--green)" : "var(--muted-2)"};margin-right:6px"></i>${escapeHTML(feature.text)}</li>`).join("")}</ul>
+          <div class="panel-head"><h3>Conta</h3><i class="fa-solid fa-shield-halved muted"></i></div>
+          <div class="panel-body" style="display:flex;flex-direction:column;gap:12px">
+            <div class="row-between tiny"><span class="muted">Login</span><strong>${user.cloud ? "Supabase" : "Local"}</strong></div>
+            <div class="row-between tiny"><span class="muted">Foto</span><strong>${user.avatar_url ? "Personalizada" : "Iniciais"}</strong></div>
+            <button class="btn btn-ghost btn-sm" id="change-avatar" type="button"><i class="fa-solid fa-image"></i>Foto ou GIF</button>
+            ${user.authed ? `<button class="btn btn-danger btn-sm" id="profile-logout" type="button"><i class="fa-solid fa-right-from-bracket"></i>Sair da conta</button>` : ""}
           </div>
         </div>
 
@@ -123,13 +132,12 @@ export function renderPerfil() {
           <div class="panel-body" style="display:flex;flex-direction:column;gap:12px">
             <label class="row-between tiny" style="gap:12px"><span>Pular abertura automaticamente</span><input type="checkbox" id="setting-autoSkip" ${store.getSettings().autoSkipIntro ? "checked" : ""}></label>
             <label class="row-between tiny" style="gap:12px"><span>Notificações de amigos</span><input type="checkbox" id="setting-notifications" ${store.getSettings().notifications ? "checked" : ""}></label>
-            ${user.authed ? `<button class="btn btn-danger btn-sm" id="profile-logout" type="button" style="margin-top:4px"><i class="fa-solid fa-right-from-bracket"></i>Sair da conta</button>` : ""}
           </div>
         </div>
 
         <div class="panel panel-pad">
-          <div class="section-kicker"><i class="fa-solid fa-shield-halved"></i> Sobre este perfil</div>
-          <p class="tiny" style="margin-top:7px">Tudo é salvo no <strong>localStorage</strong> deste navegador. Nenhuma conta é enviada para servidores externos.</p>
+          <div class="section-kicker"><i class="fa-solid fa-cloud"></i> Conta w00filmes</div>
+          <p class="tiny" style="margin-top:7px">Perfil, foto, amigos e salas são salvos no Supabase. Lista e histórico continuam neste navegador por enquanto.</p>
         </div>
       </aside>
     </div>`;
@@ -148,19 +156,34 @@ function mountPerfil() {
   });
 
   qs("#edit-profile")?.addEventListener("click", openEditProfile);
-  qs("#profile-avatar-edit")?.addEventListener("click", openEditProfile);
+  qs("#profile-avatar-edit")?.addEventListener("click", () => qs("#avatar-file")?.click());
+  qs("#change-avatar")?.addEventListener("click", () => qs("#avatar-file")?.click());
+  qs("#avatar-file")?.addEventListener("change", async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const button = qs("#profile-avatar-edit");
+    button?.classList.add("uploading");
+    toast(file.type === "image/gif" ? "Enviando GIF..." : "Enviando foto...", "info", "Upload");
+    try {
+      await uploadAvatar(file);
+      toast("Foto atualizada.", "success", "Perfil");
+    } catch (error) {
+      toast(error.message, "error", "Upload");
+    } finally {
+      button?.classList.remove("uploading");
+      event.target.value = "";
+    }
+  });
 
   qs("#clear-history")?.addEventListener("click", () => {
     store.clearHistory();
-    renderPerfil();
+    window.dispatchEvent(new CustomEvent("pk:history-changed"));
     toast("Histórico limpo.", "success");
   });
 
-  qs("#profile-logout")?.addEventListener("click", () => {
-    store.logout();
-    refreshShell();
-    renderPerfil();
-    toast("Você saiu da conta demo.", "info");
+  qs("#profile-logout")?.addEventListener("click", async () => {
+    await authLogout();
+    toast("Você saiu da conta.", "info");
   });
 
   qs("#setting-autoSkip")?.addEventListener("change", (event) => {
@@ -175,40 +198,46 @@ function mountPerfil() {
 
 function openEditProfile() {
   const user = store.getUser();
-  const colors = CONFIG.defaultAvatarColors;
+  if (!user.authed) { toast("Entre na sua conta para editar o perfil.", "info"); return; }
   const content = `
     <button class="modal-close" data-close-modal type="button" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
-    <div class="auth-head"><div class="brand-mark">${escapeHTML(CONFIG.brandShort)}</div><h2>Editar perfil</h2><p>As mudanças ficam salvas neste navegador.</p></div>
+    <div class="auth-head"><div class="brand-mark">w00</div><h2>Editar perfil</h2><p>Seus dados ficam sincronizados no Supabase.</p></div>
     <form class="auth-body" id="edit-profile-form">
-      <div class="field"><label for="edit-name">Nome</label><input class="input" id="edit-name" name="name" required maxlength="28" value="${escapeHTML(user.name)}"></div>
-      <div class="field"><label for="edit-email">E-mail</label><input class="input" id="edit-email" name="email" type="email" value="${escapeHTML(user.email)}"></div>
-      <div class="field"><label for="edit-bio">Bio</label><textarea class="textarea" id="edit-bio" name="bio" maxlength="120">${escapeHTML(user.bio)}</textarea></div>
+      <div class="field"><label for="edit-name">Nome</label><input class="input" id="edit-name" name="name" required maxlength="40" value="${escapeHTML(user.name)}"></div>
+      <div class="field"><label for="edit-email">E-mail</label><input class="input" id="edit-email" type="email" value="${escapeHTML(user.email)}" disabled></div>
+      <div class="field"><label for="edit-bio">Bio</label><textarea class="textarea" id="edit-bio" name="bio" maxlength="140">${escapeHTML(user.bio)}</textarea></div>
       <div class="field"><label for="edit-genre">Gênero favorito</label><select class="select" id="edit-genre" name="favoriteGenre">${CONFIG.genres.map((genre) => `<option value="${genre.name}" ${user.favoriteGenre === genre.name ? "selected" : ""}>${genre.name}</option>`).join("")}</select></div>
-      <div class="field"><label>Cor do avatar</label><div class="row wrap" style="gap:8px">${colors.map((color) => `<label style="cursor:pointer"><input type="radio" name="color" value="${color}" ${user.color === color ? "checked" : ""} style="position:absolute;opacity:0"><span class="avatar sm" style="background:${color};box-shadow:${user.color === color ? "0 0 0 2px #fff" : "none"}"></span></label>`).join("")}</div></div>
       <button class="btn btn-primary btn-block" type="submit"><i class="fa-solid fa-check"></i>Salvar alterações</button>
     </form>`;
 
-  openModal(content, { className: "modal-sm", label: "Editar perfil", onMount: () => {
-    qs("#edit-profile-form")?.addEventListener("submit", (event) => {
-      event.preventDefault();
-      const data = new FormData(event.currentTarget);
-      store.saveUser({
-        name: String(data.get("name") || "").trim() || DEFAULT_USER.name,
-        email: String(data.get("email") || "").trim() || DEFAULT_USER.email,
-        bio: String(data.get("bio") || "").trim() || "Explorando o catálogo de demonstração.",
-        favoriteGenre: data.get("favoriteGenre"),
-        color: data.get("color") || user.color,
-        authed: true
+  openModal(content, {
+    className: "modal-sm",
+    label: "Editar perfil",
+    onMount: () => {
+      qs("#edit-profile-form")?.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const data = new FormData(event.currentTarget);
+        const patch = {
+          name: String(data.get("name") || "").trim() || DEFAULT_USER.name,
+          bio: String(data.get("bio") || "").trim() || "Explorando o catálogo.",
+          favoriteGenre: data.get("favoriteGenre")
+        };
+        const submit = event.currentTarget.querySelector("button[type=submit]");
+        submit.disabled = true;
+        try {
+          if (user.cloud) {
+            await updateProfile(patch);
+          } else {
+            store.saveUser(patch);
+            window.dispatchEvent(new CustomEvent("pk:auth-changed"));
+          }
+          closeModal();
+          toast("Perfil atualizado.", "success", "Tudo certo");
+        } catch (error) {
+          toast(error.message, "error");
+          submit.disabled = false;
+        }
       });
-      closeModal();
-      refreshShell();
-      renderPerfil();
-      toast("Perfil atualizado.", "success", "Tudo certo");
-    });
-    qsa('input[name="color"]').forEach((input) => input.addEventListener("change", () => {
-      qsa('input[name="color"]').forEach((entry) => {
-        entry.nextElementSibling.style.boxShadow = entry.checked ? "0 0 0 2px #fff" : "none";
-      });
-    }));
-  }});
+    }
+  });
 }

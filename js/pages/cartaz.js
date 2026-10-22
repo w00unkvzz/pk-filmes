@@ -24,7 +24,7 @@ function releaseCard(item) {
   return `<article class="release-card" data-release-month="${item.releaseDate.slice(0, 7)}" data-open-details="${escapeHTML(item.id)}">
     <div class="release-poster"><div class="poster" style="--c1:${item.colors[0]};--c2:${item.colors[1]}"><div class="poster-topline"><span class="poster-grade">${escapeHTML(item.age)}</span></div><div class="poster-ring"></div><span class="poster-title">${escapeHTML(item.title)}</span></div></div>
     <div class="release-info">
-      <div class="row-between"><h3>${escapeHTML(item.title)}</h3><span class="badge badge-vip"><i class="fa-solid fa-calendar"></i> ${formatDate(item.releaseDate)}</span></div>
+      <div class="row-between"><h3>${escapeHTML(item.title)}</h3><span class="badge badge-accent"><i class="fa-solid fa-calendar"></i> ${formatDate(item.releaseDate)}</span></div>
       <p>${escapeHTML(item.genres.join(" · "))} · ${item.type === "series" ? "Série" : "Filme"}</p>
       ${countdownMarkup(item.releaseDate)}
       <div class="row-between" style="gap:8px;margin-top:auto">

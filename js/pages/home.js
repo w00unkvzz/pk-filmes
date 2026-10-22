@@ -6,6 +6,22 @@ import { mediaRow, top10Row, genreStrip, qs, escapeHTML, formatDuration, toast, 
 
 let heroTimer = null;
 
+function heroMeta(item) {
+  const bits = [];
+  if (Number(item.rating) > 0) {
+    bits.push(`<span class="rating"><i class="fa-solid fa-star"></i>${Number(item.rating).toFixed(1)}</span>`);
+  }
+  if (item.year) bits.push(`<span>${escapeHTML(String(item.year))}</span>`);
+  const seasons = item.seasons?.length || 1;
+  const length = item.type === "series"
+    ? `${seasons} temporada${seasons > 1 ? "s" : ""}`
+    : (item.duration ? formatDuration(item.duration) : "");
+  if (length) bits.push(`<span>${escapeHTML(length)}</span>`);
+  if (item.age) bits.push(`<span class="badge-age">${escapeHTML(item.age)}</span>`);
+  if (item.genres?.length) bits.push(`<span>${escapeHTML(item.genres.slice(0, 2).join(" · "))}</span>`);
+  return bits.join('<span class="dot"></span>');
+}
+
 function heroMarkup(item) {
   const inList = store.isInWatchlist(item.id);
   return `
@@ -14,18 +30,12 @@ function heroMarkup(item) {
     </div>
     <div class="hero-content">
       <div class="hero-badges">
-        <span class="badge badge-vip"><i class="fa-solid fa-bolt"></i> Em destaque</span>
+        <span class="badge badge-accent"><i class="fa-solid fa-bolt"></i> Em destaque</span>
         <span class="badge ${item.type === "series" ? "badge-live" : "badge-new"}">${item.type === "series" ? "Série original" : "Filme original"}</span>
         ${item.isNew ? '<span class="badge badge-new">Novo</span>' : ""}
       </div>
       <h1 class="hero-title">${escapeHTML(item.title)}</h1>
-      <div class="meta hero-meta">
-        <span class="rating"><i class="fa-solid fa-star"></i>${item.rating.toFixed(1)}</span>
-        <span class="dot"></span><span>${item.year}</span>
-        <span class="dot"></span><span>${item.type === "series" ? `${item.seasons?.length || 1} temporadas` : formatDuration(item.duration)}</span>
-        <span class="dot"></span><span class="badge-age">${escapeHTML(item.age)}</span>
-        <span class="dot"></span><span>${escapeHTML(item.genres.slice(0, 2).join(" · "))}</span>
-      </div>
+      <div class="meta hero-meta">${heroMeta(item)}</div>
       <p class="hero-desc">${escapeHTML(item.synopsis)}</p>
       <div class="hero-actions">
         <button class="btn btn-light btn-lg" data-play="${escapeHTML(item.id)}" type="button"><i class="fa-solid fa-play"></i>Assistir agora</button>
@@ -33,7 +43,7 @@ function heroMarkup(item) {
         <button class="btn btn-icon" data-watchlist="${escapeHTML(item.id)}" type="button" title="${inList ? "Remover da lista" : "Adicionar à lista"}" aria-label="${inList ? "Remover da lista" : "Adicionar à lista"}"><i class="fa-solid ${inList ? "fa-check" : "fa-plus"}"></i></button>
       </div>
     </div>
-    <div class="hero-side-note">PK Filmes · catálogo demo</div>`;
+    <div class="hero-side-note">w00filmes · sessão da casa</div>`;
 }
 
 function heroDots(active) {
@@ -55,7 +65,7 @@ export function renderHome() {
         ${emptyState("fa-film", "Catálogo vazio", "Adicione seus títulos em catalog.json para começar. O site já está pronto para carregar nome, capa, categoria, idade e player.")}
         <div class="row" style="justify-content:center;margin-top:16px">
           <a class="btn btn-primary" href="catalogo.html"><i class="fa-solid fa-clapperboard"></i>Ver catálogo</a>
-          <a class="btn btn-ghost" href="onboarding.html"><i class="fa-solid fa-wand-magic-sparkles"></i>Fazer o tour</a>
+          <a class="btn btn-ghost" href="amigos.html"><i class="fa-solid fa-user-group"></i>Encontrar amigos</a>
         </div>
       </section>`;
     return;
@@ -94,12 +104,12 @@ export function renderHome() {
       <div class="party-hero" style="margin:0">
         <div class="party-hero-inner">
           <div>
-            <div class="section-kicker"><i class="fa-solid fa-tower-broadcast"></i> PK Party</div>
+            <div class="section-kicker"><i class="fa-solid fa-tower-broadcast"></i> w00 Party</div>
             <h2 style="font-size:clamp(1.5rem,3vw,2.4rem)">Assistir junto ficou mais fácil.</h2>
-            <p>Crie uma sala, escolha um título e converse com seus amigos em tempo real — tudo neste navegador.</p>
+            <p>Crie uma sala, escolha um título e converse com seus amigos em tempo real — sincronizado pelo Supabase.</p>
             <div class="row"><a class="btn btn-primary" href="pkparty.html"><i class="fa-solid fa-plus"></i>Criar sala</a><a class="btn btn-ghost" href="pkparty.html"><i class="fa-solid fa-right-to-bracket"></i>Entrar com código</a></div>
           </div>
-          <div class="badge badge-live"><i class="fa-solid fa-circle"></i> 3 salas ao vivo</div>
+          <div class="badge badge-live"><i class="fa-solid fa-circle"></i> salas em tempo real</div>
         </div>
       </div>
     </section>`;

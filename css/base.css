@@ -1,4 +1,4 @@
-/* PK Filmes demo — base tokens, reset and primitives */
+/* w00filmes — base tokens, reset and primitives */
 :root {
   --bg: #050507;
   --bg-soft: #0a0a0f;
@@ -203,7 +203,6 @@ button.chip:hover, a.chip:hover { color: var(--text); border-color: var(--line-s
 }
 .badge-age { border-color: rgba(255, 255, 255, 0.18); }
 .badge-live { color: #fecdd3; border-color: rgba(236, 72, 153, 0.4); background: rgba(236, 72, 153, 0.16); }
-.badge-vip { color: #fde68a; border-color: rgba(251, 191, 36, 0.35); background: rgba(251, 191, 36, 0.12); }
 .badge-new { color: #bbf7d0; border-color: rgba(52, 211, 153, 0.35); background: rgba(52, 211, 153, 0.12); }
 .badge-soft { background: rgba(255,255,255,.05); color: var(--muted); }
 

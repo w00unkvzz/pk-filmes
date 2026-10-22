@@ -86,7 +86,7 @@ export function renderCatalogo() {
     <div class="catalog-header">
       <div class="eyebrow section-kicker"><i class="fa-solid fa-clapperboard"></i> Catálogo completo</div>
       <h1>Tudo o que você quer assistir.</h1>
-      <p>Filtre por tipo, gênero, ano ou procure pelo elenco. O catálogo é fictício e usa vídeos de demonstração.</p>
+      <p>Filtre por tipo, gênero, ano ou procure pelo elenco. Seu catálogo, seus títulos, sua sessão.</p>
     </div>
     ${filterPanel()}
     <div class="catalog-grid-wrap">

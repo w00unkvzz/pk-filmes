@@ -1,4 +1,4 @@
-// Tiny static server for the demo (node serve.js, no dependencies).
+// Tiny static server for local development (node serve.js, no dependencies).
 const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
@@ -41,5 +41,5 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(port, "127.0.0.1", () => {
-  console.log(`PK Filmes demo: http://127.0.0.1:${port}`);
+  console.log(`w00filmes local: http://127.0.0.1:${port}`);
 });

@@ -10,6 +10,7 @@ import {
   upsertProfile,
   getSession
 } from "./supabase.js";
+import { syncSocialCache } from "./social.js";
 
 let started = false;
 
@@ -31,6 +32,7 @@ export async function initAuth() {
     const user = appUserFromSession(session, profile);
     store.saveUser(user);
     window.dispatchEvent(new CustomEvent("pk:auth-changed"));
+    syncSocialCache();
   });
 }
 

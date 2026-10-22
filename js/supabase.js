@@ -152,9 +152,7 @@ export async function upsertProfile(authUser, patch = {}) {
     id: authUser.id,
     name: String(patch.name || meta.name || email.split("@")[0] || "Visitante").slice(0, 80),
     email,
-    color: patch.color || meta.color || "#6a5acd",
-    plan: patch.plan || "Grátis",
-    plan_id: patch.planId || "free",
+    avatar_url: patch.avatar_url || "",
     bio: patch.bio || "Explorando o catálogo.",
     favorite_genre: patch.favoriteGenre || "Ficção",
     joined: patch.joined || new Date().toISOString().slice(0, 10),
@@ -181,9 +179,7 @@ export function appUserFromSession(session, profile = null) {
     id: authUser.id,
     name: profile?.name || meta.name || email.split("@")[0] || "Visitante",
     email,
-    color: profile?.color || meta.color || "#6a5acd",
-    plan: profile?.plan || "Grátis",
-    planId: profile?.plan_id || "free",
+    avatar_url: profile?.avatar_url || meta.avatar_url || "",
     joined: profile?.joined || (authUser.created_at ? authUser.created_at.slice(0, 10) : ""),
     bio: profile?.bio || "Explorando o catálogo.",
     favoriteGenre: profile?.favorite_genre || "Ficção",
@@ -204,6 +200,9 @@ export async function initCloudSession(onUser) {
       if (session?.user) {
         const profile = await fetchProfile(session.user.id);
         onUser?.(session, profile);
+      } else {
+        // Do not keep a stale cloud identity after the session expires.
+        onUser?.(null, null);
       }
       onAuthChange(async (event, nextSession) => {
         if (event === "SIGNED_OUT" || !nextSession?.user) {

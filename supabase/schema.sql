@@ -1,4 +1,4 @@
--- PK Filmes — Supabase schema
+-- w00filmes — Supabase schema
 -- Run this once in Supabase → SQL Editor → New query → Run.
 -- Safe to re-run: every object is created with IF NOT EXISTS or replaced.
 
