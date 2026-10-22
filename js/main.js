@@ -33,16 +33,11 @@ async function renderCurrent() {
 }
 
 async function boot() {
-  // Restore the Supabase session before painting the shell.
-  try {
-    await initAuth();
-  } catch (error) {
-    console.warn("[auth] não foi possível restaurar a sessão:", error.message);
-  }
-
   renderShell();
   bindGlobalEvents();
   await renderCurrent();
+  // Sessão do Supabase em background — não bloqueia a pintura inicial.
+  initAuth().catch((error) => console.warn("[auth] não restaurado:", error.message));
   openDetailsFromUrl();
 
   // Password recovery links land on /perfil.html?recovery=1.

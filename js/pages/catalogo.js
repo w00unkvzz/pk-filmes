@@ -27,13 +27,14 @@ function years() {
 }
 
 function filtered() {
+  const q = state.query ? state.query.toLowerCase() : "";
   let list = CATALOG.filter((item) => {
     if (state.type && item.type !== state.type) return false;
     if (state.genre && !item.genres.includes(state.genre)) return false;
     if (state.year && String(item.year) !== String(state.year)) return false;
-    if (state.query) {
-      const haystack = `${item.title} ${item.genres.join(" ")} ${item.synopsis} ${item.cast.join(" ")}`.toLowerCase();
-      if (!haystack.includes(state.query.toLowerCase())) return false;
+    if (q) {
+      const hay = item._hay || `${item.title} ${item.genres.join(" ")} ${item.synopsis} ${item.cast.join(" ")}`.toLowerCase();
+      if (!hay.includes(q)) return false;
     }
     return true;
   });
@@ -126,11 +127,18 @@ function updateUrl() {
 }
 
 function mountCatalogo() {
+  let debounceTimer = null;
   const bind = (id, key, eventName = "change") => {
     qs(id)?.addEventListener(eventName, (event) => {
       state[key] = event.target.value;
       state.visible = PAGE_SIZE;
-      updateResults();
+      if (key === "query") {
+        // Debounce no input de busca para não filtrar a cada tecla.
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => updateResults(), 180);
+      } else {
+        updateResults();
+      }
     });
   };
   bind("#filter-type", "type");

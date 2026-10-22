@@ -51,6 +51,8 @@ function normalizeCatalogItem(raw, index) {
   const player = String(raw.player || raw.stream || raw.video || "").trim();
   const type = raw.tipo === "serie" || raw.tipo === "series" || raw.type === "series" ? "series" : "movie";
   const id = String(raw.id || raw.slug || slugify(`${title}-${raw.ano || raw.year || ""}`)).trim();
+  const escHTML = String(title).replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+  const escAge = String(String(raw.idade ?? "L")).replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
   return {
     id,
     title,
@@ -73,7 +75,9 @@ function normalizeCatalogItem(raw, index) {
     top10: Boolean(raw.top10),
     isNew: Boolean(raw.novo ?? raw.isNew),
     addedAt: raw.addedAt || `2026-0${(index % 9) + 1}-${String((index % 27) + 1).padStart(2, "0")}`,
-    popularity: Math.round(70 + Number(raw.nota ?? raw.rating ?? 0) * 3 + (raw.top10 ? 8 : 0))
+    popularity: Math.round(70 + Number(raw.nota ?? raw.rating ?? 0) * 3 + (raw.top10 ? 8 : 0)),
+    titleEsc: escHTML,
+    ageEsc: escAge
   };
 }
 
@@ -100,9 +104,15 @@ async function loadRemoteCatalog() {
   // Serve from cache on subsequent page loads — avoids fetching + normalising
   // 2886 items on every navigation.
   const cached = readCache();
-  if (cached) return cached;
-
+  if (cached) {
+    // Cache guarda payload cru — mantém normalização ao voltar do cache.
+    return cached
+      .map((item, index) => normalizeCatalogItem(item, index))
+      .filter((item) => item.id && item.title);
+  }
   try {
+    // No navegador, resolve contra a página para fetch HTTP a partir da raiz.
+    // Em testes Node, document.baseURI é setado pelo harness no servidor local.
     const base = typeof document !== "undefined" && document.baseURI ? document.baseURI : import.meta.url;
     const url = new URL("catalog.json", base);
     const response = await fetch(url, { cache: "default" });
@@ -110,19 +120,17 @@ async function loadRemoteCatalog() {
     const payload = await response.json();
     const items = Array.isArray(payload) ? payload : payload?.items;
     if (!Array.isArray(items)) throw new Error("payload sem array items");
+    // Salva o payload cru: evita normalizar 2886 itens na segunda visita.
+    writeCache(items);
     const normalized = items
       .map((item, index) => normalizeCatalogItem(item, index))
       .filter((item) => item.id && item.title);
-    writeCache(normalized);
     return normalized;
   } catch (error) {
     console.warn(`[catalog] catálogo vazio ou indisponível: ${error.message}`);
     return null;
   }
 }
-
-const CACHE_KEY = "w00filmes.catalog_cache";
-const CACHE_TTL = 60 * 60 * 1000;
 
 function readCache() {
   try {
@@ -139,14 +147,28 @@ function writeCache(items) {
   try {
     if (typeof localStorage === "undefined") return;
     localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), items }));
-  } catch { /* quota ou indisponível */ }
+  } catch { /* quota */ }
 }
+
+const CACHE_KEY = "w00filmes.catalog_cache";
+const CACHE_TTL = 60 * 60 * 1000;
 
 const remoteCatalog = await loadRemoteCatalog();
 // If catalog.json cannot be loaded, the site stays empty rather than showing
 // placeholder titles. This keeps the catalog strictly operator-supplied.
 export const CATALOG = remoteCatalog || [];
 export const CATALOG_SOURCE = remoteCatalog?.length ? "catalog.json" : "vazio";
+
+// Pré-computa haystack de busca uma vez por item (y evita reconcatenar strings
+// em cada filtragem dentro de filtered() em catalogo.js).
+for (const item of CATALOG) {
+  if (!item._hay) item._hay = `${item.title} ${item.genres.join(" ")} ${item.synopsis} ${item.cast.join(" ")}`.toLowerCase();
+}
+
+// Map id -> item: lookup O(1) no byId em vez do .find() O(n).
+const ID_INDEX = new Map();
+for (const item of CATALOG) { ID_INDEX.set(item.id, item); }
+export const byId = (id) => ID_INDEX.get(id) || null;
 
 // Upcoming titles are intentionally empty until the operator supplies their
 // own release list, so no placeholder film appears in the catalog.
@@ -179,7 +201,6 @@ export const DEFAULT_USER = {
   favoriteGenre: "Ficção"
 };
 
-export const byId = (id) => CATALOG.find((item) => item.id === id) || UPCOMING.find((item) => item.id === id);
 const flaggedFeatured = CATALOG.filter((item) => item.featured);
 const flaggedTrending = CATALOG.filter((item) => item.trending);
 const flaggedTop10 = CATALOG.filter((item) => item.top10).slice(0, 10);

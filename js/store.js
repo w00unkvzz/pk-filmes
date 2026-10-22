@@ -32,6 +32,7 @@ export function subscribe(fn) {
 
 export function onStoreChange(fn) {
   const handler = (event) => {
+    _wlSet = null;
     if (event.key && event.key.startsWith(P)) fn(event.key.slice(P.length), safeParse(event.newValue));
   };
   window.addEventListener("storage", handler);
@@ -64,6 +65,7 @@ export function login(name, email) {
 }
 
 export function logout() {
+  _wlSet = null;
   const watchlist = getWatchlist();
   const history = getHistory();
   write("user", { ...DEFAULT_USER, authed: false });
@@ -76,19 +78,32 @@ export function isLoggedIn() {
   return Boolean(getUser().authed);
 }
 
-/* Watchlist */
+/* Watchlist — Set memoizado para lookup O(1) e atualização atômica */
+let _wlSet = null;
+
+function _wlSync(list) {
+  if (!_wlSet) _wlSet = new Set();
+  _wlSet.clear();
+  for (const id of list) _wlSet.add(id);
+}
+
 export function getWatchlist() {
-  return read("watchlist", []);
+  const raw = read("watchlist", []);
+  _wlSync(raw);
+  return raw;
 }
 
 export function isInWatchlist(id) {
-  return getWatchlist().includes(id);
+  getWatchlist();
+  return _wlSet.has(id);
 }
 
 export function toggleWatchlist(id) {
-  const list = getWatchlist();
-  const exists = list.includes(id);
-  const next = exists ? list.filter((item) => item !== id) : [id, ...list];
+  const raw = read("watchlist", []);
+  _wlSync(raw);
+  const exists = _wlSet.has(id);
+  const next = exists ? raw.filter((value) => value !== id) : [id, ...raw];
+  _wlSync(next);
   write("watchlist", next);
   return { added: !exists, list: next };
 }

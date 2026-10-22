@@ -278,16 +278,18 @@ export function posterCard(item, options = {}) {
   const progress = options.progress ?? 0;
   const isSeries = item.type === "series";
   const type = typeLabel(item).toUpperCase();
-  return `<article class="title-card" data-open-details="${escapeHTML(item.id)}" tabindex="0" aria-label="${escapeHTML(item.title)}">
+  const titleEsc = item.titleEsc ?? escapeHTML(item.title);
+  const ageEsc = item.ageEsc ?? escapeHTML(item.age || "L");
+  return `<article class="title-card" data-open-details="${escapeHTML(item.id)}" tabindex="0" aria-label="${titleEsc}">
     <div class="poster-wrap">
       <div class="poster ${item.poster ? "has-image" : ""}" style="--c1:${item.colors?.[0] || "#1e1b4b"};--c2:${item.colors?.[1] || "#6a5acd"}">
         ${posterImage(item)}
-        <div class="poster-topline"><span class="poster-grade">${escapeHTML(item.age || "L")}</span><span class="poster-type">${type}</span></div>
+        <div class="poster-topline"><span class="poster-grade">${ageEsc}</span><span class="poster-type">${type}</span></div>
         <div class="poster-ring"></div>
-        <span class="poster-title ${item.title.length > 18 ? "small" : ""}">${escapeHTML(item.title)}</span>
+        <span class="poster-title ${item.title.length > 18 ? "small" : ""}">${titleEsc}</span>
       </div>
       <div class="poster-overlay">
-        <button class="card-play" data-play="${escapeHTML(item.id)}" type="button" aria-label="Assistir ${escapeHTML(item.title)}"><i class="fa-solid fa-play"></i></button>
+        <button class="card-play" data-play="${escapeHTML(item.id)}" type="button" aria-label="Assistir ${titleEsc}"><i class="fa-solid fa-play"></i></button>
         <div class="card-quick">
           <button data-watchlist="${escapeHTML(item.id)}" type="button" title="${inList ? "Remover da minha lista" : "Adicionar à minha lista"}" aria-label="${inList ? "Remover da lista" : "Adicionar à lista"}"><i class="fa-solid ${inList ? "fa-check" : "fa-plus"}"></i></button>
           <button data-open-details="${escapeHTML(item.id)}" type="button" title="Mais informações" aria-label="Mais informações"><i class="fa-solid fa-circle-info"></i></button>
@@ -296,7 +298,7 @@ export function posterCard(item, options = {}) {
       ${options.remove ? `<button class="card-remove" data-remove-history="${escapeHTML(item.id)}" type="button" title="Remover do histórico" aria-label="Remover do histórico"><i class="fa-solid fa-xmark"></i></button>` : ""}
     </div>
     <div class="card-info">
-      <span class="card-title">${escapeHTML(item.title)}</span>
+      <span class="card-title">${titleEsc}</span>
       ${cardMeta(item)}
       ${progress ? `<div class="card-progress"><span style="width:${Math.min(100, progress)}%"></span></div>` : ""}
     </div>
@@ -564,7 +566,7 @@ export function openPlayer(item, options = {}) {
     </div>
     <div class="player-stage">${embed
       ? `<iframe id="player-frame" src="${escapeHTML(stream)}" title="${escapeHTML(displayTitle)}" allow="autoplay; fullscreen; picture-in-picture; encrypted-media" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`
-      : `<video id="player-video" controls autoplay playsinline preload="metadata" src="${escapeHTML(stream)}"></video>`}</div>
+      : `<video id="player-video" controls autoplay playsinline preload="metadata" src="${escapeHTML(stream)}" poster="${escapeHTML(item.poster || "")}"></video>`}</div>
     <div class="player-next">
       <div class="poster ${item.poster ? "has-image" : ""}" style="--c1:${item.colors?.[0] || "#1e1b4b"};--c2:${item.colors?.[1] || "#6a5acd"}">${item.poster ? `<img class="poster-img" src="${escapeHTML(item.poster)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">` : `<span class="poster-title">${escapeHTML(item.title)}</span>`}</div>
       <div class="grow"><strong style="display:block;font-size:11px">Você está assistindo</strong><span class="tiny muted">${escapeHTML(displayTitle)}</span></div>
