@@ -2,8 +2,8 @@
 // The anon key is public by design; Row Level Security protects the data.
 // Fill both values from Supabase → Project Settings → API.
 export const SUPABASE_CONFIG = {
-  url: "", // https://SEU-PROJETO.supabase.co
-  anonKey: "", // eyJ... (anon public)
+  url: "https://jpeuyfjbxjqisxnbkonb.supabase.co",
+  anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwZXV5ZmpieGpxaXN4bmJrb25iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2NDE5MTAsImV4cCI6MjEwODIxNzkxMH0.Yr7idZLyHTVAF5P8zaYPxaQe8vmNfnQ3NMe0Dx2TWr0",
   // Optional. Leave empty to redirect back to the current page.
   redirectTo: ""
 };
