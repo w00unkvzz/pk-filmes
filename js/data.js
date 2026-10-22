@@ -132,25 +132,6 @@ async function loadRemoteCatalog() {
   }
 }
 
-function readCache() {
-  try {
-    if (typeof localStorage === "undefined") return null;
-    const raw = localStorage.getItem(CACHE_KEY);
-    if (!raw) return null;
-    const { ts, items } = JSON.parse(raw);
-    if (Date.now() - ts > CACHE_TTL) { localStorage.removeItem(CACHE_KEY); return null; }
-    return Array.isArray(items) ? items : null;
-  } catch { return null; }
-}
-
-function writeCache(items) {
-  try {
-    if (typeof localStorage === "undefined") return;
-    localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), items }));
-  } catch { /* quota */ }
-}
-
-const CACHE_KEY = "w00filmes.catalog_cache";
 const CACHE_TTL = 60 * 60 * 1000;
 
 const remoteCatalog = await loadRemoteCatalog();
