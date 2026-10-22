@@ -230,14 +230,18 @@
 @media (max-width: 760px) {
   .sidebar {
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    will-change: transform;
     backface-visibility: hidden;
     -webkit-font-smoothing: antialiased;
   }
-  
+  .sidebar.animating {
+    will-change: transform;
+  }
+
   /* Otimiza o backdrop pra não piscar */
   #sidebar-backdrop {
     transition: opacity 0.3s ease !important;
+  }
+  #sidebar-backdrop.animating {
     will-change: opacity;
   }
 }

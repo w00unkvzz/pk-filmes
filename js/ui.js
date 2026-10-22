@@ -939,6 +939,37 @@ export function refreshShell() {
   qsa(".avatar-btn, .sidebar-user .avatar").forEach(() => {});
 }
 
+/* Sidebar: will-change só durante a animação (evita GPU/memória presos) */
+let sidebarAnimTimer = null;
+
+function sidebarAnimate() {
+  const sidebar = qs("#sidebar");
+  const backdrop = qs("#sidebar-backdrop");
+  sidebar?.classList.add("animating");
+  backdrop?.classList.add("animating");
+  clearTimeout(sidebarAnimTimer);
+  sidebarAnimTimer = setTimeout(() => {
+    sidebar?.classList.remove("animating");
+    backdrop?.classList.remove("animating");
+  }, 320);
+}
+
+export function sidebarOpen() {
+  sidebarAnimate();
+  qs("#sidebar")?.classList.add("open");
+  qs("#sidebar-backdrop")?.classList.add("open");
+  document.body.classList.add("sidebar-open");
+}
+
+export function sidebarClose() {
+  const sidebar = qs("#sidebar");
+  if (!sidebar?.classList.contains("open")) return;
+  sidebarAnimate();
+  sidebar.classList.remove("open");
+  qs("#sidebar-backdrop")?.classList.remove("open");
+  document.body.classList.remove("sidebar-open");
+}
+
 /* Global event wiring */
 export function bindGlobalEvents() {
   if (window.__pkGlobalBound) return;
@@ -951,15 +982,11 @@ export function bindGlobalEvents() {
 
     const sidebarToggle = target.closest("[data-sidebar-toggle]");
     if (sidebarToggle) {
-      qs("#sidebar")?.classList.add("open");
-      qs("#sidebar-backdrop")?.classList.add("open");
-      document.body.classList.add("sidebar-open");
+      sidebarOpen();
       return;
     }
     if (target.closest("[data-sidebar-close]") || target.id === "sidebar-backdrop") {
-      qs("#sidebar")?.classList.remove("open");
-      qs("#sidebar-backdrop")?.classList.remove("open");
-      document.body.classList.remove("sidebar-open");
+      sidebarClose();
       return;
     }
 
@@ -976,7 +1003,7 @@ export function bindGlobalEvents() {
       qs('[data-profile-toggle]')?.setAttribute("aria-expanded", "false");
     }
 
-    if (target.closest("[data-auth-open]")) { event.preventDefault(); openAuthModal(); return; }
+    if (target.closest("[data-auth-open]")) { event.preventDefault(); sidebarClose(); openAuthModal(); return; }
 
     if (target.closest("[data-logout]")) {
       event.preventDefault();
@@ -1071,9 +1098,7 @@ export function bindGlobalEvents() {
     if (event.key === "Escape") {
       closeModal();
       qs("#profile-menu")?.classList.remove("open");
-      qs("#sidebar")?.classList.remove("open");
-      qs("#sidebar-backdrop")?.classList.remove("open");
-      document.body.classList.remove("sidebar-open");
+      sidebarClose();
     }
     if (event.key === "Enter" && event.target.matches("[data-open-details]")) {
       event.preventDefault();
