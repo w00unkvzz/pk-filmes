@@ -1,0 +1,8 @@
+{
+  "schema": "pkfilmes.catalog.v1",
+  "updated": "2026-10-22",
+  "count": 0,
+  "source": "Catálogo próprio",
+  "attribution": "Adicione seus títulos licenciados em items. Campos obrigatórios: nome, capa, categoria, idade, player.",
+  "items": []
+}

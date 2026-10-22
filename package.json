@@ -1,0 +1,10 @@
+{
+  "name": "pk-filmes",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Catálogo de streaming com login Supabase e deploy estático no Vercel",
+  "scripts": {
+    "dev": "node serve.js",
+    "start": "node serve.js"
+  }
+}

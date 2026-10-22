@@ -1,0 +1,23 @@
+// Supabase project credentials.
+// The anon key is public by design; Row Level Security protects the data.
+// Fill both values from Supabase → Project Settings → API.
+export const SUPABASE_CONFIG = {
+  url: "", // https://SEU-PROJETO.supabase.co
+  anonKey: "", // eyJ... (anon public)
+  // Optional. Leave empty to redirect back to the current page.
+  redirectTo: ""
+};
+
+export function isSupabaseConfigured() {
+  return Boolean(
+    SUPABASE_CONFIG.url &&
+    SUPABASE_CONFIG.anonKey &&
+    /^https:\/\/.+\.supabase\.co\/?$/.test(SUPABASE_CONFIG.url)
+  );
+}
+
+export function authRedirectUrl(path = "") {
+  if (SUPABASE_CONFIG.redirectTo) return SUPABASE_CONFIG.redirectTo;
+  const base = `${location.origin}${location.pathname}`;
+  return path ? new URL(path, base).toString() : base;
+}
