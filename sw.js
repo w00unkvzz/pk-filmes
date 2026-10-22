@@ -5,11 +5,11 @@
 //   HTML pages    → network-first, fallback to cache
 //   Supabase/fonts/FA → network-only (no cache)
 
-const VERSION = "w00-v5";
+const VERSION = "w00-v6";
 // Catalog stays on v1 on purpose: bumping it forces a multi-MB re-download.
-const CATALOG_CACHE = "w00-catalog-v1";
-const STATIC_CACHE  = "w00-static-v5";
-const HTML_CACHE    = "w00-html-v5";
+const CATALOG_CACHE = "w00-catalog-v2";
+const STATIC_CACHE  = "w00-static-v6";
+const HTML_CACHE    = "w00-html-v6";
 
 const STATIC_ASSETS = [
   "/css/base.css",
@@ -17,6 +17,9 @@ const STATIC_ASSETS = [
   "/css/components.css",
   "/css/pages.css",
   "/css/theme.css",
+  "/css/detalhes.css",
+  "/js/tmdb.js",
+  "/js/watchparty.js",
   "/js/main.js",
   "/js/config.js",
   "/js/data.js",
@@ -33,6 +36,8 @@ const STATIC_ASSETS = [
   "/js/pages/amigos.js",
   "/js/pages/pkparty.js",
   "/js/pages/cartaz.js",
+  "/js/pages/detalhes.js",
+  "/js/pages/player.js",
 ];
 
 // ── install: pre-cache static assets ──────────────────────────────────────

@@ -1,6 +1,6 @@
 // Home page: hero carousel, continue watching, curated rows and genres.
 import { CONFIG } from "../config.js";
-import { CATALOG, featured, trending, top10, movies, series, newReleases } from "../data.js";
+import { CATALOG, catalogTitles, featured, trending, top10, movies, series, newReleases } from "../data.js";
 import * as store from "../store.js";
 import { mediaRow, top10Row, genreStrip, qs, escapeHTML, formatDuration, toast, emptyState } from "../ui.js";
 
@@ -56,7 +56,7 @@ export function renderHome() {
   const history = store.getHistory();
   const historyItems = history.map((entry) => ({ item: CATALOG.find((movie) => movie.id === entry.id), entry })).filter(({ item }) => item);
   const progressMap = Object.fromEntries(history.map((entry) => [entry.id, store.progressPercent(entry)]));
-  const family = CATALOG.filter((item) => item.genres.some((genre) => ["Família", "Animação", "Aventura"].includes(genre))).slice(0, 12);
+  const family = catalogTitles.filter((item) => item.genres.some((genre) => ["Família", "Animação", "Aventura"].includes(genre))).slice(0, 12);
   const hero = featured[0];
 
   if (!hero) {
@@ -104,10 +104,10 @@ export function renderHome() {
         <div class="party-hero-inner">
           <div>
             <h2 style="font-size:clamp(1.5rem,3vw,2.4rem)">Assistir junto ficou mais fácil.</h2>
-            <p>Crie uma sala, escolha um título e converse com seus amigos em tempo real — sincronizado pelo Supabase.</p>
+            <p>Crie uma sala, escolha um título e convide seus amigos para assistir juntos, na mesma hora.</p>
             <div class="row"><a class="btn btn-primary" href="pkparty.html"><i class="fa-solid fa-plus"></i>Criar sala</a><a class="btn btn-ghost" href="pkparty.html"><i class="fa-solid fa-right-to-bracket"></i>Entrar com código</a></div>
           </div>
-          <div class="badge badge-live"><i class="fa-solid fa-circle"></i> salas em tempo real</div>
+          <div class="badge badge-live"><i class="fa-solid fa-circle"></i> salas ao vivo</div>
         </div>
       </div>
     </section>`;

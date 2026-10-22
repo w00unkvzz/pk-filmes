@@ -92,7 +92,7 @@ function timeAgo(timestamp) {
 
 function posterMarkup(item, className = "room-poster") {
   if (item?.poster) return `<div class="${className}"><img src="${escapeHTML(item.poster)}" alt="${escapeHTML(item.title)}" loading="lazy"></div>`;
-  const colors = item?.colors || ["#3b0a24", "#ff4fa3"];
+  const colors = item?.colors || ["#1e1b4b", "#6366f1"];
   return `<div class="${className}" style="--c1:${colors[0]};--c2:${colors[1]}"><span>${escapeHTML(item?.title || "w00")}</span></div>`;
 }
 
@@ -138,7 +138,7 @@ export async function renderPkparty() {
   user = store.getUser();
   const code = new URLSearchParams(location.search).get("sala");
   if (!user.cloud) {
-    qs("#page-content").innerHTML = `<div class="page-section">${emptyState("fa-tower-broadcast", "Entre para assistir junto", "O w00 Party usa sua conta Supabase para salas, chat e sincronização.")}<div class="row" style="justify-content:center;margin-top:14px"><button class="btn btn-primary" data-auth-open type="button"><i class="fa-solid fa-right-to-bracket"></i>Entrar ou criar conta</button></div></div>`;
+    qs("#page-content").innerHTML = `<div class="page-section">${emptyState("fa-tower-broadcast", "Entre para assistir junto", "Entre para criar salas, conversar e assistir junto.")}<div class="row" style="justify-content:center;margin-top:14px"><button class="btn btn-primary" data-auth-open type="button"><i class="fa-solid fa-right-to-bracket"></i>Entrar ou criar conta</button></div></div>`;
     return;
   }
   if (code) {
@@ -180,19 +180,11 @@ async function renderLobby() {
         </div>`).join("")}</div></section>` : ""}
 
       <section class="page-section">
-        <div class="section-head"><div><div class="section-kicker"><i class="fa-solid fa-circle-play"></i> Ao vivo agora</div><h2>Salas</h2></div><span class="badge badge-live"><i class="fa-solid fa-circle"></i> Supabase</span></div>
+        <div class="section-head"><div><div class="section-kicker"><i class="fa-solid fa-circle-play"></i> Ao vivo agora</div><h2>Salas</h2></div><span class="badge badge-live"><i class="fa-solid fa-circle"></i> ao vivo</span></div>
         <div class="rooms-grid">${rooms.length ? rooms.map(roomCard).join("") : emptyState("fa-tower-broadcast", "Nenhuma sala ativa", "Crie a primeira e chame seus amigos.")}</div>
       </section>
 
-      <section class="page-section">
-        <div class="section-head"><div><div class="section-kicker"><i class="fa-solid fa-wand-magic-sparkles"></i> Como funciona</div><h2>Uma sala. Todo mundo junto.</h2></div></div>
-        <div class="stat-grid">
-          <div class="panel panel-pad"><div class="section-kicker">01 · Escolha</div><h3 style="margin-top:6px">Selecione um título</h3><p class="tiny" style="margin-top:5px">Use um título do catálogo ou cole um link direto de vídeo.</p></div>
-          <div class="panel panel-pad"><div class="section-kicker">02 · Convide</div><h3 style="margin-top:6px">Amigos do Supabase</h3><p class="tiny" style="margin-top:5px">O anfitrião convida pela lista de amigos ou compartilha o código.</p></div>
-          <div class="panel panel-pad"><div class="section-kicker">03 · Assista</div><h3 style="margin-top:6px">Controles do anfitrião</h3><p class="tiny" style="margin-top:5px">Play, pause e seek chegam em tempo real. Sem botão de sincronizar.</p></div>
-          <div class="panel panel-pad"><div class="section-kicker">04 · Converse</div><h3 style="margin-top:6px">Chat persistente</h3><p class="tiny" style="margin-top:5px">Mensagens ficam salvas no Supabase e aparecem na hora.</p></div>
-        </div>
-      </section>`;
+`;
 
     mountLobby();
     subscribeLobby();

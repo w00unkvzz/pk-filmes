@@ -1,20 +1,20 @@
 /* w00filmes — base tokens, reset and primitives */
 :root {
-  --bg: #050507;
-  --bg-soft: #0a0a0f;
-  --panel: #111118;
-  --panel-2: #171720;
-  --panel-3: #1e1e29;
+  --bg: #05060f;
+  --bg-soft: #080a16;
+  --panel: #0f1324;
+  --panel-2: #11162a;
+  --panel-3: #182035;
   --line: rgba(255, 255, 255, 0.09);
   --line-strong: rgba(255, 255, 255, 0.16);
   --text: #f7f7fb;
   --muted: #9c9caf;
   --muted-2: #6f6f82;
-  --accent: #6a5acd;
-  --accent-bright: #8b7cf6;
-  --accent-soft: rgba(106, 90, 205, 0.16);
-  --pink: #ec4899;
-  --pink-soft: rgba(236, 72, 153, 0.14);
+  --accent: #6366f1;
+  --accent-bright: #818cf8;
+  --accent-soft: rgba(99, 102, 241, 0.16);
+  --pink: #6366f1;
+  --pink-soft: rgba(99, 102, 241, 0.14);
   --gold: #fbbf24;
   --green: #34d399;
   --red: #fb7185;
@@ -35,8 +35,8 @@ html { scroll-behavior: smooth; }
 body {
   min-height: 100vh;
   background:
-    radial-gradient(900px 500px at 12% -10%, rgba(106, 90, 205, 0.12), transparent 60%),
-    radial-gradient(700px 420px at 92% 8%, rgba(236, 72, 153, 0.07), transparent 62%),
+    radial-gradient(900px 500px at 12% -10%, rgba(99, 102, 241, 0.12), transparent 60%),
+    radial-gradient(700px 420px at 92% 8%, rgba(99, 102, 241, 0.07), transparent 62%),
     var(--bg);
   color: var(--text);
   font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -98,17 +98,17 @@ strong { color: var(--text); font-weight: 700; }
 .btn-primary {
   background: linear-gradient(135deg, var(--accent-bright), var(--accent));
   color: #fff;
-  box-shadow: 0 10px 28px rgba(106, 90, 205, 0.34);
+  box-shadow: 0 10px 28px rgba(99, 102, 241, 0.34);
 }
-.btn-primary:hover { box-shadow: 0 14px 34px rgba(106, 90, 205, 0.46); }
+.btn-primary:hover { box-shadow: 0 14px 34px rgba(99, 102, 241, 0.46); }
 
-.btn-light { background: #fff; color: #09090d; }
+.btn-light { background: #fff; color: #080a16; }
 .btn-light:hover { background: #e9e9f2; }
 
 .btn-pink {
-  background: linear-gradient(135deg, #f472b6, var(--pink));
+  background: linear-gradient(135deg, #818cf8, var(--pink));
   color: #fff;
-  box-shadow: 0 10px 28px rgba(236, 72, 153, 0.3);
+  box-shadow: 0 10px 28px rgba(99, 102, 241, 0.3);
 }
 
 .btn-ghost {
@@ -163,10 +163,10 @@ strong { color: var(--text); font-weight: 700; }
 .input:focus, .select:focus, .textarea:focus {
   border-color: rgba(139, 124, 246, 0.65);
   background: rgba(255, 255, 255, 0.075);
-  box-shadow: 0 0 0 3px rgba(106, 90, 205, 0.16);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.16);
 }
 .select { appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%); background-position: calc(100% - 18px) 19px, calc(100% - 13px) 19px; background-size: 5px 5px; background-repeat: no-repeat; padding-right: 34px; }
-.select option { background: #14141c; color: #fff; }
+.select option { background: #0f1425; color: #fff; }
 
 /* Chips, badges, meta */
 .chip {
@@ -202,7 +202,7 @@ button.chip:hover, a.chip:hover { color: var(--text); border-color: var(--line-s
   text-transform: uppercase;
 }
 .badge-age { border-color: rgba(255, 255, 255, 0.18); }
-.badge-live { color: #fecdd3; border-color: rgba(236, 72, 153, 0.4); background: rgba(236, 72, 153, 0.16); }
+.badge-live { color: #fecdd3; border-color: rgba(99, 102, 241, 0.4); background: rgba(99, 102, 241, 0.16); }
 .badge-new { color: #bbf7d0; border-color: rgba(52, 211, 153, 0.35); background: rgba(52, 211, 153, 0.12); }
 .badge-soft { background: rgba(255,255,255,.05); color: var(--muted); }
 
@@ -223,7 +223,7 @@ button.chip:hover, a.chip:hover { color: var(--text); border-color: var(--line-s
 .tiny { font-size: 0.71rem; }
 .hidden { display: none !important; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
-.text-gradient { background: linear-gradient(100deg, #fff 15%, #c4b5fd 55%, #f9a8d4); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.text-gradient { background: linear-gradient(100deg, #fff 15%, #c4b5fd 55%, #a5b4fc); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .divider { height: 1px; background: var(--line); border: 0; }
 .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 10px; padding: 52px 24px; border: 1px dashed var(--line); border-radius: var(--radius); background: rgba(255,255,255,.022); }
 .empty-state i { font-size: 1.7rem; color: var(--muted-2); }

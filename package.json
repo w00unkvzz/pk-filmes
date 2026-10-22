@@ -2,7 +2,7 @@
   "name": "w00filmes",
   "version": "2.0.0",
   "private": true,
-  "description": "w00filmes — streaming, amigos e sessões sincronizadas com Supabase",
+  "description": "w00filmes — streaming, amigos e sessões sincronizadas",
   "scripts": {
     "dev": "node serve.js",
     "start": "node serve.js"

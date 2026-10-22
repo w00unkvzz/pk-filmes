@@ -27,7 +27,7 @@ export function initials(name = "") {
 export function avatar(user, size = "sm", extra = "") {
   const name = typeof user === "string" ? user : user?.name || "Visitante";
   const photo = typeof user === "object" ? user?.avatar_url || user?.avatarUrl || "" : "";
-  return `<span class="avatar ${size} ${extra}" aria-hidden="true"><span class="avatar-initials">${escapeHTML(initials(name))}</span>${photo ? `<img src="${escapeHTML(photo)}" alt="" loading="lazy" onerror="this.remove()">` : ""}</span>`;
+  return `<span class="avatar ${size} ${extra}" aria-hidden="true"><span class="avatar-initials">${escapeHTML(initials(name))}</span>${photo ? `<img src="${escapeHTML(photo)}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ""}</span>`;
 }
 
 
@@ -434,105 +434,12 @@ function syncWatchlistButtons(id) {
   });
 }
 
-function detailMeta(item) {
-  const bits = [];
-  if (Number(item.rating) > 0) bits.push(`<span class="rating"><i class="fa-solid fa-star"></i>${Number(item.rating).toFixed(1)}</span>`);
-  const year = item.year || (item.releaseDate ? new Date(item.releaseDate).getFullYear() : "");
-  if (year) bits.push(`<span>${escapeHTML(String(year))}</span>`);
-  const seasons = item.seasons?.length || 1;
-  const length = item.type === "series"
-    ? `${seasons} temporada${seasons > 1 ? "s" : ""}`
-    : (item.duration ? formatDuration(item.duration) : "");
-  if (length) bits.push(`<span>${escapeHTML(length)}</span>`);
-  if (item.age) bits.push(`<span class="badge-age">${escapeHTML(item.age)}</span>`);
-  return bits.join('<span class="dot"></span>');
-}
-
 /* Details */
+// The old details modal was replaced by a dedicated page (detalhes.html) with
+// backdrop, cast, episodes and watch-party entry point.
 export function openDetails(item) {
   if (!item) return;
-  const inList = store.isInWatchlist(item.id);
-  const history = store.getHistoryEntry(item.id);
-  const isSeries = item.type === "series";
-  const firstSeason = item.seasons?.[0];
-  const firstEpisode = firstSeason?.episodes?.[0];
-  const genreBadges = (item.genres || []).map((genre) => `<span class="badge badge-soft">${escapeHTML(genre)}</span>`).join(" ");
-  const upcoming = Boolean(item.releaseDate);
-  const episodes = firstSeason?.episodes || [];
-  const content = `
-    <button class="modal-close" data-close-modal type="button" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
-    <div class="modal-head" style="--c1:${item.colors?.[0] || "#1e1b4b"};--c2:${item.colors?.[1] || "#6a5acd"}">
-      <div class="modal-head-inner">
-        <div class="modal-poster">
-          <div class="poster ${item.poster ? "has-image" : ""}" style="--c1:${item.colors?.[0] || "#1e1b4b"};--c2:${item.colors?.[1] || "#6a5acd"}">
-            ${posterImage(item)}
-            <div class="poster-topline"><span class="poster-grade">${escapeHTML(item.age || "L")}</span><span class="poster-type">${typeLabel(item).toUpperCase()}</span></div>
-            <div class="poster-ring"></div>
-            <span class="poster-title">${escapeHTML(item.title)}</span>
-          </div>
-        </div>
-        <div class="modal-head-info">
-          <div class="hero-badges">${upcoming ? '<span class="badge badge-accent">Em breve</span>' : `<span class="badge ${item.isNew ? "badge-new" : "badge-soft"}">${item.isNew ? "Novo" : "Catálogo"}</span>`}</div>
-          <h2>${escapeHTML(item.title)}</h2>
-          <div class="meta">${detailMeta(item)}</div>
-          <div class="modal-actions">
-            ${upcoming
-              ? `<button class="btn btn-primary" data-watchlist-detail="${escapeHTML(item.id)}" type="button"><i class="fa-solid ${inList ? "fa-check" : "fa-plus"}"></i>${inList ? "Na minha lista" : "Lembrar-me"}</button>`
-              : `<button class="btn btn-light" data-play-detail="${escapeHTML(item.id)}" type="button"><i class="fa-solid fa-play"></i>Assistir ${isSeries && firstEpisode ? "T1 E1" : "agora"}</button>
-                 <button class="btn ${inList ? "btn-primary" : "btn-ghost"}" data-watchlist-detail="${escapeHTML(item.id)}" type="button"><i class="fa-solid ${inList ? "fa-check" : "fa-plus"}"></i>${inList ? "Na minha lista" : "Minha lista"}</button>`}
-            <button class="btn-icon" data-share-detail="${escapeHTML(item.id)}" type="button" aria-label="Compartilhar título" title="Compartilhar"><i class="fa-solid fa-share-nodes"></i></button>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="modal-body" data-detail-id="${escapeHTML(item.id)}">
-      <div class="modal-cols">
-        <div>
-          <p>${escapeHTML(item.synopsis || "Sinopse em preparação.")}</p>
-          ${isSeries && episodes.length ? `
-            <div class="row-between" style="margin-top:24px;gap:12px">
-              <h3>Episódios</h3>
-              ${(item.seasons?.length || 1) > 1 ? `<select class="select" id="detail-season" style="width:auto;min-height:34px;height:34px;padding-block:0;font-size:11px">${item.seasons.map((season) => `<option value="${season.number}">Temporada ${season.number}</option>`).join("")}</select>` : ""}
-            </div>
-            <div id="detail-episodes">${episodeList(item, firstSeason?.number || 1)}</div>` : ""}
-          ${history ? `<div class="row" style="margin-top:22px"><div class="progress grow" style="max-width:260px"><span style="width:${store.progressPercent(history)}%"></span></div><span class="tiny muted">${store.progressPercent(history)}% assistido</span></div>` : ""}
-        </div>
-        <div class="modal-facts">
-          <div class="modal-fact"><span>Direção</span><strong>${escapeHTML(item.director || "Equipe w00")}</strong></div>
-          <div class="modal-fact"><span>Elenco</span><strong>${escapeHTML((item.cast || []).join(", ") || "Elenco não informado")}</strong></div>
-          <div class="modal-fact"><span>Gêneros</span><strong>${escapeHTML((item.genres || []).join(" · "))}</strong></div>
-          <div class="modal-fact"><span>${upcoming ? "Estreia" : "Disponível em"}</span><strong>${formatDate(item.releaseDate || item.addedAt || "2026-10-22")}</strong></div>
-          ${upcoming ? `<div class="modal-fact"><span>Contagem</span><strong>${daysUntil(item.releaseDate)} dias</strong></div>` : ""}
-          <div class="modal-fact"><span>Classificação</span><strong>${escapeHTML(item.age || "L")} · ${escapeHTML(item.genres?.[0] || "Livre")}</strong></div>
-        </div>
-      </div>
-    </div>`;
-
-  openModal(content, {
-    className: "modal-lg",
-    label: item.title,
-    onMount: () => {
-      const seasonSelect = qs("#detail-season");
-      if (seasonSelect) {
-        seasonSelect.addEventListener("change", () => {
-          const season = item.seasons.find((entry) => String(entry.number) === seasonSelect.value);
-          const target = qs("#detail-episodes");
-          if (season && target) target.innerHTML = episodeList(item, season.number);
-        });
-      }
-    }
-  });
-}
-
-function episodeList(item, seasonNumber) {
-  const season = item.seasons?.find((entry) => entry.number === seasonNumber) || item.seasons?.[0];
-  if (!season) return "";
-  return `<div class="episode-list">${season.episodes.map((episode) => `
-    <button class="episode-item" data-play-episode="${escapeHTML(item.id)}" data-season="${season.number}" data-ep="${episode.number}" type="button">
-      <span class="episode-num">${String(episode.number).padStart(2, "0")}</span>
-      <span class="grow"><strong>${escapeHTML(episode.title)}</strong><span>T${season.number} E${episode.number} · ${formatDuration(episode.duration)}</span></span>
-      <span class="episode-play"><i class="fa-solid fa-play"></i></span>
-    </button>`).join("")}</div>`;
+  location.href = `detalhes.html?id=${encodeURIComponent(item.id)}`;
 }
 
 export function daysUntil(date) {
@@ -541,84 +448,11 @@ export function daysUntil(date) {
 }
 
 /* Player */
-function isEmbedStream(url = "") {
-  const value = String(url).trim();
-  if (!value) return false;
-  if (/^data:video\//i.test(value) || /^blob:/i.test(value)) return false;
-  const clean = value.split("#")[0].split("?")[0].toLowerCase();
-  if (/\.(mp4|m4v|webm|ogv|ogg|mov|m3u8)$/.test(clean)) return false;
-  return /youtube\.com|youtu\.be|vimeo\.com|dailymotion\.com|embed|player\./i.test(value);
-}
-
+// Playback now happens on a dedicated immersive page (player.html).
 export function openPlayer(item, options = {}) {
   if (!item) return;
-  const episode = options.episode || null;
-  const stream = episode?.stream || item.player || item.stream;
-  if (!stream) {
-    toast("Este título ainda não tem um player configurado.", "info", "Em breve");
-    return;
-  }
-  const embed = isEmbedStream(stream);
-  const history = store.getHistoryEntry(item.id);
-  const displayTitle = episode ? `${item.title} · T${episode.season} E${episode.number}` : item.title;
-  const content = `
-    <div class="player-top">
-      <div class="grow"><h3>${escapeHTML(displayTitle)}</h3><div class="meta"><span>${episode ? escapeHTML(episode.title) : typeLabel(item)}</span><span class="dot"></span><span>${formatDuration(episode?.duration || item.duration)}</span><span class="dot"></span><span class="badge badge-soft">w00filmes</span></div></div>
-      <button class="btn-icon" data-close-modal type="button" aria-label="Fechar player"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    <div class="player-stage">${embed
-      ? `<iframe id="player-frame" src="${escapeHTML(stream)}" title="${escapeHTML(displayTitle)}" allow="autoplay; fullscreen; picture-in-picture; encrypted-media" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`
-      : `<video id="player-video" controls autoplay playsinline preload="metadata" src="${escapeHTML(stream)}" poster="${escapeHTML(item.poster || "")}"></video>`}</div>
-    <div class="player-next">
-      <div class="poster ${item.poster ? "has-image" : ""}" style="--c1:${item.colors?.[0] || "#1e1b4b"};--c2:${item.colors?.[1] || "#6a5acd"}">${item.poster ? `<img class="poster-img" src="${escapeHTML(item.poster)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">` : `<span class="poster-title">${escapeHTML(item.title)}</span>`}</div>
-      <div class="grow"><strong style="display:block;font-size:11px">Você está assistindo</strong><span class="tiny muted">${escapeHTML(displayTitle)}</span></div>
-      <button class="btn btn-sm btn-ghost" data-close-modal type="button">Fechar</button>
-    </div>`;
-
-  let cleanup = null;
-  openModal(content, {
-    className: "player-modal",
-    label: `Player — ${item.title}`,
-    onMount: () => {
-      const video = qs("#player-video");
-      if (!video) {
-        // Embedded provider (iframe): no cross-origin progress events available.
-        cleanup = () => {};
-        return;
-      }
-      let lastSave = 0;
-      const save = (force = false) => {
-        if (!video || !Number.isFinite(video.currentTime)) return;
-        const duration = Number.isFinite(video.duration) ? video.duration : (episode?.duration || item.duration || 0) * 60;
-        if (force || Date.now() - lastSave > 5000) {
-          lastSave = Date.now();
-          store.addHistory(item, video.currentTime, duration, episode ? { episode: { season: episode.season, number: episode.number, title: episode.title, id: episode.id } } : {});
-        }
-      };
-      video.addEventListener("loadedmetadata", () => {
-        if (history?.progress > 5 && history.progress < (video.duration || Infinity) - 10) {
-          video.currentTime = history.progress;
-          toast(`Retomando de ${formatClock(history.progress)}.`, "info", "Continuar assistindo");
-        }
-      });
-      video.addEventListener("play", () => save(true));
-      video.addEventListener("pause", () => save(true));
-      video.addEventListener("timeupdate", () => save(false));
-      video.addEventListener("ended", () => {
-        const duration = Number.isFinite(video.duration) ? video.duration : 0;
-        store.addHistory(item, duration, duration, episode ? { episode: { season: episode.season, number: episode.number, title: episode.title, id: episode.id } } : {});
-        toast("Você concluiu este título. Bom filme!", "success", "Sessão concluída");
-      });
-      const started = video.play();
-      if (started && typeof started.catch === "function") started.catch(() => {});
-      cleanup = () => { try { video.pause(); save(true); video.removeAttribute("src"); video.load(); } catch { /* noop */ } };
-    },
-    onClose: () => {
-      if (cleanup) cleanup();
-      cleanup = null;
-      window.dispatchEvent(new CustomEvent("pk:history-changed"));
-    }
-  });
+  const id = options.episode?.id || item.id;
+  location.href = `player.html?id=${encodeURIComponent(id)}`;
 }
 
 export function playItem(id, options = {}) {
@@ -638,10 +472,10 @@ export function playItem(id, options = {}) {
 /* Share */
 export async function shareItem(item) {
   if (!item) return;
-  const url = new URL(location.href);
+  const url = new URL("detalhes.html", location.href);
   url.search = "";
   url.hash = "";
-  url.searchParams.set("filme", item.id);
+  url.searchParams.set("id", item.id);
   try {
     await navigator.clipboard.writeText(url.toString());
     toast("Link copiado para a área de transferência.", "success", "Compartilhar");
@@ -659,12 +493,12 @@ export async function shareItem(item) {
 }
 
 export function openDetailsFromUrl() {
+  const page = document.body.dataset.page;
+  if (page === "detalhes" || page === "player") return false;
   const params = new URLSearchParams(location.search);
   const id = params.get("filme") || params.get("id");
-  if (!id) return false;
-  const item = byId(id);
-  if (!item) return false;
-  setTimeout(() => openDetails(item), 80);
+  if (!id || !byId(id)) return false;
+  location.replace(`detalhes.html?id=${encodeURIComponent(id)}`);
   return true;
 }
 
@@ -678,8 +512,8 @@ function authErrorMessage(message = "") {
     [/password should be at least/i, "A senha precisa ter pelo menos 6 caracteres."],
     [/unable to validate email|invalid email/i, "E-mail inválido."],
     [/rate limit|too many requests/i, "Muitas tentativas. Aguarde um pouco."],
-    [/provider is not enabled/i, "Login com GitHub não está ativado no Supabase."],
-    [/supabase não configurado/i, "Supabase não configurado."],
+    [/provider is not enabled/i, "Login com GitHub indisponível no momento."],
+    [/supabase não configurado/i, "Recurso temporariamente indisponível."],
     [/network|fetch/i, "Falha de conexão. Verifique sua internet."]
   ];
   for (const [pattern, translation] of rules) {
@@ -695,7 +529,7 @@ function accountModal(user) {
     <div class="auth-head">
       <div class="brand-mark">${escapeHTML(CONFIG.brandShort)}</div>
       <h2>Sua conta</h2>
-      <p>${cloud ? "Sessão sincronizada pelo Supabase." : "Perfil local salvo neste navegador."}</p>
+      <p>${cloud ? "Sessão sincronizada na sua conta." : "Perfil salvo neste navegador."}</p>
     </div>
     <div class="auth-account">
       ${avatar(user, "md")}
@@ -705,7 +539,7 @@ function accountModal(user) {
     <form class="auth-body">
       ${cloud ? `<button class="btn btn-primary btn-block" data-password-change type="button"><i class="fa-solid fa-key"></i>Alterar senha</button>` : ""}
       <button class="btn btn-ghost btn-block" data-logout type="button"><i class="fa-solid fa-right-from-bracket"></i>Sair da conta</button>
-      <p class="auth-note">${cloud ? "Seus dados estão no seu projeto Supabase." : "Configure o Supabase para ativar contas reais e sincronização."}</p>
+      <p class="auth-note">${cloud ? "Seus dados ficam salvos na sua conta." : "Entre para sincronizar seu perfil e sua lista."}</p>
     </form>`;
   openModal(content, {
     className: "modal-sm",
@@ -911,19 +745,19 @@ export function openAuthModal() {
       <button class="btn btn-primary btn-block" id="auth-submit" type="submit"><i class="fa-solid fa-right-to-bracket"></i>Entrar</button>
       ${SUPABASE_CONFIG.githubOAuth ? `<button class="btn btn-ghost btn-block" id="auth-github" type="button"><i class="fa-brands fa-github"></i>Continuar com GitHub</button>` : ""}
       <button class="btn btn-link btn-block" id="auth-reset" type="button">Esqueci minha senha</button>
-      <p class="auth-note">Conta real via Supabase · seus dados ficam no seu projeto.</p>
+      <p class="auth-note">Conta sincronizada · seus dados ficam salvos.</p>
     </form>` : `
     <button class="modal-close" data-close-modal type="button" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
     <div class="auth-head">
       <div class="brand-mark">${escapeHTML(CONFIG.brandShort)}</div>
       <h2>Entrar no w00filmes</h2>
-      <p>Modo local enquanto o Supabase não está configurado.</p>
+      <p>Entre para salvar seu perfil e sua lista.</p>
     </div>
     <form class="auth-body" id="auth-form">
       <div class="field"><label for="auth-name">Nome de exibição</label><input class="input" id="auth-name" name="name" required maxlength="28" placeholder="Como podemos chamar você?"></div>
       <div class="field"><label for="auth-email">E-mail (opcional)</label><input class="input" id="auth-email" name="email" type="email" placeholder="voce@exemplo.com"></div>
       <button class="btn btn-primary btn-block" type="submit"><i class="fa-solid fa-right-to-bracket"></i>Entrar no modo local</button>
-      <p class="auth-note">Para ativar contas reais, preencha <code>js/supabase-config.js</code> com a URL e a anon key do seu projeto Supabase.</p>
+      <p class="auth-note">Crie sua conta para sincronizar seus dados entre dispositivos.</p>
     </form>`;
 
   openModal(content, {

@@ -84,7 +84,7 @@ export async function renderAmigos() {
       <div class="friends-hero">
         <div class="section-kicker"><i class="fa-solid fa-user-group"></i> Comunidade w00filmes</div>
         <h1>Assista com quem importa.</h1>
-        <p>Encontre pessoas, envie pedidos e combine uma sessão no w00 Party. Tudo sincronizado pelo Supabase.</p>
+        <p>Encontre pessoas, envie pedidos e combine uma sessão no w00 Party. Tudo sincronizado na sua conta.</p>
       </div>
 
       <div class="friends-layout">

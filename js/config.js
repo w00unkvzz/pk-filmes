@@ -32,7 +32,7 @@ export const CONFIG = {
     { name: "Fantasia", icon: "fa-dragon", colors: ["#2e1065", "#8b5cf6"] },
     { name: "Ficção", icon: "fa-rocket", colors: ["#020617", "#14b8a6"] },
     { name: "Mistério", icon: "fa-magnifying-glass", colors: ["#0f172a", "#64748b"] },
-    { name: "Romance", icon: "fa-heart", colors: ["#500724", "#ec4899"] },
+    { name: "Romance", icon: "fa-heart", colors: ["#4c1d95", "#a78bfa"] },
     { name: "Suspense", icon: "fa-eye", colors: ["#111827", "#7c3aed"] },
     { name: "Terror", icon: "fa-ghost", colors: ["#0a0a0a", "#991b1b"] },
     { name: "Tecnologia", icon: "fa-microchip", colors: ["#022c22", "#10b981"] }

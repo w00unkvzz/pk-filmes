@@ -10,6 +10,8 @@ import { renderPerfil } from "./pages/perfil.js";
 import { renderAmigos } from "./pages/amigos.js";
 import { renderPkparty } from "./pages/pkparty.js";
 import { renderCartaz } from "./pages/cartaz.js";
+import { renderDetalhes } from "./pages/detalhes.js";
+import { renderPlayer } from "./pages/player.js";
 
 const routes = {
   home: renderHome,
@@ -18,7 +20,9 @@ const routes = {
   perfil: renderPerfil,
   amigos: renderAmigos,
   pkparty: renderPkparty,
-  cartaz: renderCartaz
+  cartaz: renderCartaz,
+  detalhes: renderDetalhes,
+  player: renderPlayer
 };
 
 const page = document.body.dataset.page || "home";
@@ -33,6 +37,8 @@ function currentAuthKey() {
   return [user.authed ? 1 : 0, user.id || "", user.name || "", user.cloud ? 1 : 0].join("|");
 }
 function scheduleAuthRender() {
+  // Never restart an in-progress video because the session refreshed.
+  if (page === "player") return;
   const key = currentAuthKey();
   if (key === authRenderKey) return;
   clearTimeout(authRenderTimer);
@@ -46,7 +52,7 @@ async function renderCurrent() {
   resetRowObservers();
   const render = routes[page] || routes.home;
   await render();
-  renderFooter();
+  if (page !== "player") renderFooter();
   setupRowArrows();
 }
 

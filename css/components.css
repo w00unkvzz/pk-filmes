@@ -30,7 +30,7 @@
   background:
     radial-gradient(65% 95% at 78% 18%, rgba(255,255,255,.2), transparent 58%),
     radial-gradient(50% 80% at 20% 105%, rgba(0,0,0,.55), transparent 60%),
-    linear-gradient(90deg, rgba(5,5,7,.94) 0%, rgba(5,5,7,.72) 38%, rgba(5,5,7,.12) 72%, rgba(5,5,7,.35) 100%);
+    linear-gradient(90deg, rgba(5, 6, 15,.94) 0%, rgba(5, 6, 15,.72) 38%, rgba(5, 6, 15,.12) 72%, rgba(5, 6, 15,.35) 100%);
 }
 .hero::after {
   content: "";
@@ -115,7 +115,7 @@
 .card-grid.wide { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 24px 18px; }
 
 .title-card { position: relative; min-width: 0; }
-.title-card .poster-wrap { position: relative; border-radius: 12px; overflow: hidden; background: #15151e; aspect-ratio: 2 / 3; box-shadow: 0 10px 30px rgba(0,0,0,.28); }
+.title-card .poster-wrap { position: relative; border-radius: 12px; overflow: hidden; background: #121729; aspect-ratio: 2 / 3; box-shadow: 0 10px 30px rgba(0,0,0,.28); }
 .poster {
   position: absolute;
   inset: 0;
@@ -131,7 +131,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  background: #15151e;
+  background: #121729;
 }
 .poster.has-image::before,
 .poster.has-image .poster-ring { display: none; }
@@ -209,7 +209,7 @@
 .title-card:hover .poster-overlay, .title-card:focus-within .poster-overlay { opacity: 1; }
 .title-card:hover .poster { transform: scale(1.04); }
 .poster { transition: transform .35s var(--ease); }
-.card-play { width: 45px; height: 45px; border-radius: 50%; display: grid; place-items: center; background: #fff; color: #0a0a0f; font-size: 15px; box-shadow: 0 8px 24px rgba(0,0,0,.45); }
+.card-play { width: 45px; height: 45px; border-radius: 50%; display: grid; place-items: center; background: #fff; color: #080a16; font-size: 15px; box-shadow: 0 8px 24px rgba(0,0,0,.45); }
 .card-play:hover { transform: scale(1.06); }
 .card-quick { display: flex; gap: 7px; }
 .card-quick button { width: 31px; height: 31px; border-radius: 50%; display: grid; place-items: center; background: rgba(0,0,0,.72); border: 1px solid rgba(255,255,255,.28); color: #fff; font-size: 10px; }
@@ -277,7 +277,7 @@
   font-weight: 800;
   letter-spacing: -.02em;
   color: #fff;
-  background: linear-gradient(135deg, rgba(255, 79, 163, .96), rgba(126, 25, 82, .96));
+  background: linear-gradient(135deg, rgba(99, 102, 241, .96), rgba(67, 56, 202, .96));
   box-shadow: 0 6px 16px rgba(0,0,0,.45);
   pointer-events: none;
   user-select: none;
@@ -309,7 +309,7 @@
   overflow: auto;
   border: 1px solid var(--line);
   border-radius: 20px;
-  background: #0d0d13;
+  background: #0b0d19;
   box-shadow: 0 30px 120px rgba(0,0,0,.8);
   animation: popIn .24s var(--ease);
 }
@@ -318,7 +318,7 @@
 .modal-close { position: sticky; float: right; top: 12px; right: 12px; z-index: 5; margin: 12px 12px 0 0; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.2); color: #fff; font-size: 12px; backdrop-filter: blur(8px); }
 .modal-close:hover { background: rgba(255,255,255,.18); }
 .modal-head { position: relative; min-height: 280px; padding: 32px; display: flex; align-items: flex-end; background: linear-gradient(135deg, var(--c1, #1e1b4b), var(--c2, #6a5acd)); overflow: hidden; }
-.modal-head::before { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(5,5,7,.94) 0%, rgba(5,5,7,.64) 55%, rgba(5,5,7,.2)), radial-gradient(circle at 82% 20%, rgba(255,255,255,.2), transparent 35%); }
+.modal-head::before { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(5, 6, 15,.94) 0%, rgba(5, 6, 15,.64) 55%, rgba(5, 6, 15,.2)), radial-gradient(circle at 82% 20%, rgba(255,255,255,.2), transparent 35%); }
 .modal-head::after { content: ""; position: absolute; inset: 0; background-image: radial-gradient(rgba(255,255,255,.2) .6px, transparent .6px); background-size: 6px 6px; opacity: .14; }
 .modal-head-inner { position: relative; z-index: 2; display: flex; align-items: flex-end; gap: 24px; width: 100%; }
 .modal-poster { width: 150px; aspect-ratio: 2/3; border-radius: 12px; overflow: hidden; flex: 0 0 150px; position: relative; box-shadow: 0 18px 45px rgba(0,0,0,.5); border: 1px solid rgba(255,255,255,.15); }
@@ -337,13 +337,13 @@
 .episode-list { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
 .episode-item { display: flex; align-items: center; gap: 12px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255,255,255,.025); }
 .episode-item:hover { background: rgba(255,255,255,.055); border-color: var(--line-strong); }
-.episode-num { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; background: rgba(106,90,205,.18); color: #c4b5fd; font-size: 11px; font-weight: 800; flex: 0 0 30px; }
+.episode-num { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; background: rgba(99, 102, 241,.18); color: #c4b5fd; font-size: 11px; font-weight: 800; flex: 0 0 30px; }
 .episode-item strong { display: block; font-size: 12px; }
 .episode-item span { color: var(--muted-2); font-size: 10px; }
 .episode-play { margin-left: auto; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: #fff; color: #08080c; font-size: 9px; }
 
 /* Player */
-.player-modal { width: min(1180px, 100%); background: #050507; }
+.player-modal { width: min(1180px, 100%); background: #05060f; }
 .player-top { display: flex; align-items: center; gap: 14px; padding: 14px 18px; border-bottom: 1px solid var(--line); }
 .player-top h3 { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .player-top .meta { font-size: 10px; }
@@ -389,7 +389,7 @@
 .avatar.md { width: 46px; height: 46px; font-size: 13px; }
 .avatar.lg { width: 76px; height: 76px; font-size: 22px; }
 .avatar.xl { width: 112px; height: 112px; font-size: 32px; }
-.avatar.ring { box-shadow: 0 0 0 3px #0a0a0f, 0 0 0 4px var(--accent); }
+.avatar.ring { box-shadow: 0 0 0 3px #080a16, 0 0 0 4px var(--accent); }
 
 /* Utility layout */
 .split-main { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 24px; align-items: start; }

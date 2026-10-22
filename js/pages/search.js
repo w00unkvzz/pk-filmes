@@ -1,5 +1,5 @@
 // Search page: fuzzy matching, history, popular terms and discovery.
-import { CATALOG, POPULAR_SEARCHES, getGenreMeta } from "../data.js";
+import { catalogTitles, POPULAR_SEARCHES, getGenreMeta } from "../data.js";
 import { CONFIG } from "../config.js";
 import * as store from "../store.js";
 import { qs, escapeHTML, posterCard, emptyState, toast } from "../ui.js";
@@ -55,7 +55,7 @@ function score(term, item) {
 function search(term) {
   const q = normalize(term);
   if (!q) return [];
-  return CATALOG
+  return catalogTitles
     .map((item) => ({ item, score: score(term, item) }))
     .filter((entry) => entry.score > 0)
     .sort((a, b) => b.score - a.score || b.item.rating - a.item.rating)
@@ -76,7 +76,7 @@ function popularMarkup() {
   return `<section class="page-section tight">
     <div class="section-head"><div><div class="section-kicker"><i class="fa-solid fa-fire"></i> Em alta</div><h2>Buscas populares</h2></div></div>
     <div class="popular-grid">${POPULAR_SEARCHES.map((term, index) => {
-      const item = CATALOG.find((entry) => entry.title === term);
+      const item = catalogTitles.find((entry) => entry.title === term);
       return `<button class="popular-item" data-history-term="${escapeHTML(term)}" type="button"><span class="rank">${String(index + 1).padStart(2, "0")}</span><span><strong>${escapeHTML(term)}</strong><span>${item ? `${item.year} · ${item.genres[0]}` : "Catálogo"}</span></span></button>`;
     }).join("")}</div>
   </section>`;
@@ -90,7 +90,7 @@ function genresMarkup() {
 }
 
 function recommendMarkup() {
-  const recommended = [...CATALOG].sort((a, b) => b.rating - a.rating).slice(0, 12);
+  const recommended = [...catalogTitles].sort((a, b) => b.rating - a.rating).slice(0, 12);
   return `<section class="page-section tight">
     <div class="section-head"><div><div class="section-kicker"><i class="fa-solid fa-wand-magic-sparkles"></i> Para você</div><h2>Recomendados</h2></div><span class="badge badge-soft">Baseado no seu catálogo</span></div>
     <div class="card-grid">${recommended.map((item) => posterCard(item)).join("")}</div>
@@ -116,7 +116,7 @@ export function renderSearch() {
       ${historyMarkup()}
       ${POPULAR_SEARCHES.length ? popularMarkup() : ""}
       ${genresMarkup()}
-      ${CATALOG.length ? recommendMarkup() : ""}
+      ${catalogTitles.length ? recommendMarkup() : ""}
     </div>
 
     <section class="page-section" id="search-results-section" hidden>

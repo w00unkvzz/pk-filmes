@@ -4,12 +4,12 @@ import * as store from "./store.js";
 
 function client() {
   const sb = getClient();
-  if (!sb) throw new Error("Supabase não configurado.");
+  if (!sb) throw new Error("Recurso indisponível no momento.");
   return sb;
 }
 
 function throwIf(error) {
-  if (error) throw new Error(error.message || "Falha no Supabase.");
+  if (error) throw new Error(error.message || "Não foi possível concluir a ação.");
 }
 
 /* ---------------------------------------------------------------------------

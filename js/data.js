@@ -14,7 +14,7 @@ const GENRE_COLORS = {
   Fantasia: ["#2e1065", "#8b5cf6"],
   Ficção: ["#020617", "#14b8a6"],
   Mistério: ["#0f172a", "#64748b"],
-  Romance: ["#500724", "#ec4899"],
+  Romance: ["#4c1d95", "#a78bfa"],
   Suspense: ["#111827", "#7c3aed"],
   Terror: ["#0a0a0a", "#991b1b"],
   Tecnologia: ["#022c22", "#10b981"]
@@ -48,7 +48,9 @@ function normalizeCatalogItem(raw, index) {
       ? raw.genres
       : String(raw.generos || raw.genres || "").split(/[,/|]/);
   const genres = unique([category, ...extraGenres]).slice(0, 4);
-  const player = String(raw.player || raw.stream || raw.video || "").trim();
+  // Mixed content: the feed mostly serves http:// MP4s. Every CDN we checked
+  // answers on https too, so upgrading avoids the browser blocking playback.
+  const player = String(raw.player || raw.stream || raw.video || "").trim().replace(/^http:\/\//i, "https://");
   const type = raw.tipo === "serie" || raw.tipo === "series" || raw.type === "series" ? "series" : "movie";
   const id = String(raw.id || raw.slug || slugify(`${title}-${raw.ano || raw.year || ""}`)).trim();
   const escHTML = String(title).replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
@@ -66,6 +68,7 @@ function normalizeCatalogItem(raw, index) {
     cast: Array.isArray(raw.elenco) ? raw.elenco : Array.isArray(raw.cast) ? raw.cast : [],
     director: String(raw.direcao || raw.director || ""),
     poster: String(raw.capa || raw.poster || raw.cover || "").trim(),
+    backdrop: String(raw.backdrop || raw.backdrop_path || "").trim(),
     player,
     stream: player,
     trailer: String(raw.trailer || "").trim(),
@@ -81,7 +84,7 @@ function normalizeCatalogItem(raw, index) {
   };
 }
 
-const CACHE_KEY = "w00filmes.catalog_cache";
+const CACHE_KEY = "w00filmes.catalog_cache_v2";
 const CACHE_TTL = 60 * 60 * 1000; // 1 hour
 
 function readCache() {
@@ -156,8 +159,6 @@ export const UPCOMING = [];
 
 
 
-export const POPULAR_SEARCHES = CATALOG.slice(0, 8).map((item) => item.title);
-
 export const DEFAULT_USER = {
   id: "local-user",
   name: "Visitante",
@@ -168,21 +169,101 @@ export const DEFAULT_USER = {
   favoriteGenre: "Ficção"
 };
 
-const flaggedFeatured = CATALOG.filter((item) => item.featured);
-const flaggedTrending = CATALOG.filter((item) => item.trending);
-const flaggedTop10 = CATALOG.filter((item) => item.top10).slice(0, 10);
-export const featured = flaggedFeatured.length ? flaggedFeatured : CATALOG.slice(0, 6);
-export const trending = flaggedTrending.length ? flaggedTrending : CATALOG.slice(0, 10);
-export const top10 = flaggedTop10.length ? flaggedTop10 : [...CATALOG].sort((a, b) => b.rating - a.rating).slice(0, 10);
-export const newReleases = [...CATALOG].sort((a, b) => (b.year || 0) - (a.year || 0)).slice(0, 10);
+/* --------------------------------------------------------------------------
+   Series grouping
+   The feed ships episodes as flat rows ("Show - T3E8 - Episódio 8"). We group
+   them once so cards, catalog and details show one entry per show while the
+   player still receives the exact episode and its play link.
+   ----------------------------------------------------------------------- */
+function parseEpisodeTitle(title) {
+  const match = String(title).match(/\s*[-–]\s*T(\d+)\s*E(\d+)\b([\s\S]*)$/i);
+  if (!match) return null;
+  return {
+    base: String(title).slice(0, match.index).trim(),
+    season: Number(match[1]),
+    episode: Number(match[2]),
+    extra: String(match[3] || "").replace(/^\s*[-–]\s*/, "").trim()
+  };
+}
+
+const SERIES_GROUP_BY_ID = new Map();
+const SERIES_GROUP_LIST = [];
+
+for (const item of CATALOG) {
+  if (item.type !== "series") continue;
+  const parsed = parseEpisodeTitle(item.title);
+  const base = parsed?.base || item.title;
+  const key = base.toLowerCase();
+  let group = SERIES_GROUP_LIST.find((entry) => entry.key === key);
+  if (!group) {
+    group = { key, base, items: [] };
+    SERIES_GROUP_LIST.push(group);
+  }
+  group.items.push({
+    item,
+    season: parsed?.season ?? 1,
+    episode: parsed?.episode ?? group.items.length + 1,
+    name: parsed?.extra || item.title
+  });
+  SERIES_GROUP_BY_ID.set(item.id, group);
+}
+
+for (const group of SERIES_GROUP_LIST) {
+  group.items.sort((a, b) => a.season - b.season || a.episode - b.episode);
+  group.first = group.items[0];
+  const seasonNumbers = [...new Set(group.items.map((entry) => entry.season))].sort((a, b) => a - b);
+  group.seasons = seasonNumbers.map((number) => ({
+    number,
+    episodes: group.items.filter((entry) => entry.season === number)
+  }));
+  const baseItem = group.first.item;
+  const showTitle = group.base || baseItem.title;
+  const titleEsc = String(showTitle).replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+  group.show = {
+    ...baseItem,
+    id: baseItem.id,
+    title: showTitle,
+    titleEsc,
+    type: "series",
+    isShow: true,
+    groupKey: group.key,
+    episodeCount: group.items.length,
+    seasonCount: group.seasons.length,
+    seasonNumbers,
+    _hay: `${showTitle} ${group.items.map((entry) => entry.item.title).join(" ")} ${baseItem.genres.join(" ")} ${baseItem.synopsis}`.toLowerCase()
+  };
+}
+
 export const movies = CATALOG.filter((item) => item.type === "movie");
-export const series = CATALOG.filter((item) => item.type === "series");
-export const allGenres = [...new Set(CATALOG.flatMap((item) => item.genres))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+export const series = SERIES_GROUP_LIST.map((group) => group.show);
+export const seriesEpisodes = CATALOG.filter((item) => item.type === "series");
+export const catalogTitles = [...movies, ...series];
+export const allGenres = [...new Set(catalogTitles.flatMap((item) => item.genres))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+export function getSeriesGroup(value) {
+  const item = typeof value === "string" ? byId(value) : value;
+  return item ? SERIES_GROUP_BY_ID.get(item.id) || null : null;
+}
+
+export function getSeriesShow(value) {
+  return getSeriesGroup(value)?.show || null;
+}
+
+export const POPULAR_SEARCHES = catalogTitles.slice(0, 8).map((item) => item.title);
+
+const flaggedFeatured = movies.filter((item) => item.featured);
+const flaggedTrending = catalogTitles.filter((item) => item.trending);
+const flaggedTop10 = catalogTitles.filter((item) => item.top10);
+const byScore = (a, b) => (b.rating || 0) - (a.rating || 0) || (b.popularity || 0) - (a.popularity || 0);
+export const featured = flaggedFeatured.length >= 3 ? flaggedFeatured.slice(0, 6) : movies.slice(0, 6);
+export const trending = flaggedTrending.length >= 6 ? flaggedTrending.slice(0, 10) : [...catalogTitles].sort(byScore).slice(0, 10);
+export const top10 = flaggedTop10.length >= 10 ? flaggedTop10.slice(0, 10) : [...catalogTitles].sort(byScore).slice(0, 10);
+export const newReleases = [...catalogTitles].sort((a, b) => (b.year || 0) - (a.year || 0) || byScore(a, b)).slice(0, 10);
 
 export function getGenreMeta(name) {
   return CONFIG.genres.find((genre) => genre.name === name) || { name, icon: "fa-film", colors: ["#1e1b4b", "#6a5acd"] };
 }
 
 export function episodesFor(item) {
-  return item?.seasons?.[0]?.episodes || [];
+  return getSeriesGroup(item)?.items || [];
 }

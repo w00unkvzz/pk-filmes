@@ -68,7 +68,7 @@
 .sidebar-link:hover { background: rgba(255,255,255,.055); color: #fff; }
 .sidebar-link.active {
   color: #fff;
-  background: linear-gradient(90deg, rgba(106,90,205,.24), rgba(106,90,205,.06));
+  background: linear-gradient(90deg, rgba(99, 102, 241,.24), rgba(99, 102, 241,.06));
 }
 .sidebar-link.active::before {
   content: "";
@@ -107,7 +107,7 @@
   align-items: center;
   gap: 16px;
   padding: 0 clamp(18px, 3.2vw, 46px);
-  background: linear-gradient(to bottom, rgba(5,5,7,.94), rgba(5,5,7,.72), transparent);
+  background: linear-gradient(to bottom, rgba(5, 6, 15,.94), rgba(5, 6, 15,.72), transparent);
   backdrop-filter: blur(16px);
 }
 .topbar-search { position: relative; flex: 1 1 440px; max-width: 520px; }
@@ -125,7 +125,7 @@
   transition: border-color .18s, background .18s, box-shadow .18s;
 }
 .topbar-search input::placeholder { color: var(--muted-2); }
-.topbar-search input:focus { border-color: rgba(139,124,246,.5); background: rgba(255,255,255,.08); box-shadow: 0 0 0 3px rgba(106,90,205,.12); }
+.topbar-search input:focus { border-color: rgba(139,124,246,.5); background: rgba(255,255,255,.08); box-shadow: 0 0 0 3px rgba(99, 102, 241,.12); }
 .topbar-spacer { flex: 1; }
 .topbar-actions { display: flex; align-items: center; gap: 9px; flex-shrink: 0; }
 .topbar-icon { position: relative; width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; color: #c3c3d2; background: rgba(255,255,255,.045); border: 1px solid transparent; transition: all .18s; }
@@ -197,7 +197,7 @@
   .sidebar .sidebar-label, .sidebar .brand-text, .sidebar .sidebar-user div, .sidebar .sidebar-badge { opacity: 1; transform: none; }
   .sidebar .nav-section-label { opacity: 1; }
   .page-shell { margin-left: 0; }
-  .topbar { padding: 0 14px; gap: 10px; background: rgba(5,5,7,.92); border-bottom: 1px solid rgba(255,255,255,.05); }
+  .topbar { padding: 0 14px; gap: 10px; background: rgba(5, 6, 15,.92); border-bottom: 1px solid rgba(255,255,255,.05); }
   .topbar-search { display: none; }
   .topbar-spacer { display: none; }
   .topbar-actions { margin-left: auto; }

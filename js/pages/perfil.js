@@ -66,7 +66,7 @@ export async function renderPerfil() {
         <input type="file" id="avatar-file" class="hidden" accept="image/png,image/jpeg,image/webp,image/gif">
       </div>
       <div class="profile-identity">
-        <div class="row wrap" style="gap:9px"><h1>${escapeHTML(user.name)}</h1>${user.cloud ? '<span class="badge badge-live"><i class="fa-solid fa-cloud"></i>supabase</span>' : '<span class="badge badge-soft">local</span>'}</div>
+        <div class="row wrap" style="gap:9px"><h1>${escapeHTML(user.name)}</h1>${user.cloud ? '<span class="badge badge-live"><i class="fa-solid fa-cloud"></i>sincronizado</span>' : '<span class="badge badge-soft">local</span>'}</div>
         <div class="meta"><span>${escapeHTML(user.email || "sem e-mail")}</span><span class="dot"></span><span>Desde ${formatDate(user.joined)}</span><span class="dot"></span><span>${escapeHTML(user.bio)}</span></div>
       </div>
       <div class="profile-actions">
@@ -114,7 +114,7 @@ export async function renderPerfil() {
         <div class="profile-panel">
           <div class="panel-head"><h3>Conta</h3><i class="fa-solid fa-shield-halved muted"></i></div>
           <div class="panel-body" style="display:flex;flex-direction:column;gap:12px">
-            <div class="row-between tiny"><span class="muted">Login</span><strong>${user.cloud ? "Supabase" : "Local"}</strong></div>
+            <div class="row-between tiny"><span class="muted">Login</span><strong>${user.cloud ? "Conta" : "Local"}</strong></div>
             <div class="row-between tiny"><span class="muted">Foto</span><strong>${user.avatar_url ? "Personalizada" : "Iniciais"}</strong></div>
             <button class="btn btn-ghost btn-sm" id="change-avatar" type="button"><i class="fa-solid fa-image"></i>Foto ou GIF</button>
             ${user.authed ? `<button class="btn btn-danger btn-sm" id="profile-logout" type="button"><i class="fa-solid fa-right-from-bracket"></i>Sair da conta</button>` : ""}
@@ -131,7 +131,7 @@ export async function renderPerfil() {
 
         <div class="panel panel-pad">
           <div class="section-kicker"><i class="fa-solid fa-cloud"></i> Conta w00filmes</div>
-          <p class="tiny" style="margin-top:7px">Perfil, foto, amigos e salas são salvos no Supabase. Lista e histórico continuam neste navegador por enquanto.</p>
+          <p class="tiny" style="margin-top:7px">Perfil, foto, amigos e salas ficam salvos na sua conta. Lista e histórico continuam neste navegador.</p>
         </div>
       </aside>
     </div>`;
@@ -195,7 +195,7 @@ function openEditProfile() {
   if (!user.authed) { toast("Entre na sua conta para editar o perfil.", "info"); return; }
   const content = `
     <button class="modal-close" data-close-modal type="button" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
-    <div class="auth-head"><div class="brand-mark">w00</div><h2>Editar perfil</h2><p>Seus dados ficam sincronizados no Supabase.</p></div>
+    <div class="auth-head"><div class="brand-mark">w00</div><h2>Editar perfil</h2><p>Seus dados ficam sincronizados na sua conta.</p></div>
     <form class="auth-body" id="edit-profile-form">
       <div class="field"><label for="edit-name">Nome</label><input class="input" id="edit-name" name="name" required maxlength="40" value="${escapeHTML(user.name)}"></div>
       <div class="field"><label for="edit-email">E-mail</label><input class="input" id="edit-email" type="email" value="${escapeHTML(user.email)}" disabled></div>
