@@ -312,18 +312,38 @@ const _rowObserver = typeof IntersectionObserver !== "undefined"
       entries.forEach((entry) => {
         if (!entry.isIntersecting) return;
         const row = entry.target;
-        const pending = row.__pendingCards;
-        if (!pending?.length) return;
+        const items = row.__lazyItems;
+        if (!items?.length) return;
         _rowObserver.unobserve(row);
-        pending.forEach((html) => {
-          const wrap = document.createElement("div");
-          wrap.innerHTML = html;
-          while (wrap.firstChild) row.appendChild(wrap.firstChild);
-        });
-        delete row.__pendingCards;
+        const options = row.__rowOptions || {};
+        delete row.__lazyItems;
+        delete row.__rowOptions;
+        injectCards(row, items, options);
       });
     }, { rootMargin: "200px" })
   : null;
+
+// Injects cards in small batches so a row with many titles never blocks the
+// main thread. Building all card HTML up-front was the cause of the freezes.
+function injectCards(row, items, options) {
+  const BATCH = 8;
+  function step(start) {
+    if (!row.isConnected) return;
+    const slice = items.slice(start, start + BATCH);
+    const frag = document.createDocumentFragment();
+    slice.forEach((item) => {
+      const wrap = document.createElement("div");
+      const opts = options.progressMap
+        ? { progress: options.progressMap[item.id] || 0, remove: options.remove }
+        : options;
+      wrap.innerHTML = posterCard(item, opts);
+      while (wrap.firstChild) frag.appendChild(wrap.firstChild);
+    });
+    row.appendChild(frag);
+    if (start + BATCH < items.length) requestAnimationFrame(() => step(start + BATCH));
+  }
+  step(0);
+}
 
 // Evita que linhas antigas continuem observadas após um re-render
 // (o observer guardaria referência ao DOM removido, acumulando memória).
@@ -335,9 +355,14 @@ export function mediaRow(title, items, options = {}) {
   if (!items.length) return "";
   const rowId = options.id || `row-${Math.random().toString(36).slice(2)}`;
   const progressMap = options.progressMap || {};
-  const EAGER = 12; // cards rendered immediately
-  const eager = items.slice(0, EAGER);
-  const lazy = items.slice(EAGER);
+  // Never dump a huge array into the DOM. The original site requests ~20
+  // titles per row; "Ver tudo" leads to the full catalog.  This is what
+  // prevents the "Séries em destaque" row (1.5k items) from freezing mobile.
+  const MAX_ITEMS = Math.max(1, options.limit ?? 20);
+  const pool = items.length > MAX_ITEMS ? items.slice(0, MAX_ITEMS) : items;
+  const EAGER = Math.min(12, pool.length); // cards rendered immediately
+  const eager = pool.slice(0, EAGER);
+  const lazy = pool.slice(EAGER);
   const html = `<section class="page-section ${options.tight ? "tight" : ""}">
     <div class="section-head">
       <div>${options.kicker ? `<div class="section-kicker">${options.kicker}</div>` : ""}<h2>${title}</h2></div>
@@ -352,13 +377,13 @@ export function mediaRow(title, items, options = {}) {
     </div>
   </section>`;
   if (lazy.length && _rowObserver) {
-    // Schedule lazy injection after this section is in the DOM.
+    // Store references only. HTML is built when the row approaches the
+    // viewport, so offscreen rows cost almost nothing.
     requestAnimationFrame(() => {
       const rowEl = document.getElementById(rowId);
       if (!rowEl) return;
-      rowEl.__pendingCards = lazy.map((item) =>
-        posterCard(item, { progress: progressMap[item.id] || 0, remove: options.remove })
-      );
+      rowEl.__lazyItems = lazy;
+      rowEl.__rowOptions = { progressMap, remove: options.remove };
       _rowObserver.observe(rowEl);
     });
   }

@@ -10,7 +10,8 @@ const state = {
   year: "",
   sort: "popular",
   query: "",
-  visible: PAGE_SIZE
+  visible: PAGE_SIZE,
+  rendered: 0
 };
 
 function readParams() {
@@ -100,9 +101,9 @@ export function renderCatalogo() {
   setupRowArrows();
 }
 
-function updateResults() {
+function updateResults(reset = true) {
   const list = filtered();
-  const visible = list.slice(0, state.visible);
+  const total = Math.min(state.visible, list.length);
   const grid = qs("#catalog-grid");
   const count = qs("#result-count");
   const active = qs("#active-filters");
@@ -110,7 +111,18 @@ function updateResults() {
   if (!grid) return;
   count.textContent = `${list.length} título${list.length === 1 ? "" : "s"} encontrado${list.length === 1 ? "" : "s"}`;
   active.innerHTML = activeFilters();
-  grid.innerHTML = visible.length ? visible.map((item) => posterCard(item)).join("") : emptyState("fa-film", "Nenhum título encontrado", "Ajuste os filtros ou limpe a busca para ver o catálogo completo.");
+  if (reset) {
+    grid.innerHTML = list.length
+      ? list.slice(0, total).map((item) => posterCard(item)).join("")
+      : emptyState("fa-film", "Nenhum título encontrado", "Ajuste os filtros ou limpe a busca para ver o catálogo completo.");
+    state.rendered = total;
+  } else {
+    // Append only the new page; recreating every card on each click is what
+    // made the catalog page heavier and heavier.
+    const next = list.slice(state.rendered, total);
+    if (next.length) grid.insertAdjacentHTML("beforeend", next.map((item) => posterCard(item)).join(""));
+    state.rendered = total;
+  }
   more.style.display = list.length > state.visible ? "inline-flex" : "none";
   updateUrl();
 }
@@ -171,6 +183,6 @@ function mountCatalogo() {
 
   qs("#load-more")?.addEventListener("click", () => {
     state.visible += PAGE_SIZE;
-    updateResults();
+    updateResults(false);
   });
 }

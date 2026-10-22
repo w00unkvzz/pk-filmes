@@ -25,6 +25,25 @@ const routes = {
 
 const page = document.body.dataset.page || "home";
 
+// Supabase fires several auth events on boot (INITIAL_SESSION, SIGNED_IN,
+// TOKEN_REFRESHED). Re-rendering the whole page for each one rebuilt every
+// card row and was a big source of jank. Coalesce them and skip no-op changes.
+let authRenderTimer = null;
+let authRenderKey = null;
+function currentAuthKey() {
+  const user = store.getUser();
+  return [user.authed ? 1 : 0, user.id || "", user.name || "", user.cloud ? 1 : 0].join("|");
+}
+function scheduleAuthRender() {
+  const key = currentAuthKey();
+  if (key === authRenderKey) return;
+  clearTimeout(authRenderTimer);
+  authRenderTimer = setTimeout(() => {
+    authRenderKey = key;
+    renderCurrent();
+  }, 80);
+}
+
 async function renderCurrent() {
   resetRowObservers();
   const render = routes[page] || routes.home;
@@ -37,6 +56,7 @@ async function boot() {
   renderShell();
   bindGlobalEvents();
   await renderCurrent();
+  authRenderKey = currentAuthKey();
   // Sessão do Supabase em background — não bloqueia a pintura inicial.
   initAuth().catch((error) => console.warn("[auth] não restaurado:", error.message));
   openDetailsFromUrl();
@@ -51,7 +71,7 @@ async function boot() {
 
   window.addEventListener("pk:auth-changed", () => {
     refreshShell();
-    renderCurrent();
+    scheduleAuthRender();
   });
 
   window.addEventListener("pk:social-changed", () => {

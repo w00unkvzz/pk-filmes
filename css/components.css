@@ -191,7 +191,7 @@
 }
 .poster-title.small { font-size: .9rem; }
 .poster-topline { position: absolute; z-index: 2; top: 10px; left: 10px; right: 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.poster-grade { display: grid; place-items: center; min-width: 27px; height: 22px; padding: 0 6px; border-radius: 5px; background: rgba(0,0,0,.58); border: 1px solid rgba(255,255,255,.16); color: #fff; font-size: 9px; font-weight: 800; backdrop-filter: blur(6px); }
+.poster-grade { display: grid; place-items: center; min-width: 27px; height: 22px; padding: 0 6px; border-radius: 5px; background: rgba(0,0,0,.72); border: 1px solid rgba(255,255,255,.16); color: #fff; font-size: 9px; font-weight: 800; }
 .poster-type { color: rgba(255,255,255,.72); font-size: 8px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; text-shadow: 0 1px 8px rgba(0,0,0,.7); }
 .poster-overlay {
   position: absolute;
@@ -212,7 +212,7 @@
 .card-play { width: 45px; height: 45px; border-radius: 50%; display: grid; place-items: center; background: #fff; color: #0a0a0f; font-size: 15px; box-shadow: 0 8px 24px rgba(0,0,0,.45); }
 .card-play:hover { transform: scale(1.06); }
 .card-quick { display: flex; gap: 7px; }
-.card-quick button { width: 31px; height: 31px; border-radius: 50%; display: grid; place-items: center; background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.28); color: #fff; font-size: 10px; backdrop-filter: blur(8px); }
+.card-quick button { width: 31px; height: 31px; border-radius: 50%; display: grid; place-items: center; background: rgba(0,0,0,.72); border: 1px solid rgba(255,255,255,.28); color: #fff; font-size: 10px; }
 .card-quick button:hover { background: rgba(255,255,255,.2); }
 .card-info { padding: 10px 2px 0; }
 .card-title { display: block; font-size: 12.5px; font-weight: 700; color: #f2f2f8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -221,7 +221,7 @@
 .card-meta .star { color: var(--gold); }
 .card-progress { height: 3px; border-radius: 4px; background: rgba(255,255,255,.12); margin: 8px 2px 0; overflow: hidden; }
 .card-progress span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--accent-bright), var(--pink)); }
-.card-remove { position: absolute; z-index: 5; top: 8px; right: 8px; width: 25px; height: 25px; border-radius: 50%; display: grid; place-items: center; background: rgba(0,0,0,.6); color: rgba(255,255,255,.8); font-size: 9px; opacity: 0; transition: opacity .18s; backdrop-filter: blur(6px); }
+.card-remove { position: absolute; z-index: 5; top: 8px; right: 8px; width: 25px; height: 25px; border-radius: 50%; display: grid; place-items: center; background: rgba(0,0,0,.72); color: rgba(255,255,255,.8); font-size: 9px; opacity: 0; transition: opacity .18s; }
 .title-card:hover .card-remove { opacity: 1; }
 .card-remove:hover { background: var(--red); color: #1b0206; }
 

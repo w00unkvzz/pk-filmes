@@ -95,8 +95,8 @@ export function renderHome() {
 
     ${mediaRow("Em alta esta semana", trending.slice(0, 12), { id: "trending-row", kicker: "O que todo mundo está vendo" })}
     ${top10Row(top10)}
-    ${mediaRow("Filmes para a sua noite", movies.slice(0, 12), { id: "movies-row", kicker: "Sessão da casa" })}
-    ${mediaRow("Séries em destaque", series, { id: "series-row", kicker: "Histórias em episódios" })}
+    ${mediaRow("Filmes para a sua noite", movies, { id: "movies-row", kicker: "Sessão da casa", href: "catalogo.html?tipo=movie" })}
+    ${mediaRow("Séries em destaque", series, { id: "series-row", kicker: "Histórias em episódios", href: "catalogo.html?tipo=series" })}
     ${mediaRow("Novidades no catálogo", newReleases, { id: "new-row", kicker: "Acabou de chegar" })}
     ${mediaRow("Família & animação", family, { id: "family-row", kicker: "Para assistir junto" })}
 
