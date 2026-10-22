@@ -325,6 +325,12 @@ const _rowObserver = typeof IntersectionObserver !== "undefined"
     }, { rootMargin: "200px" })
   : null;
 
+// Evita que linhas antigas continuem observadas após um re-render
+// (o observer guardaria referência ao DOM removido, acumulando memória).
+export function resetRowObservers() {
+  _rowObserver?.disconnect();
+}
+
 export function mediaRow(title, items, options = {}) {
   if (!items.length) return "";
   const rowId = options.id || `row-${Math.random().toString(36).slice(2)}`;

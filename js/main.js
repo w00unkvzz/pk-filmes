@@ -1,5 +1,5 @@
 // Application entry: shell, route selection and cross-page events.
-import { renderShell, renderFooter, bindGlobalEvents, refreshShell, setupRowArrows, openDetailsFromUrl, openPasswordModal } from "./ui.js";
+import { renderShell, renderFooter, bindGlobalEvents, refreshShell, setupRowArrows, openDetailsFromUrl, openPasswordModal, resetRowObservers } from "./ui.js";
 import { CONFIG } from "./config.js";
 import * as store from "./store.js";
 import { initAuth } from "./auth.js";
@@ -26,6 +26,7 @@ const routes = {
 const page = document.body.dataset.page || "home";
 
 async function renderCurrent() {
+  resetRowObservers();
   const render = routes[page] || routes.home;
   await render();
   renderFooter();
