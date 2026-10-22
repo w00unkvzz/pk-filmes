@@ -571,7 +571,19 @@ select option { background: #1b0c15; color: #fff; }
   .hero-content { width: 100%; padding: 50px 22px 78px; }
   .hero-title { font-size: clamp(2.3rem, 11vw, 3.6rem); }
   .hero-art { width: 68vw; right: -24vw; }
-  .page-section { padding: 27px 16px 0; }
+  .page-section { padding: 20px 16px 0; }
+  .section-head { margin-bottom: 12px; }
+  .section-head h2 { font-size: 1rem; gap: 8px; }
+  .section-link { font-size: 10px; }
+  .media-row, .top10-row { gap: 10px; }
+  .media-row > .title-card,
+  .top10-card { flex: 0 0 clamp(104px, 30vw, 140px); }
+  .card-info { padding-top: 8px; }
+  .card-title { font-size: 11px; }
+  .card-meta { font-size: 9px; gap: 5px; }
+  .poster-title { font-size: .82rem; left: 9px; right: 9px; bottom: 9px; }
+  .poster-topline { top: 7px; left: 7px; right: 7px; }
+  .top10-num { min-width: 24px; height: 24px; padding: 0 7px; font-size: 12px; border-radius: 7px; top: 7px; left: 7px; }
   .party-hero { margin: 12px 12px 0; border-radius: 22px; }
   .friends-hero { padding: 28px 16px 6px; }
   .friends-layout { padding: 14px 16px 0; gap: 14px; }

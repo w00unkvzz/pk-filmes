@@ -358,7 +358,7 @@ export function mediaRow(title, items, options = {}) {
 export function top10Row(items) {
   return `<section class="page-section">
     <div class="section-head">
-      <div><div class="section-kicker"><i class="fa-solid fa-fire"></i> Ranking semanal</div><h2>Top 10 da semana</h2></div>
+      <h2>Top 10 da semana</h2>
       <a class="section-link" href="catalogo.html?ordenar=popular">Ver catálogo <i class="fa-solid fa-arrow-right"></i></a>
     </div>
     <div class="media-row-wrap">

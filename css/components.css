@@ -254,13 +254,34 @@
 .row-arrow[disabled] { opacity: 0; pointer-events: none; }
 
 /* Top 10 */
-.top10-row { display: flex; gap: 18px; overflow-x: auto; padding: 4px 2px 12px; scrollbar-width: none; }
+.top10-row { display: flex; gap: 14px; overflow-x: auto; padding: 4px 2px 12px; scrollbar-width: none; }
 .top10-row::-webkit-scrollbar { display: none; }
-.top10-card { position: relative; flex: 0 0 260px; display: flex; align-items: flex-end; gap: 0; }
-.top10-num { flex: 0 0 76px; font-family: "Space Grotesk", sans-serif; font-size: 118px; line-height: .72; font-weight: 700; letter-spacing: -.1em; color: transparent; -webkit-text-stroke: 2px rgba(255,255,255,.28); transform: translateX(9px); text-align: center; user-select: none; }
-.top10-card .title-card { flex: 1; min-width: 0; }
+.top10-card { position: relative; flex: 0 0 172px; }
+.top10-card .title-card { display: block; width: 100%; min-width: 0; }
 .top10-card .poster-wrap { aspect-ratio: 2/3; }
 .top10-card .title-card .card-info { display: none; }
+.top10-card .poster-topline { display: none; }
+.top10-num {
+  position: absolute;
+  z-index: 4;
+  top: 9px;
+  left: 9px;
+  display: grid;
+  place-items: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 8px;
+  border-radius: 9px;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+  color: #fff;
+  background: linear-gradient(135deg, rgba(255, 79, 163, .96), rgba(126, 25, 82, .96));
+  box-shadow: 0 6px 16px rgba(0,0,0,.45);
+  pointer-events: none;
+  user-select: none;
+}
 
 /* Genre pills */
 .genre-strip { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 4px; scrollbar-width: none; }
@@ -397,14 +418,23 @@
   .hero-desc { -webkit-line-clamp: 3; font-size: .82rem; }
   .hero-dots { left: 22px; bottom: 22px; }
   .hero-side-note { display: none; }
-  .section-head { align-items: center; }
-  .page-section { padding-top: 23px; }
-  .media-row > .title-card { flex-basis: 142px; }
+  .section-head { align-items: center; margin-bottom: 12px; }
+  .section-head h2 { font-size: 1rem; gap: 8px; }
+  .section-link { font-size: 10px; }
+  .page-section { padding-top: 20px; }
+  .media-row { gap: 10px; }
+  .media-row > .title-card { flex: 0 0 clamp(104px, 30vw, 140px); }
+  .card-info { padding-top: 8px; }
+  .card-title { font-size: 11px; }
+  .card-meta { font-size: 9px; gap: 5px; }
+  .poster-title { font-size: .82rem; left: 9px; right: 9px; bottom: 9px; }
+  .poster-topline { top: 7px; left: 7px; right: 7px; }
   .card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 15px 11px; }
   .card-grid.wide { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 12px; }
   .row-arrow { display: none; }
-  .top10-card { flex-basis: 220px; }
-  .top10-num { font-size: 94px; flex-basis: 60px; }
+  .top10-row { gap: 10px; }
+  .top10-card { flex: 0 0 clamp(104px, 30vw, 140px); }
+  .top10-num { min-width: 24px; height: 24px; padding: 0 7px; font-size: 12px; border-radius: 7px; top: 7px; left: 7px; }
   .modal-backdrop { padding: 0; align-items: flex-end; }
   .modal { max-height: 92vh; border-radius: 18px 18px 0 0; }
   .modal-head { padding: 22px; min-height: 250px; }

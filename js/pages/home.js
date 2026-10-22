@@ -79,7 +79,6 @@ export function renderHome() {
 
     ${historyItems.length ? mediaRow("Continuar assistindo", historyItems.map(({ item }) => item), {
       id: "continue-row",
-      kicker: "Retome de onde parou",
       href: "perfil.html#historico",
       progressMap,
       remove: true
@@ -87,24 +86,23 @@ export function renderHome() {
 
     <section class="page-section tight">
       <div class="section-head">
-        <div><div class="section-kicker"><i class="fa-solid fa-compass"></i> Navegue por humor</div><h2>Explorar por gênero</h2></div>
+        <h2>Explorar por gênero</h2>
         <a class="section-link" href="catalogo.html">Ver catálogo <i class="fa-solid fa-arrow-right"></i></a>
       </div>
       ${genreStrip(CONFIG.genres.map((genre) => genre.name))}
     </section>
 
-    ${mediaRow("Em alta esta semana", trending.slice(0, 12), { id: "trending-row", kicker: "O que todo mundo está vendo" })}
+    ${mediaRow("Filmes Populares", trending, { id: "trending-row" })}
     ${top10Row(top10)}
-    ${mediaRow("Filmes para a sua noite", movies, { id: "movies-row", kicker: "Sessão da casa", href: "catalogo.html?tipo=movie" })}
-    ${mediaRow("Séries em destaque", series, { id: "series-row", kicker: "Histórias em episódios", href: "catalogo.html?tipo=series" })}
-    ${mediaRow("Novidades no catálogo", newReleases, { id: "new-row", kicker: "Acabou de chegar" })}
-    ${mediaRow("Família & animação", family, { id: "family-row", kicker: "Para assistir junto" })}
+    ${mediaRow("Filmes para a sua noite", movies, { id: "movies-row", href: "catalogo.html?tipo=movie" })}
+    ${mediaRow("Séries em destaque", series, { id: "series-row", href: "catalogo.html?tipo=series" })}
+    ${mediaRow("Novidades no catálogo", newReleases, { id: "new-row" })}
+    ${mediaRow("Família & animação", family, { id: "family-row" })}
 
     <section class="page-section">
       <div class="party-hero" style="margin:0">
         <div class="party-hero-inner">
           <div>
-            <div class="section-kicker"><i class="fa-solid fa-tower-broadcast"></i> w00 Party</div>
             <h2 style="font-size:clamp(1.5rem,3vw,2.4rem)">Assistir junto ficou mais fácil.</h2>
             <p>Crie uma sala, escolha um título e converse com seus amigos em tempo real — sincronizado pelo Supabase.</p>
             <div class="row"><a class="btn btn-primary" href="pkparty.html"><i class="fa-solid fa-plus"></i>Criar sala</a><a class="btn btn-ghost" href="pkparty.html"><i class="fa-solid fa-right-to-bracket"></i>Entrar com código</a></div>
