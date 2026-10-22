@@ -132,7 +132,6 @@ async function loadRemoteCatalog() {
   }
 }
 
-const CACHE_TTL = 60 * 60 * 1000;
 
 const remoteCatalog = await loadRemoteCatalog();
 // If catalog.json cannot be loaded, the site stays empty rather than showing
