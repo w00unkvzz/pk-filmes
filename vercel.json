@@ -36,63 +36,63 @@
   "rewrites": [
     {
       "source": "/filme/:slug",
-      "destination": "/index.html"
+      "destination": "/"
     },
     {
       "source": "/serie/:slug",
-      "destination": "/index.html"
+      "destination": "/"
     },
     {
       "source": "/assistir/:slug",
-      "destination": "/index.html"
+      "destination": "/"
     },
     {
       "source": "/sala/:code",
-      "destination": "/index.html"
+      "destination": "/"
     },
     {
       "source": "/catalogo",
-      "destination": "/index.html"
+      "destination": "/"
     },
     {
       "source": "/buscar",
-      "destination": "/index.html"
+      "destination": "/"
     },
     {
       "source": "/perfil",
-      "destination": "/index.html"
+      "destination": "/"
     },
     {
       "source": "/amigos",
-      "destination": "/index.html"
+      "destination": "/"
     },
     {
       "source": "/party",
-      "destination": "/index.html"
+      "destination": "/"
     },
     {
       "source": "/em-breve",
-      "destination": "/index.html"
+      "destination": "/"
     },
     {
       "source": "/cartaz",
-      "destination": "/index.html"
+      "destination": "/"
     },
     {
       "source": "/inicio",
-      "destination": "/index.html"
+      "destination": "/"
     },
     {
       "source": "/w00-party",
-      "destination": "/index.html"
+      "destination": "/"
     },
     {
       "source": "/detalhes/:slug",
-      "destination": "/index.html"
+      "destination": "/"
     },
     {
       "source": "/player/:slug",
-      "destination": "/index.html"
+      "destination": "/"
     }
   ]
 }
