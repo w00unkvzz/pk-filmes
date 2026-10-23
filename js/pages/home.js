@@ -1,8 +1,7 @@
-// Home page: hero carousel, continue watching, curated rows and genres.
-import { CONFIG } from "../config.js";
+// Home page: hero carousel, continue watching and curated rows.
 import { CATALOG, catalogTitles, featured, trending, top10, movies, series, newReleases } from "../data.js";
 import * as store from "../store.js";
-import { mediaRow, top10Row, genreStrip, qs, escapeHTML, formatDuration, toast, emptyState } from "../ui.js";
+import { mediaRow, top10Row, qs, escapeHTML, formatDuration, toast, emptyState } from "../ui.js";
 import { openTrailerModal } from "../trailer.js";
 
 let heroTimer = null;
@@ -34,16 +33,16 @@ function heroMarkup(item) {
     </div>
     <div class="hero-overlay" aria-hidden="true"></div>
     <div class="hero-content">
-      <div class="hero-brand"><span class="hero-brand-mark">PK</span><span>original</span></div>
+      <div class="hero-brand"><span class="hero-brand-mark">W00</span><span>original</span></div>
       <h1 class="hero-title">${escapeHTML(item.title)}</h1>
       <div class="meta hero-meta">${heroMeta(item)}</div>
       <p class="hero-desc">${escapeHTML(item.synopsis)}</p>
       <div class="hero-actions">
         <button class="hero-btn hero-btn-play" data-play="${escapeHTML(item.id)}" type="button">
-          <span class="hero-btn-icon"><i class="fa-solid fa-play"></i></span><span>Assistir Agora</span>
+          <i class="fa-solid fa-play"></i><span>Assistir Agora</span>
         </button>
         <button class="hero-btn hero-btn-trailer" data-trailer="${escapeHTML(item.id)}" type="button">
-          <span class="hero-btn-icon"><i class="fa-solid fa-film"></i></span><span>Trailer</span>
+          <i class="fa-solid fa-video"></i><span>Trailer</span>
         </button>
       </div>
     </div>`;
@@ -86,14 +85,6 @@ export function renderHome() {
       progressMap,
       remove: true
     }) : ""}
-
-    <section class="page-section tight">
-      <div class="section-head">
-        <h2>Explorar por gênero</h2>
-        <a class="section-link" href="catalogo.html">Ver catálogo <i class="fa-solid fa-arrow-right"></i></a>
-      </div>
-      ${genreStrip(CONFIG.genres.map((genre) => genre.name))}
-    </section>
 
     ${mediaRow("Filmes Populares", trending, { id: "trending-row" })}
     ${top10Row(top10)}

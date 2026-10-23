@@ -52,7 +52,7 @@ async function renderCurrent() {
   resetRowObservers();
   const render = routes[page] || routes.home;
   await render();
-  if (page !== "player") renderFooter();
+  if (page !== "player" && page !== "perfil") renderFooter();
   setupRowArrows();
 }
 

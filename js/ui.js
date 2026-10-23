@@ -241,7 +241,7 @@ export function closeModal() {
 }
 
 /* Cards and rows */
-function posterImage(item) {
+export function posterImage(item) {
   if (!item?.poster) return "";
   // Cards are ~172px wide (2x DPR ≈ 344px), so w342 is enough. Using the
   // w500 original wasted bandwidth/memory and made fast scrolling heavier.

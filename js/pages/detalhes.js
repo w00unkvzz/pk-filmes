@@ -149,16 +149,14 @@ export function renderDetalhes() {
 
   content.innerHTML = `
     <section class="details-page" id="details-page" style="--c1:${show.colors?.[0] || "#172554"};--c2:${show.colors?.[1] || "#6366f1"}">
-      <div class="details-bg" aria-hidden="true">
-        ${initialBackdrop ? `<img id="details-bg-img" src="${escapeHTML(initialBackdrop)}" alt="" fetchpriority="high" decoding="async" referrerpolicy="no-referrer">` : ""}
-      </div>
+      <div class="details-bg" id="details-bg" aria-hidden="true"${initialBackdrop ? ` style="background-image:url(${escapeHTML(initialBackdrop)})"` : ""}></div>
       <div class="details-veil" aria-hidden="true"></div>
 
       <div class="details-inner">
         <a class="details-back" href="index.html"><i class="fa-solid fa-arrow-left"></i><span>Voltar</span></a>
 
         <header class="details-hero">
-          <div class="brand-label"><span class="brand-logo-s">PK</span><span>original</span></div>
+          <div class="brand-label"><span class="brand-logo-s">W00</span><span>original</span></div>
           <h1 class="details-title" id="details-title">${escapeHTML(title)}</h1>
           <div class="details-meta" id="details-meta">${metaMarkup({
             year: yearOf(null, show),
@@ -368,8 +366,8 @@ async function hydrateDetails({ item, group, show, selected }) {
     const heading = qs("#details-title");
     if (heading) heading.textContent = title;
   }
-  const bg = qs("#details-bg-img");
-  if (bg && backdrop) bg.src = backdrop;
+  const bg = qs("#details-bg");
+  if (bg && backdrop) bg.style.backgroundImage = `url("${backdrop}")`;
 
   const meta = qs("#details-meta");
   if (meta) meta.innerHTML = metaMarkup({

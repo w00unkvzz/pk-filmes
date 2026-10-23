@@ -2,10 +2,9 @@
 import { CONFIG } from "../config.js";
 import { byId, DEFAULT_USER } from "../data.js";
 import * as store from "../store.js";
-import { logout as authLogout } from "../auth.js";
 import { uploadAvatar, updateProfile, syncSocialCache } from "../social.js";
 import {
-  qs, qsa, avatar, posterCard, emptyState, formatDuration, formatDate,
+  qs, qsa, avatar, posterCard, posterImage, emptyState, formatDuration, formatDate,
   escapeHTML, openModal, closeModal, toast
 } from "../ui.js";
 
@@ -21,7 +20,7 @@ function historyItem(entry) {
   if (!item) return "";
   const percent = store.progressPercent(entry);
   return `<article class="continue-item" data-open-details="${escapeHTML(item.id)}">
-    <div class="poster" style="--c1:${item.colors[0]};--c2:${item.colors[1]}"><span class="poster-title">${escapeHTML(item.title)}</span></div>
+    <div class="poster ${item.poster ? "has-image" : ""}" style="--c1:${item.colors[0]};--c2:${item.colors[1]}">${posterImage(item)}<span class="poster-title">${escapeHTML(item.title)}</span></div>
     <div class="grow">
       <strong>${escapeHTML(item.title)}</strong>
       <span>${entry.episode ? `T${entry.episode.season} E${entry.episode.number} · ` : ""}${percent}% assistido</span>
@@ -109,29 +108,12 @@ export async function renderPerfil() {
       </div>
 
       <aside class="profile-side">
-        
-
-        <div class="profile-panel">
-          <div class="panel-head"><h3>Conta</h3><i class="fa-solid fa-shield-halved muted"></i></div>
-          <div class="panel-body" style="display:flex;flex-direction:column;gap:12px">
-            <div class="row-between tiny"><span class="muted">Login</span><strong>${user.cloud ? "Conta" : "Local"}</strong></div>
-            <div class="row-between tiny"><span class="muted">Foto</span><strong>${user.avatar_url ? "Personalizada" : "Iniciais"}</strong></div>
-            <button class="btn btn-ghost btn-sm" id="change-avatar" type="button"><i class="fa-solid fa-image"></i>Foto ou GIF</button>
-            ${user.authed ? `<button class="btn btn-danger btn-sm" id="profile-logout" type="button"><i class="fa-solid fa-right-from-bracket"></i>Sair da conta</button>` : ""}
-          </div>
-        </div>
-
         <div class="profile-panel">
           <div class="panel-head"><h3>Preferências</h3><i class="fa-solid fa-sliders muted"></i></div>
           <div class="panel-body" style="display:flex;flex-direction:column;gap:12px">
             <label class="row-between tiny" style="gap:12px"><span>Pular abertura automaticamente</span><input type="checkbox" id="setting-autoSkip" ${store.getSettings().autoSkipIntro ? "checked" : ""}></label>
             <label class="row-between tiny" style="gap:12px"><span>Notificações de amigos</span><input type="checkbox" id="setting-notifications" ${store.getSettings().notifications ? "checked" : ""}></label>
           </div>
-        </div>
-
-        <div class="panel panel-pad">
-          <div class="section-kicker"><i class="fa-solid fa-cloud"></i> Conta w00filmes</div>
-          <p class="tiny" style="margin-top:7px">Perfil, foto, amigos e salas ficam salvos na sua conta. Lista e histórico continuam neste navegador.</p>
         </div>
       </aside>
     </div>`;
@@ -151,7 +133,6 @@ function mountPerfil() {
 
   qs("#edit-profile")?.addEventListener("click", openEditProfile);
   qs("#profile-avatar-edit")?.addEventListener("click", () => qs("#avatar-file")?.click());
-  qs("#change-avatar")?.addEventListener("click", () => qs("#avatar-file")?.click());
   qs("#avatar-file")?.addEventListener("change", async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -173,11 +154,6 @@ function mountPerfil() {
     store.clearHistory();
     window.dispatchEvent(new CustomEvent("pk:history-changed"));
     toast("Histórico limpo.", "success");
-  });
-
-  qs("#profile-logout")?.addEventListener("click", async () => {
-    await authLogout();
-    toast("Você saiu da conta.", "info");
   });
 
   qs("#setting-autoSkip")?.addEventListener("change", (event) => {

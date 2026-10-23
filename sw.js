@@ -5,11 +5,11 @@
 //   HTML pages    → network-first, fallback to cache
 //   Supabase/fonts/FA → network-only (no cache)
 
-const VERSION = "w00-v9";
+const VERSION = "w00-v10";
 // Catalog stays on v2 on purpose: bumping it forces a multi-MB re-download.
 const CATALOG_CACHE = "w00-catalog-v2";
-const STATIC_CACHE  = "w00-static-v9";
-const HTML_CACHE    = "w00-html-v9";
+const STATIC_CACHE  = "w00-static-v10";
+const HTML_CACHE    = "w00-html-v10";
 
 const STATIC_ASSETS = [
   "/css/base.css",
