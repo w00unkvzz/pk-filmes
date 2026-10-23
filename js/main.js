@@ -1,12 +1,11 @@
 // Application entry: shell, History API routing and cross-page events.
-import { renderShell, renderFooter, bindGlobalEvents, refreshShell, setupRowArrows, openPasswordModal, resetRowObservers, closeModal, sidebarClose } from "./ui.js";
+import { renderShell, bindGlobalEvents, refreshShell, setupRowArrows, openPasswordModal, resetRowObservers, closeModal, sidebarClose } from "./ui.js";
 import { CONFIG } from "./config.js";
 import * as store from "./store.js";
 import { initAuth } from "./auth.js";
 import { normalizeLocation, getRoute, navigate, routeForHref, searchPath } from "./router.js";
 import { renderHome, destroyHome } from "./pages/home.js";
 import { renderCatalogo } from "./pages/catalogo.js";
-import { renderSearch } from "./pages/search.js";
 import { renderPerfil } from "./pages/perfil.js";
 import { renderAmigos, destroyAmigos } from "./pages/amigos.js";
 import { renderPkparty, destroyPkparty, hasActivePartyRoom } from "./pages/pkparty.js";
@@ -17,7 +16,6 @@ import { renderPlayer } from "./pages/player.js";
 const routes = {
   home: renderHome,
   catalogo: renderCatalogo,
-  search: renderSearch,
   perfil: renderPerfil,
   amigos: renderAmigos,
   pkparty: renderPkparty,
@@ -29,12 +27,6 @@ const routes = {
 let currentRoute = { page: "home", params: new URLSearchParams(), roomCode: "" };
 let currentPage = document.body.dataset.page || "home";
 let renderToken = 0;
-
-function shouldRenderFooter() {
-  if (["player", "perfil", "detalhes"].includes(currentPage)) return false;
-  if (currentPage === "pkparty" && currentRoute.roomCode) return false;
-  return true;
-}
 
 // Supabase fires several auth events on boot (INITIAL_SESSION, SIGNED_IN,
 // TOKEN_REFRESHED). Re-rendering the whole page for each one rebuilt every
@@ -67,7 +59,6 @@ async function renderCurrent() {
   const render = routes[currentPage] || routes.home;
   await render();
   if (token !== renderToken) return;
-  if (shouldRenderFooter()) renderFooter();
   setupRowArrows();
 }
 

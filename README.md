@@ -20,7 +20,7 @@ banco, Realtime e Storage. Deploy no **Vercel**.
 
 ## Páginas
 
-`index.html` · `catalogo.html` · `search.html` · `cartaz.html` ·
+`index.html` · `catalogo.html` · `cartaz.html` ·
 `pkparty.html` · `amigos.html` · `mascote.html` · `perfil.html`
 
 ## 1. Supabase

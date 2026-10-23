@@ -5,6 +5,7 @@ import { CATALOG, byId } from "../data.js";
 import { getRoute, navigate, roomPath } from "../router.js";
 import * as store from "../store.js";
 import { getClient } from "../supabase.js";
+import { SUPABASE_CONFIG } from "../supabase-config.js";
 import {
   listRooms,
   createRoom,
@@ -16,11 +17,8 @@ import {
   savePlaybackState,
   loadMessages,
   sendMessage,
-  inviteFriendToRoom,
   myRoomInvites,
-  respondRoomInvite,
-  fetchFriendsState,
-  mapFriend
+  respondRoomInvite
 } from "../social.js";
 import {
   qs,
@@ -108,7 +106,7 @@ function roomCard(item) {
   return `<article class="room-card">
     ${posterMarkup(itemMovie)}
     <div class="room-info">
-      <div class="row-between"><h3>${escapeHTML(item.name)}</h3>${item.is_private ? '<i class="fa-solid fa-lock tiny muted"></i>' : '<span class="room-live">ao vivo</span>'}</div>
+      <div class="row-between"><h3>${escapeHTML(item.name)}</h3><span class="room-live">ao vivo</span></div>
       <p>${escapeHTML(itemMovie?.title || "Sessão privada")}</p>
       <div class="room-meta">
         ${avatar({ name: item.host_name, avatar_url: item.host_avatar }, "xs")}
@@ -147,14 +145,29 @@ export function hasActivePartyRoom() {
   return Boolean(room?.id);
 }
 
+function closeRoomQuietly(roomId) {
+  if (!roomId) return;
+  if (isHost) {
+    try {
+      realtimeChannel?.send({ type: "broadcast", event: "room-closed", payload: { sender_id: user.id } });
+    } catch {}
+  }
+  leaveRoom(roomId).catch((error) => console.warn("[party] sair:", error.message));
+}
+
 export function destroyPkparty() {
+  const roomId = room?.id;
+  closeRoomQuietly(roomId);
   cleanupParty();
 }
 
 export async function renderPkparty() {
+  const previousRoomId = room?.id;
+  const previousCode = String(room?.code || "").toUpperCase();
+  const code = activeRoomCode();
+  if (previousRoomId && previousCode !== code) closeRoomQuietly(previousRoomId);
   cleanupParty();
   user = store.getUser();
-  const code = activeRoomCode();
   if (!user.cloud) {
     qs("#page-content").innerHTML = `<div class="page-section">${emptyState("fa-tower-broadcast", "Entre para assistir junto", "Entre para criar salas, conversar e assistir junto.")}<div class="row" style="justify-content:center;margin-top:14px"><button class="btn btn-primary" data-auth-open type="button"><i class="fa-solid fa-right-to-bracket"></i>Entrar ou criar conta</button></div></div>`;
     return;
@@ -388,10 +401,8 @@ function renderRoom() {
             <div><strong>${escapeHTML(hostMember?.name || "Anfitrião")}</strong><span>${isHost ? "você é o anfitrião" : "anfitrião da sala"}</span></div>
           </div>
           <div class="party-actions">
-            ${isHost ? `<button class="party-action" data-share-room type="button"><i class="fa-solid fa-link"></i><span>Compartilhar</span></button>` : ""}
-            ${isHost ? `<button class="party-action" data-invite-friends type="button"><i class="fa-solid fa-user-plus"></i><span>Convidar</span></button>` : ""}
-            <button class="party-action" data-party-fullscreen type="button"><i class="fa-solid fa-expand"></i><span>Tela cheia</span></button>
-            <button class="party-action danger" data-leave-room type="button"><i class="fa-solid fa-right-from-bracket"></i><span>Sair</span></button>
+            ${isHost ? `<button class="party-action" data-copy-room-link type="button"><i class="fa-solid fa-link"></i><span>Copiar Link</span></button>` : ""}
+            <button class="party-action danger" data-leave-room type="button"><i class="fa-solid fa-right-from-bracket"></i><span>Sair da Sala</span></button>
           </div>
         </div>
       </div>
@@ -429,11 +440,13 @@ function renderParticipants(onlineIds = new Set()) {
   if (onlineCount) onlineCount.textContent = `${online} online`;
 }
 
+function chatMessageMarkup(message) {
+  const self = message.user_id === user.id;
+  return `<div class="chat-msg ${self ? "self" : ""}">${avatar({ name: message.sender_name || "Convidado", avatar_url: message.sender_avatar || "" }, "xs")}<div class="chat-msg-body"><strong>${escapeHTML(self ? "Você" : message.sender_name || "Convidado")}</strong><p>${escapeHTML(message.body)}</p></div></div>`;
+}
+
 function chatMarkup() {
-  return chatRows.map((message) => {
-    const self = message.user_id === user.id;
-    return `<div class="chat-msg ${self ? "self" : ""}">${avatar({ name: message.sender_name || "Convidado", avatar_url: message.sender_avatar || "" }, "xs")}<div class="chat-msg-body"><strong>${escapeHTML(self ? "Você" : message.sender_name || "Convidado")}</strong><p>${escapeHTML(message.body)}</p></div></div>`;
-  }).join("");
+  return chatRows.map(chatMessageMarkup).join("");
 }
 
 function renderChat() {
@@ -447,7 +460,10 @@ function appendChat(message) {
   if (!message?.client_id) return;
   if (chatRows.some((row) => row.client_id === message.client_id)) return;
   chatRows.push(message);
-  renderChat();
+  const log = qs("#party-chat-log");
+  if (!log) return;
+  log.insertAdjacentHTML("beforeend", chatMessageMarkup(message));
+  log.scrollTop = log.scrollHeight;
 }
 
 function roomShareUrl() {
@@ -489,56 +505,23 @@ function togglePartyTheater(force) {
   if (!active) stage.scrollIntoView({ block: "nearest" });
 }
 
-function openShareRoomModal() {
-  if (!isHost) return;
-  const link = roomShareUrl();
-  const content = `
-    <button class="modal-close" data-close-modal type="button" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
-    <div class="share-room-head">
-      <span class="share-room-icon"><i class="fa-solid fa-link"></i></span>
-      <h2>Compartilhar sala</h2>
-      <p>Quem abrir este link entra direto na sessão.</p>
-    </div>
-    <div class="share-room-body">
-      <label class="share-room-label" for="share-room-link">Link da sala</label>
-      <div class="share-room-field">
-        <input id="share-room-link" class="input" readonly value="${escapeHTML(link)}">
-        <button class="btn btn-primary" data-copy-room-link type="button"><i class="fa-solid fa-copy"></i>Copiar Link</button>
-      </div>
-      <div class="share-room-code">
-        <span>Código <strong>${escapeHTML(room.code)}</strong></span>
-        <button class="btn btn-ghost btn-sm" data-copy-room-code type="button"><i class="fa-solid fa-copy"></i>Copiar código</button>
-      </div>
-      ${navigator.share ? `<button class="btn btn-ghost btn-block" data-share-native type="button"><i class="fa-solid fa-share-nodes"></i>Compartilhar pelo celular</button>` : ""}
-    </div>`;
-  openModal(content, {
-    className: "modal-share-room",
-    label: "Compartilhar sala",
-    onMount: () => {
-      qs("[data-copy-room-link]")?.addEventListener("click", () => copyText(link, "Link da sala copiado."));
-      qs("[data-copy-room-code]")?.addEventListener("click", () => copyText(room.code, `Código ${room.code} copiado.`));
-      qs("[data-share-native]")?.addEventListener("click", async () => {
-        try {
-          await navigator.share({ title: room.name, text: "Entra na minha sala do w00 Party", url: link });
-        } catch {}
-      });
-    }
-  });
-}
-
 function mountRoom() {
   renderParticipants();
   renderChat();
 
-  qs("[data-share-room]")?.addEventListener("click", openShareRoomModal);
-  qs("[data-invite-friends]")?.addEventListener("click", openInviteModal);
+  qs("[data-copy-room-link]")?.addEventListener("click", () => copyText(roomShareUrl(), "Link da sala copiado."));
   qsa("[data-party-fullscreen]").forEach((button) => button.addEventListener("click", () => togglePartyTheater()));
   qs("[data-leave-room]")?.addEventListener("click", async () => {
+    const currentRoomId = room?.id;
+    if (!currentRoomId) return;
     if (isHost) realtimeChannel?.send({ type: "broadcast", event: "room-closed", payload: { sender_id: user.id } });
     try {
-      await leaveRoom(room.id);
+      await leaveRoom(currentRoomId);
     } catch (error) {
       console.warn("[party] sair:", error.message);
+    } finally {
+      // Avoid a second leave RPC when the router tears the page down.
+      room = null;
     }
     navigate("/party");
   });
@@ -581,8 +564,41 @@ function mountRoom() {
     });
   }
 
+  bindExitCleanup();
   connectRoomRealtime();
   setupPlayback();
+}
+
+function leaveRoomOnExit() {
+  const currentRoom = room;
+  if (!currentRoom?.id) return;
+  try {
+    realtimeChannel?.send({ type: "broadcast", event: "room-closed", payload: { sender_id: user.id } });
+  } catch {}
+  const sb = getClient();
+  if (!sb) return;
+  sb.auth.getSession().then(({ data }) => {
+    const token = data?.session?.access_token;
+    if (!token) return;
+    const base = SUPABASE_CONFIG.url.replace(/\/$/, "");
+    fetch(`${base}/rest/v1/rpc/leave_room`, {
+      method: "POST",
+      keepalive: true,
+      headers: {
+        apikey: SUPABASE_CONFIG.anonKey,
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ p_room: currentRoom.id })
+    }).catch(() => {});
+  }).catch(() => {});
+}
+
+let exitCleanupBound = false;
+function bindExitCleanup() {
+  if (exitCleanupBound) return;
+  exitCleanupBound = true;
+  window.addEventListener("pagehide", leaveRoomOnExit);
 }
 
 async function refreshRoomState() {
@@ -783,40 +799,4 @@ function applyPlayback(payload) {
     safePlay(video);
   }
   setTimeout(() => { applyingRemote = false; updatePartyControls(); }, 120);
-}
-
-async function openInviteModal() {
-  let friends = store.getFriends();
-  if (!friends.length) {
-    try {
-      const rows = await fetchFriendsState();
-      friends = rows.filter((row) => row.status === "accepted").map(mapFriend);
-      store.setSocialCache(friends, rows.filter((row) => row.status === "pending" && row.direction === "received").map(mapFriend));
-    } catch {}
-  }
-  const content = `
-    <button class="modal-close" data-close-modal type="button" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
-    <div class="auth-head"><div class="brand-mark">w00</div><h2>Convidar amigos</h2><p>Eles recebem o convite no w00 Party.</p></div>
-    <div class="auth-body">
-      ${friends.length ? friends.map((friend) => `<div class="user-card">${avatar(friend, "md")}<div class="grow"><strong>${escapeHTML(friend.name)}</strong><span>${escapeHTML(friend.favoriteGenre || "amigo")}</span></div><button class="btn btn-sm btn-ghost" data-send-room-invite="${escapeHTML(friend.id)}" type="button"><i class="fa-solid fa-paper-plane"></i>Convidar</button></div>`).join("") : `<p class="tiny muted">Você ainda não tem amigos. Adicione alguém na página Amigos.</p><a class="btn btn-ghost btn-block btn-sm" href="/amigos">Ir para Amigos</a>`}
-    </div>`;
-  openModal(content, {
-    className: "modal-sm",
-    label: "Convidar amigos",
-    onMount: () => {
-      qsa("[data-send-room-invite]").forEach((button) => {
-        button.addEventListener("click", async () => {
-          button.disabled = true;
-          try {
-            await inviteFriendToRoom(room.id, button.dataset.sendRoomInvite);
-            button.innerHTML = '<i class="fa-solid fa-check"></i>Convidado';
-            toast("Convite enviado.", "success");
-          } catch (error) {
-            toast(error.message, "error");
-            button.disabled = false;
-          }
-        });
-      });
-    }
-  });
 }

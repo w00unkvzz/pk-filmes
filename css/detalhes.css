@@ -560,7 +560,6 @@
 body[data-page="player"] { background: #000; }
 body[data-page="player"] .sidebar,
 body[data-page="player"] .topbar,
-body[data-page="player"] .site-footer,
 body[data-page="player"] .mobile-nav,
 body[data-page="player"] .sidebar-backdrop { display: none !important; }
 body[data-page="player"] .page-shell { margin-left: 0; }
@@ -1171,11 +1170,33 @@ body[data-page="player"] .app { display: block; min-height: 100vh; }
   .player-top-bar { padding: 12px 14px; }
   .meta-title { font-size: 14px; }
   .meta-subtitle { font-size: 10px; }
-  .player-bottom-wrapper { padding: 0 14px 12px; }
-  .controls-left { gap: 12px; }
-  .controls-right { gap: 12px; }
+  .player-bottom-wrapper { padding: 0 14px 12px; gap: 8px; }
+  .controls-left { gap: 8px; }
+  .controls-right { gap: 8px; }
   .capsule-btn { display: none; }
-  .volume-container { display: none; }
-  .timeline-container { gap: 10px; }
+  .volume-container { display: flex; }
+  .volume-slider { display: none; }
+  .timeline-container { gap: 8px; }
   .player-party-btn span { display: none; }
+}
+
+/* Mobile player controls: one horizontal timeline row and one action row.
+   Keep the mute button visible; the slider is hidden to save width. */
+@media (max-width: 760px) {
+  .timeline-container { width: 100%; min-width: 0; gap: 8px; }
+  .timeline { min-width: 0; }
+  .time-display { flex: 0 0 auto; min-width: 62px; font-size: 9px; text-align: right; }
+  .controls-bar { gap: 8px; flex-wrap: nowrap; }
+  .controls-left { flex: 1 1 auto; min-width: 0; gap: 12px; }
+  .controls-right { flex: 0 0 auto; gap: 12px; }
+  .control-icon { flex: 0 0 auto; width: 32px; height: 32px; }
+  .player-overlay { z-index: 10; }
+  .player-movie-actions { align-items: stretch; }
+  .player-movie-actions .btn { min-height: 40px; }
+}
+
+@media (max-width: 430px) {
+  .controls-left, .controls-right { gap: 8px; }
+  .timeline-container { gap: 6px; }
+  .time-display { min-width: 58px; font-size: 8px; }
 }

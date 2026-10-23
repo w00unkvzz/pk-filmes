@@ -357,6 +357,12 @@ begin
     delete from public.rooms where id = p_room;
   else
     delete from public.room_members where room_id = p_room and user_id = v_uid;
+    -- A guest leaving the last seat closes the room as well.
+    delete from public.rooms r
+    where r.id = p_room
+      and not exists (
+        select 1 from public.room_members m where m.room_id = p_room
+      );
   end if;
   return true;
 end;
@@ -399,8 +405,6 @@ as $$
   from public.rooms r
   join public.profiles p on p.id = r.host
   where r.is_private = false
-    or r.host = auth.uid()
-    or exists (select 1 from public.room_members m where m.room_id = r.id and m.user_id = auth.uid())
   order by r.created_at desc
   limit 50;
 $$;

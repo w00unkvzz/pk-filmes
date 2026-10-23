@@ -178,14 +178,6 @@
 }
 .sidebar-backdrop.open { opacity: 1; pointer-events: auto; }
 
-/* Footer */
-.site-footer { margin-top: 56px; padding: 32px clamp(18px,3.2vw,46px); border-top: 1px solid var(--line); color: var(--muted-2); font-size: 11px; }
-.site-footer .row-between { gap: 20px; }
-.site-footer a:hover { color: #fff; }
-.footer-links { display: flex; flex-wrap: wrap; gap: 16px; }
-.footer-brand { display: flex; align-items: center; gap: 9px; color: var(--muted); font-weight: 700; }
-.footer-brand .brand-mark { width: 24px; height: 24px; border-radius: 7px; font-size: 9px; flex-basis: 24px; }
-
 @media (max-width: 1024px) {
   .topbar-search { flex-basis: 300px; }
 }
@@ -206,12 +198,6 @@
   .mobile-top-logo .brand-mark { width: 30px; height: 30px; border-radius: 8px; font-size: 11px; flex-basis: 30px; }
   .mobile-top-logo strong { font-family: "Space Grotesk", sans-serif; font-size: 13px; letter-spacing: .08em; }
   .page-content { padding-bottom: 24px; }
-  
-  
-  
-  
-  .site-footer { padding-bottom: 24px; }
-  .site-footer .row-between { flex-direction: column; align-items: flex-start; }
 }
 
 /* --- Fix: Sidebar Smoothness & GPU Acceleration --- */

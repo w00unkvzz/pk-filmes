@@ -132,7 +132,7 @@ export function renderShell() {
   topbar.innerHTML = `
     <button class="mobile-menu-btn" data-sidebar-toggle type="button" aria-label="Abrir menu"><i class="fa-solid fa-bars"></i></button>
     <a class="mobile-top-logo" href="/"><span class="brand-mark">${escapeHTML(CONFIG.brandShort)}</span><strong>${escapeHTML(CONFIG.brand)}</strong></a>
-    <form class="topbar-search" action="/buscar" method="get" role="search">
+    <form class="topbar-search" action="/catalogo" method="get" role="search">
       <i class="fa-solid fa-magnifying-glass"></i>
       <input type="search" name="q" placeholder="Buscar filmes, séries ou gêneros..." autocomplete="off" aria-label="Buscar no catálogo">
     </form>
@@ -156,31 +156,11 @@ export function renderShell() {
       </div>
     </div>`;
 
-    const search = qs(".topbar-search input", topbar);
-    if (search && page === "search") {
-    const query = new URLSearchParams(location.search).get("q") || "";
-    search.value = query;
+  const search = qs(".topbar-search input", topbar);
+  if (search && page === "catalogo") {
+    search.value = new URLSearchParams(location.search).get("q") || "";
   }
   syncSidebarBackdrop();
-}
-
-export function renderFooter() {
-  const content = qs("#page-content");
-  if (!content || qs(".site-footer", content)) return;
-  content.insertAdjacentHTML("beforeend", `
-    <footer class="site-footer">
-      <div class="row-between">
-        <div class="footer-brand"><span class="brand-mark">${escapeHTML(CONFIG.brandShort)}</span>${escapeHTML(CONFIG.brand)}</div>
-        <div class="footer-links">
-          <a href="/catalogo">Catálogo</a>
-          <a href="/em-breve">Em breve</a>
-          <a href="/party">w00 Party</a>
-          <a href="/amigos">Amigos</a>
-          <a href="/perfil">Perfil</a>
-        </div>
-        <span>© ${new Date().getFullYear()} w00filmes</span>
-      </div>
-    </footer>`);
 }
 
 function syncSidebarBackdrop() {

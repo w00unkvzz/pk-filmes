@@ -8,7 +8,6 @@ export const CONFIG = {
   nav: [
     { page: "home", href: "/", label: "Início", icon: "fa-house", section: "Explorar" },
     { page: "catalogo", href: "/catalogo", label: "Catálogo", icon: "fa-clapperboard", section: "Explorar" },
-    { page: "search", href: "/buscar", label: "Buscar", icon: "fa-magnifying-glass", section: "Explorar" },
     { page: "cartaz", href: "/em-breve", label: "Em breve", icon: "fa-calendar-days", section: "Explorar" },
     { page: "pkparty", href: "/party", label: "w00 Party", icon: "fa-tower-broadcast", section: "Social" },
     { page: "amigos", href: "/amigos", label: "Amigos", icon: "fa-user-group", section: "Social", badge: "requests" },
@@ -17,7 +16,6 @@ export const CONFIG = {
   mobileNav: [
     { page: "home", href: "/", label: "Início", icon: "fa-house" },
     { page: "catalogo", href: "/catalogo", label: "Catálogo", icon: "fa-clapperboard" },
-    { page: "search", href: "/buscar", label: "Buscar", icon: "fa-magnifying-glass" },
     { page: "pkparty", href: "/party", label: "Party", icon: "fa-tower-broadcast" },
     { page: "perfil", href: "/perfil", label: "Perfil", icon: "fa-user" }
   ],

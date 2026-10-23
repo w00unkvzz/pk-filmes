@@ -88,7 +88,9 @@ export async function syncSocialCache() {
 export async function listRooms() {
   const { data, error } = await client().rpc("list_rooms");
   throwIf(error);
-  return data || [];
+  // Defense in depth: even if an older list_rooms RPC is still deployed,
+  // private rooms must never leak into the public lobby.
+  return (data || []).filter((room) => room.is_private !== true);
 }
 
 export async function createRoom({ name, movieId, isPrivate = false }) {
@@ -183,15 +185,6 @@ export async function sendMessage(roomId, body) {
     .insert(row)
     .select()
     .single();
-  throwIf(error);
-  return data;
-}
-
-export async function inviteFriendToRoom(roomId, friendId) {
-  const { data, error } = await client().rpc("invite_friend_to_room", {
-    p_room: roomId,
-    p_friend: friendId
-  });
   throwIf(error);
   return data;
 }

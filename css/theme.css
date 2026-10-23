@@ -642,7 +642,6 @@ body[data-page="perfil"] .profile-section:last-child { margin-bottom: 0; }
   .friends-layout .panel + .panel { margin-top: 14px; }
   .toast-root { bottom: 92px; }
   .modal { border-radius: 20px 20px 0 0; }
-  .site-footer { margin-top: 36px; }
 }
 @media (max-width: 430px) {
   .hero-actions .hero-btn { flex: 1 1 100%; }
@@ -664,29 +663,8 @@ body[data-page="perfil"] .profile-section:last-child { margin-bottom: 0; }
   box-shadow: 0 0 0 4px rgba(99, 102, 241, .09);
 }
 .search-box > i { color: var(--accent-bright); }
-.site-footer {
-  margin-top: 46px;
-  background: linear-gradient(180deg, transparent, rgba(99, 102, 241, .028));
-  border-top-color: rgba(129, 140, 248, .1);
-}
-.site-footer a { color: #94a3b8; }
-.footer-brand { color: #cbd5e1; }
-.footer-brand .brand-mark { box-shadow: 0 6px 18px rgba(99, 102, 241,.2), inset 0 1px 0 rgba(255,255,255,.4); }
-
-
-
-
-
-
-
-
 
 .profile-tab-panel .card-grid { margin-top: 2px; }
-@media (max-width: 760px) {
-  
-  
-  .site-footer { padding-bottom: 104px; }
-}
 
 /* Mobile fluency: fewer/cheaper backdrop-filter layers.
    The sidebar is full-height, so a 28px blur was recomputing the
@@ -757,6 +735,7 @@ body[data-page="perfil"] .profile-section:last-child { margin-bottom: 0; }
 .catalog-total strong { color: #fff; font-size: 13px; }
 
 .catalog-controls {
+  position: relative; z-index: 50;
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
   margin: 0 clamp(16px, 3.2vw, 46px);
   padding: 10px; border: 1px solid var(--line); border-radius: 18px;
@@ -778,6 +757,7 @@ body[data-page="perfil"] .profile-section:last-child { margin-bottom: 0; }
 }
 .catalog-filter-row { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
 .catalog-dropdown { position: relative; }
+.catalog-dropdown.open { z-index: 60; }
 .catalog-select {
   display: inline-flex; align-items: center; justify-content: space-between; gap: 9px;
   min-width: 118px; height: 34px; padding: 0 12px;
@@ -789,11 +769,11 @@ body[data-page="perfil"] .profile-section:last-child { margin-bottom: 0; }
 .catalog-dropdown.open .catalog-select { color: #fff; border-color: rgba(129,140,248,.45); background: rgba(99,102,241,.12); }
 .catalog-dropdown.open .catalog-select i { transform: rotate(180deg); }
 .catalog-menu {
-  display: none; position: absolute; z-index: 40; top: calc(100% + 8px); left: 0;
+  display: none; position: absolute; z-index: 200; top: calc(100% + 8px); left: 0;
   width: 210px; max-height: 286px; overflow: auto; padding: 6px;
   border: 1px solid rgba(129, 140, 248, .2); border-radius: 14px;
-  background: rgba(10, 15, 32, .98); box-shadow: 0 24px 70px rgba(0,0,0,.65);
-  backdrop-filter: blur(20px);
+  background: #111827; box-shadow: 0 24px 70px rgba(0,0,0,.65);
+  backdrop-filter: none;
 }
 .catalog-dropdown.open .catalog-menu { display: block; }
 .catalog-menu-item {
@@ -1117,12 +1097,13 @@ body[data-page="pkparty"] .page-shell { min-height: calc(100dvh - var(--topbar-h
 .party-person:first-child { margin-left: 0; }
 .party-person .avatar { width: 24px; height: 24px; font-size: 8px; }
 .party-person > i { position: absolute; right: -2px; bottom: -2px; display: grid; place-items: center; width: 11px; height: 11px; border-radius: 50%; background: #0c0f1c; color: #fbbf24; font-size: 6px; }
-.party-chat-log { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 13px; display: flex; flex-direction: column; gap: 10px; scrollbar-width: thin; }
+.party-chat-log { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 13px; display: flex; flex-direction: column; gap: 10px; scrollbar-width: thin; }
 .party-chat-log .chat-msg { display: flex; gap: 8px; align-items: flex-start; }
-.party-chat-log .chat-msg-body { min-width: 0; padding: 8px 10px; border-radius: 11px; background: rgba(255, 255, 255, 0.045); border: 1px solid rgba(255, 255, 255, 0.06); }
-.party-chat-log .chat-msg.self .chat-msg-body { background: rgba(99, 102, 241, 0.14); border-color: rgba(129, 140, 248, 0.22); }
+.party-chat-log .chat-msg-body { min-width: 0; padding: 0; border: 0; border-radius: 0; background: transparent; }
+.party-chat-log .chat-msg.self .chat-msg-body { background: transparent; border: 0; }
 .party-chat-log .chat-msg-body strong { display: block; color: #c7d2fe; font-size: 8px; letter-spacing: 0.05em; text-transform: uppercase; }
-.party-chat-log .chat-msg-body p { margin-top: 2px; color: #e2e8f0; font-size: 11px; line-height: 1.45; overflow-wrap: anywhere; }
+.party-chat-log .chat-msg-body p { display: inline-block; max-width: 100%; margin-top: 3px; padding: 7px 10px; color: #e2e8f0; font-size: 11px; line-height: 1.45; overflow-wrap: anywhere; background: rgba(255, 255, 255, 0.055); border: 1px solid rgba(255, 255, 255, 0.075); border-radius: 3px 12px 12px 12px; }
+.party-chat-log .chat-msg.self .chat-msg-body p { background: rgba(99, 102, 241, 0.18); border-color: rgba(129, 140, 248, 0.22); border-radius: 12px 3px 12px 12px; }
 .party-chat-form { flex: 0 0 auto; display: flex; gap: 7px; padding: 10px; border-top: 1px solid rgba(255, 255, 255, 0.08); background: rgba(8, 10, 20, 0.35); }
 .party-chat-form input { flex: 1 1 auto; min-width: 0; height: 38px; padding: 0 12px; border-radius: 10px; color: #f8fafc; font-size: 11px; background: rgba(255, 255, 255, 0.055); border: 1px solid rgba(255, 255, 255, 0.1); outline: none; }
 .party-chat-form input:focus { border-color: rgba(129, 140, 248, 0.55); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
@@ -1146,22 +1127,7 @@ body.party-theater { overflow: hidden; }
 body.party-theater .topbar,
 body.party-theater .sidebar,
 body.party-theater .mobile-nav,
-body.party-theater .site-footer,
 body.party-theater .sidebar-backdrop { display: none !important; }
-
-/* Share room modal */
-.modal.modal-share-room { width: min(470px, 100%); padding: 24px; position: relative; border-radius: 22px; }
-.share-room-head { padding-right: 30px; }
-.share-room-icon { display: grid; place-items: center; width: 38px; height: 38px; margin-bottom: 12px; border-radius: 12px; color: #c7d2fe; background: rgba(99, 102, 241, 0.16); border: 1px solid rgba(129, 140, 248, 0.25); }
-.share-room-head h2 { font-family: "Sora", sans-serif; font-size: 1.15rem; }
-.share-room-head p { margin-top: 3px; color: var(--muted); font-size: 11px; }
-.share-room-body { margin-top: 18px; display: flex; flex-direction: column; gap: 10px; }
-.share-room-label { color: #c7d2fe; font-size: 9px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
-.share-room-field { display: flex; gap: 7px; }
-.share-room-field .input { min-width: 0; }
-.share-room-field .btn { flex: 0 0 auto; }
-.share-room-code { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 10px; border-radius: 11px; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); color: var(--muted); font-size: 10px; }
-.share-room-code strong { color: #f8fafc; letter-spacing: 0.16em; }
 
 @media (max-width: 900px) {
   .party-room-v2 {
@@ -1191,11 +1157,9 @@ body.party-theater .sidebar-backdrop { display: none !important; }
   .party-player-controls { left: 8px; right: 8px; bottom: 8px; gap: 6px; padding: 6px 7px; }
   .party-ctl { width: 30px; height: 30px; flex-basis: 30px; }
   .party-time { font-size: 8px; }
-  .party-action { height: 32px; padding: 0 9px; font-size: 9px; }
-  .party-action span { display: none; }
+  .party-action { height: 32px; padding: 0 10px; font-size: 9px; }
+  .party-action span { display: inline; }
   .party-chat { height: 44dvh; min-height: 230px; }
-  .share-room-field { flex-direction: column; }
-  .share-room-field .btn { width: 100%; }
 }
 
 /* -------------------------------------------------------------------------
@@ -1328,10 +1292,5 @@ body[data-page="detalhes"] .page-content { padding-bottom: 0; }
   .brand-logo-s { min-width: 32px; height: 22px; padding: 0 7px; font-size: 8.5px; }
 }
 
-/* Long pages should end on their last block. The footer already carries its
-   own spacing; the extra 90px after it was the main source of dead space. */
+/* Long pages should end on their last block. */
 .page-content { padding-bottom: 0; }
-.site-footer { margin-top: 32px; }
-@media (max-width: 760px) {
-  .site-footer { padding-bottom: 78px; }
-}

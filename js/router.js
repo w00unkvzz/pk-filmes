@@ -7,7 +7,7 @@ const STATIC_ROUTES = new Map([
   ["/", "home"],
   ["/inicio", "home"],
   ["/catalogo", "catalogo"],
-  ["/buscar", "search"],
+  ["/buscar", "catalogo"],
   ["/perfil", "perfil"],
   ["/amigos", "amigos"],
   ["/party", "pkparty"],
@@ -19,7 +19,7 @@ const STATIC_ROUTES = new Map([
 const LEGACY_PAGES = {
   "index.html": "home",
   "catalogo.html": "catalogo",
-  "search.html": "search",
+  "search.html": "catalogo",
   "perfil.html": "perfil",
   "amigos.html": "amigos",
   "pkparty.html": "pkparty",
@@ -106,7 +106,7 @@ export function roomPath(code) {
 
 export function searchPath(query = "") {
   const clean = String(query || "").trim();
-  return clean ? `/buscar?q=${encodeURIComponent(clean)}` : "/buscar";
+  return clean ? `/catalogo?q=${encodeURIComponent(clean)}` : "/catalogo";
 }
 
 function resolveSlug(slug, kind = "") {
@@ -168,6 +168,11 @@ function cleanUrlFor(pathname, search = "", hash = "") {
   const params = new URLSearchParams(search || "");
   const legacy = LEGACY_PAGES[path.split("/").filter(Boolean)[0] || ""];
 
+  if (path === "/buscar") {
+    const query = params.toString();
+    return `/catalogo${query ? `?${query}` : ""}${hash || ""}`;
+  }
+
   if (path === "/party" || path === "/w00-party") {
     const code = params.get("sala") || params.get("room");
     if (code) return `${roomPath(code)}${hash || ""}`;
@@ -199,10 +204,6 @@ function cleanUrlFor(pathname, search = "", hash = "") {
   if (legacy === "pkparty") {
     const code = params.get("sala") || params.get("room");
     return code ? `${roomPath(code)}${hash || ""}` : `/party${hash || ""}`;
-  }
-  if (legacy === "search") {
-    const query = params.get("q");
-    return `${searchPath(query)}${hash || ""}`;
   }
   if (legacy === "home") return `/${hash || ""}`;
   if (legacy) return `/${legacy === "cartaz" ? "em-breve" : legacy}${search || ""}${hash || ""}`;

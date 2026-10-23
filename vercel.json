@@ -33,6 +33,23 @@
       ]
     }
   ],
+  "redirects": [
+    {
+      "source": "/buscar",
+      "destination": "/catalogo",
+      "permanent": false
+    },
+    {
+      "source": "/search",
+      "destination": "/catalogo",
+      "permanent": false
+    },
+    {
+      "source": "/search.html",
+      "destination": "/catalogo",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     {
       "source": "/filme/:slug",
@@ -52,10 +69,6 @@
     },
     {
       "source": "/catalogo",
-      "destination": "/"
-    },
-    {
-      "source": "/buscar",
       "destination": "/"
     },
     {
