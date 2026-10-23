@@ -3,8 +3,13 @@ import { CONFIG } from "../config.js";
 import { CATALOG, catalogTitles, featured, trending, top10, movies, series, newReleases } from "../data.js";
 import * as store from "../store.js";
 import { mediaRow, top10Row, genreStrip, qs, escapeHTML, formatDuration, toast, emptyState } from "../ui.js";
+import { openTrailerModal } from "../trailer.js";
 
 let heroTimer = null;
+
+function heroImage(item) {
+  return item.backdrop || item.poster || "";
+}
 
 function heroMeta(item) {
   const bits = [];
@@ -17,33 +22,31 @@ function heroMeta(item) {
     ? `${seasons} temporada${seasons > 1 ? "s" : ""}`
     : (item.duration ? formatDuration(item.duration) : "");
   if (length) bits.push(`<span>${escapeHTML(length)}</span>`);
-  if (item.age) bits.push(`<span class="badge-age">${escapeHTML(item.age)}</span>`);
-  if (item.genres?.length) bits.push(`<span>${escapeHTML(item.genres.slice(0, 2).join(" · "))}</span>`);
+  if (item.genres?.length) bits.push(`<span class="hero-genre">${escapeHTML(item.genres.slice(0, 2).join(" · "))}</span>`);
   return bits.join('<span class="dot"></span>');
 }
 
 function heroMarkup(item) {
-  const inList = store.isInWatchlist(item.id);
+  const image = heroImage(item);
   return `
-    <div class="hero-art" aria-hidden="true" style="--c1:${item.colors[0]};--c2:${item.colors[1]}">
-      <span class="hero-art-word">${escapeHTML(item.title.split(" ").slice(0, 2).join(" "))}</span>
+    <div class="hero-bg ${image ? "" : "no-image"}" aria-hidden="true">
+      ${image ? `<img src="${escapeHTML(image)}" alt="" fetchpriority="high" decoding="async" referrerpolicy="no-referrer">` : ""}
     </div>
+    <div class="hero-overlay" aria-hidden="true"></div>
     <div class="hero-content">
-      <div class="hero-badges">
-        <span class="badge badge-accent"><i class="fa-solid fa-bolt"></i> Em destaque</span>
-        <span class="badge ${item.type === "series" ? "badge-live" : "badge-new"}">${item.type === "series" ? "Série original" : "Filme original"}</span>
-        ${item.isNew ? '<span class="badge badge-new">Novo</span>' : ""}
-      </div>
+      <div class="hero-brand"><span class="hero-brand-mark">PK</span><span>original</span></div>
       <h1 class="hero-title">${escapeHTML(item.title)}</h1>
       <div class="meta hero-meta">${heroMeta(item)}</div>
       <p class="hero-desc">${escapeHTML(item.synopsis)}</p>
       <div class="hero-actions">
-        <button class="btn btn-light btn-lg" data-play="${escapeHTML(item.id)}" type="button"><i class="fa-solid fa-play"></i>Assistir agora</button>
-        <button class="btn btn-ghost btn-lg" data-open-details="${escapeHTML(item.id)}" type="button"><i class="fa-solid fa-circle-info"></i>Mais informações</button>
-        <button class="btn btn-icon" data-watchlist="${escapeHTML(item.id)}" type="button" title="${inList ? "Remover da lista" : "Adicionar à lista"}" aria-label="${inList ? "Remover da lista" : "Adicionar à lista"}"><i class="fa-solid ${inList ? "fa-check" : "fa-plus"}"></i></button>
+        <button class="hero-btn hero-btn-play" data-play="${escapeHTML(item.id)}" type="button">
+          <span class="hero-btn-icon"><i class="fa-solid fa-play"></i></span><span>Assistir Agora</span>
+        </button>
+        <button class="hero-btn hero-btn-trailer" data-trailer="${escapeHTML(item.id)}" type="button">
+          <span class="hero-btn-icon"><i class="fa-solid fa-film"></i></span><span>Trailer</span>
+        </button>
       </div>
-    </div>
-    <div class="hero-side-note">w00filmes · sessão da casa</div>`;
+    </div>`;
 }
 
 function heroDots(active) {
@@ -132,6 +135,12 @@ function mountHome() {
     heroTimer = setInterval(() => paint(index + 1), 8000);
   };
   hero.addEventListener("click", (event) => {
+    const trailer = event.target.closest("[data-trailer]");
+    if (trailer) {
+      event.preventDefault();
+      openTrailerModal(featured[index]);
+      return;
+    }
     const dot = event.target.closest("[data-hero-index]");
     if (!dot) return;
     paint(Number(dot.dataset.heroIndex));

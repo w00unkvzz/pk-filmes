@@ -70,6 +70,35 @@ export async function getTitleDetails(item) {
   return null;
 }
 
+export async function getTrailer(item) {
+  const id = tmdbIdFromItem(item);
+  if (!id) return null;
+  const preferred = item?.type === "series" ? "tv" : "movie";
+  const kinds = preferred === "tv" ? ["tv", "movie"] : ["movie", "tv"];
+  const key = cacheKey("trailer", id);
+  const cached = readCache(key);
+  if (cached) return cached;
+  for (const kind of kinds) {
+    for (const language of ["pt-BR", "en-US"]) {
+      try {
+        const data = await request(`/${kind}/${id}/videos?api_key=${API_KEY}&language=${language}`);
+        const videos = Array.isArray(data?.results) ? data.results : [];
+        const trailer = videos.find((video) => video.site === "YouTube" && video.type === "Trailer")
+          || videos.find((video) => video.site === "YouTube" && /teaser|clip/i.test(video.type))
+          || videos.find((video) => video.site === "YouTube");
+        if (trailer?.key) {
+          const result = { key: trailer.key, name: trailer.name || "Trailer", site: trailer.site };
+          writeCache(key, result);
+          return result;
+        }
+      } catch {
+        // tenta o próximo idioma/tipo
+      }
+    }
+  }
+  return null;
+}
+
 export async function getSeasonDetails(tvId, seasonNumber) {
   if (!tvId || seasonNumber == null) return null;
   const key = cacheKey("tv", tvId, seasonNumber);
