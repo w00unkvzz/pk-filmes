@@ -60,7 +60,7 @@ export async function renderPerfil() {
     <div class="profile-head">
       <div class="profile-avatar-wrap">
         <button class="profile-avatar-btn" id="profile-avatar-edit" type="button" aria-label="Alterar foto ou GIF">
-          ${avatar(user, "xl")}
+          ${avatar(user, "xl", "self")}
           <span class="edit-dot"><i class="fa-solid fa-camera"></i></span>
         </button>
         <input type="file" id="avatar-file" class="hidden" accept="image/png,image/jpeg,image/webp,image/gif">

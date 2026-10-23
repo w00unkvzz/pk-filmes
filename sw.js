@@ -5,11 +5,11 @@
 //   HTML pages    → network-first, fallback to cache
 //   Supabase/fonts/FA → network-only (no cache)
 
-const VERSION = "w00-v7";
+const VERSION = "w00-v8";
 // Catalog stays on v2 on purpose: bumping it forces a multi-MB re-download.
 const CATALOG_CACHE = "w00-catalog-v2";
-const STATIC_CACHE  = "w00-static-v7";
-const HTML_CACHE    = "w00-html-v7";
+const STATIC_CACHE  = "w00-static-v8";
+const HTML_CACHE    = "w00-html-v8";
 
 const STATIC_ASSETS = [
   "/css/base.css",
@@ -39,6 +39,11 @@ const STATIC_ASSETS = [
   "/js/pages/detalhes.js",
   "/js/pages/player.js",
 ];
+
+// ── message: activate a freshly installed worker immediately ──────────────
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") self.skipWaiting();
+});
 
 // ── install: pre-cache static assets ──────────────────────────────────────
 self.addEventListener("install", (event) => {

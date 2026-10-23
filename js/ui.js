@@ -30,6 +30,30 @@ export function avatar(user, size = "sm", extra = "") {
   return `<span class="avatar ${size} ${extra}" aria-hidden="true"><span class="avatar-initials">${escapeHTML(initials(name))}</span>${photo ? `<img src="${escapeHTML(photo)}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ""}</span>`;
 }
 
+// O avatar do perfil vive fora do shell e é reconstruído apenas no upload.
+// Atualiza somente as fotos do usuário logado, sem tocar nos avatares de amigos.
+function refreshAvatars() {
+  const photo = store.getUser()?.avatar_url || "";
+  qsa(".avatar.self").forEach((holder) => {
+    const existing = holder.querySelector("img");
+    if (!photo) {
+      existing?.remove();
+      return;
+    }
+    if (existing) {
+      if (existing.getAttribute("src") !== photo) existing.src = photo;
+      return;
+    }
+    const img = document.createElement("img");
+    img.src = photo;
+    img.alt = "";
+    img.loading = "lazy";
+    img.decoding = "async";
+    img.addEventListener("error", () => img.remove(), { once: true });
+    holder.appendChild(img);
+  });
+}
+
 
 
 export function formatDuration(minutes) {
@@ -239,24 +263,18 @@ function cardMeta(item) {
 
 export function posterCard(item, options = {}) {
   if (!item) return "";
-  const inList = store.isInWatchlist(item.id);
   const progress = options.progress ?? 0;
-  const isSeries = item.type === "series";
-  const type = typeLabel(item).toUpperCase();
   const titleEsc = item.titleEsc ?? escapeHTML(item.title);
-  const ageEsc = item.ageEsc ?? escapeHTML(item.age || "L");
   return `<article class="title-card" data-open-details="${escapeHTML(item.id)}" tabindex="0" aria-label="${titleEsc}">
     <div class="poster-wrap">
       <div class="poster ${item.poster ? "has-image" : ""}" style="--c1:${item.colors?.[0] || "#1e1b4b"};--c2:${item.colors?.[1] || "#6a5acd"}">
         ${posterImage(item)}
-        <div class="poster-topline"><span class="poster-grade">${ageEsc}</span><span class="poster-type">${type}</span></div>
         <div class="poster-ring"></div>
         <span class="poster-title ${item.title.length > 18 ? "small" : ""}">${titleEsc}</span>
       </div>
       <div class="poster-overlay">
         <button class="card-play" data-play="${escapeHTML(item.id)}" type="button" aria-label="Assistir ${titleEsc}"><i class="fa-solid fa-play"></i></button>
         <div class="card-quick">
-          <button data-watchlist="${escapeHTML(item.id)}" type="button" title="${inList ? "Remover da minha lista" : "Adicionar à minha lista"}" aria-label="${inList ? "Remover da lista" : "Adicionar à lista"}"><i class="fa-solid ${inList ? "fa-check" : "fa-plus"}"></i></button>
           <button data-open-details="${escapeHTML(item.id)}" type="button" title="Mais informações" aria-label="Mais informações"><i class="fa-solid fa-circle-info"></i></button>
         </div>
       </div>
@@ -532,7 +550,7 @@ function accountModal(user) {
       <p>${cloud ? "Sessão sincronizada na sua conta." : "Perfil salvo neste navegador."}</p>
     </div>
     <div class="auth-account">
-      ${avatar(user, "md")}
+      ${avatar(user, "md", "self")}
       <div class="grow"><strong>${escapeHTML(user.name)}</strong><span>${escapeHTML(user.email)}</span></div>
       <span class="badge ${cloud ? "badge-live" : "badge-soft"}">${cloud ? "online" : "local"}</span>
     </div>
@@ -772,7 +790,7 @@ export function openAuthModal() {
 
 export function refreshShell() {
   renderShell();
-  qsa(".avatar-btn, .sidebar-user .avatar").forEach(() => {});
+  refreshAvatars();
 }
 
 /* Sidebar: will-change só durante a animação (evita GPU/memória presos) */

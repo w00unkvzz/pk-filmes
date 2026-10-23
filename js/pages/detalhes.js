@@ -125,8 +125,6 @@ export function renderDetalhes() {
               age: show.age
             })}</div>
             <div class="details-score" id="details-score">${starsMarkup(ratingOf(null, show))}</div>
-            <p class="details-synopsis clamp" id="details-synopsis">${escapeHTML(initialSynopsis)}</p>
-            <button class="details-more hidden" id="details-more" type="button">Ler mais <i class="fa-solid fa-chevron-down"></i></button>
 
             <div class="details-actions">
               <a class="btn btn-light btn-lg details-play" id="details-play" href="player.html?id=${encodeURIComponent(playId)}">
@@ -142,6 +140,12 @@ export function renderDetalhes() {
             </div>
           </div>
         </div>
+
+        <section class="details-section details-synopsis-section">
+          <div class="details-section-head"><h2>Sinopse</h2></div>
+          <p class="details-synopsis clamp" id="details-synopsis">${escapeHTML(initialSynopsis)}</p>
+          <button class="details-more hidden" id="details-more" type="button">Ler mais <i class="fa-solid fa-chevron-down"></i></button>
+        </section>
 
         <section class="details-section" id="details-cast-section">
           <div class="details-section-head"><h2>Elenco</h2><span class="tiny muted" id="details-cast-count"></span></div>

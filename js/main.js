@@ -56,7 +56,37 @@ async function renderCurrent() {
   setupRowArrows();
 }
 
+function setupServiceWorker() {
+  if (!("serviceWorker" in navigator)) return;
+  const hadController = Boolean(navigator.serviceWorker.controller);
+  let refreshing = false;
+
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!hadController || refreshing) return;
+    refreshing = true;
+    window.location.reload();
+  });
+
+  navigator.serviceWorker.register("/sw.js").then((registration) => {
+    const activateUpdate = (worker) => {
+      if (!worker) return;
+      worker.addEventListener("statechange", () => {
+        if (worker.state !== "installed") return;
+        // Em uma atualização, o controller antigo ainda está ativo.
+        // Pede ao novo worker para assumir; o controllerchange recarrega a página.
+        if (navigator.serviceWorker.controller) {
+          (registration.waiting || worker).postMessage({ type: "SKIP_WAITING" });
+        }
+      });
+    };
+    registration.addEventListener("updatefound", () => activateUpdate(registration.installing));
+    if (registration.installing) activateUpdate(registration.installing);
+    registration.update().catch(() => {});
+  }).catch((error) => console.warn("[sw] registro falhou:", error.message));
+}
+
 async function boot() {
+  setupServiceWorker();
   renderShell();
   bindGlobalEvents();
   await renderCurrent();
