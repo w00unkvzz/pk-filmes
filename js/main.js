@@ -1,14 +1,15 @@
-// Application entry: shell, route selection and cross-page events.
-import { renderShell, renderFooter, bindGlobalEvents, refreshShell, setupRowArrows, openDetailsFromUrl, openPasswordModal, resetRowObservers } from "./ui.js";
+// Application entry: shell, History API routing and cross-page events.
+import { renderShell, renderFooter, bindGlobalEvents, refreshShell, setupRowArrows, openPasswordModal, resetRowObservers, closeModal, sidebarClose } from "./ui.js";
 import { CONFIG } from "./config.js";
 import * as store from "./store.js";
 import { initAuth } from "./auth.js";
-import { renderHome } from "./pages/home.js";
+import { normalizeLocation, getRoute, navigate, routeForHref, searchPath } from "./router.js";
+import { renderHome, destroyHome } from "./pages/home.js";
 import { renderCatalogo } from "./pages/catalogo.js";
 import { renderSearch } from "./pages/search.js";
 import { renderPerfil } from "./pages/perfil.js";
-import { renderAmigos } from "./pages/amigos.js";
-import { renderPkparty } from "./pages/pkparty.js";
+import { renderAmigos, destroyAmigos } from "./pages/amigos.js";
+import { renderPkparty, destroyPkparty, hasActivePartyRoom } from "./pages/pkparty.js";
 import { renderCartaz } from "./pages/cartaz.js";
 import { renderDetalhes } from "./pages/detalhes.js";
 import { renderPlayer } from "./pages/player.js";
@@ -25,7 +26,15 @@ const routes = {
   player: renderPlayer
 };
 
-const page = document.body.dataset.page || "home";
+let currentRoute = { page: "home", params: new URLSearchParams(), roomCode: "" };
+let currentPage = document.body.dataset.page || "home";
+let renderToken = 0;
+
+function shouldRenderFooter() {
+  if (["player", "perfil", "detalhes"].includes(currentPage)) return false;
+  if (currentPage === "pkparty" && currentRoute.roomCode) return false;
+  return true;
+}
 
 // Supabase fires several auth events on boot (INITIAL_SESSION, SIGNED_IN,
 // TOKEN_REFRESHED). Re-rendering the whole page for each one rebuilt every
@@ -34,11 +43,14 @@ let authRenderTimer = null;
 let authRenderKey = null;
 function currentAuthKey() {
   const user = store.getUser();
-  return [user.authed ? 1 : 0, user.id || "", user.name || "", user.cloud ? 1 : 0].join("|");
+  return [user.authed ? 1 : 0, user.id || "", user.name || "", user.cloud ? 1 : 0, user.avatar_url || ""].join("|");
 }
 function scheduleAuthRender() {
   // Never restart an in-progress video because the session refreshed.
-  if (page === "player") return;
+  if (currentPage === "player") return;
+  // A room owns its player, chat and realtime channel. Re-rendering it on a
+  // token refresh would restart playback and drop the current message list.
+  if (currentPage === "pkparty" && hasActivePartyRoom()) return;
   const key = currentAuthKey();
   if (key === authRenderKey) return;
   clearTimeout(authRenderTimer);
@@ -49,11 +61,62 @@ function scheduleAuthRender() {
 }
 
 async function renderCurrent() {
+  const token = ++renderToken;
+  destroyHome();
   resetRowObservers();
-  const render = routes[page] || routes.home;
+  const render = routes[currentPage] || routes.home;
   await render();
-  if (page !== "player" && page !== "perfil") renderFooter();
+  if (token !== renderToken) return;
+  if (shouldRenderFooter()) renderFooter();
   setupRowArrows();
+}
+
+async function applyRoute(route) {
+  // Release page-owned channels/timers before switching to the next route.
+  if (currentPage === "pkparty" && route.page !== "pkparty") destroyPkparty();
+  if (currentPage === "amigos" && route.page !== "amigos") destroyAmigos();
+  currentRoute = route;
+  currentPage = route.page;
+  document.body.dataset.page = currentPage;
+  document.body.classList.remove("player-faux-fullscreen", "party-theater");
+  closeModal();
+  sidebarClose();
+  renderShell();
+  window.scrollTo({ top: 0, behavior: "auto" });
+  await renderCurrent();
+  authRenderKey = currentAuthKey();
+}
+
+function bindRouter() {
+  if (window.__w00RouterBound) return;
+  window.__w00RouterBound = true;
+
+  document.addEventListener("click", (event) => {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    const anchor = event.target.closest?.("a[href]");
+    if (!anchor || anchor.target === "_blank" || anchor.hasAttribute("download")) return;
+    const href = anchor.getAttribute("href");
+    const clean = routeForHref(href);
+    if (!clean) return;
+    event.preventDefault();
+    navigate(clean);
+  });
+
+  document.addEventListener("submit", (event) => {
+    const form = event.target.closest?.(".topbar-search");
+    if (!form) return;
+    event.preventDefault();
+    const value = String(new FormData(form).get("q") || "").trim();
+    navigate(searchPath(value));
+  });
+
+  window.addEventListener("popstate", () => {
+    applyRoute(getRoute());
+  });
+
+  window.addEventListener("w00:navigate", () => {
+    applyRoute(getRoute());
+  });
 }
 
 function setupServiceWorker() {
@@ -87,16 +150,20 @@ function setupServiceWorker() {
 
 async function boot() {
   setupServiceWorker();
-  renderShell();
+  currentRoute = normalizeLocation();
+  currentPage = currentRoute.page;
+  document.body.dataset.page = currentPage;
   bindGlobalEvents();
+  bindRouter();
+  renderShell();
   await renderCurrent();
   authRenderKey = currentAuthKey();
+
   // Sessão do Supabase em background — não bloqueia a pintura inicial.
   initAuth().catch((error) => console.warn("[auth] não restaurado:", error.message));
-  openDetailsFromUrl();
 
-  // Password recovery links land on /perfil.html?recovery=1.
-  if (page === "perfil" && new URLSearchParams(location.search).has("recovery")) {
+  // Password recovery links land on /perfil?recovery=1.
+  if (currentPage === "perfil" && currentRoute.params.has("recovery")) {
     const url = new URL(location.href);
     url.searchParams.delete("recovery");
     history.replaceState({}, "", url);
@@ -113,13 +180,14 @@ async function boot() {
   });
 
   window.addEventListener("pk:history-changed", () => {
-    if (page === "home" || page === "perfil") renderCurrent();
+    if (currentPage === "home" || currentPage === "perfil") renderCurrent();
   });
 
   // Keep badges and profile labels in sync when another tab changes local state.
   window.addEventListener("storage", (event) => {
     if (event.key && event.key.startsWith(CONFIG.storagePrefix)) {
       refreshShell();
+      if (event.key === `${CONFIG.storagePrefix}user`) scheduleAuthRender();
     }
   });
 }

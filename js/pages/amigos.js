@@ -7,17 +7,25 @@ import {
   sendFriendRequest,
   respondFriendRequest,
   removeFriendship,
-  mapFriend
+  mapFriend,
+  syncSocialCache
 } from "../social.js";
 import { qs, qsa, avatar, escapeHTML, toast, emptyState } from "../ui.js";
 
 let channel = null;
+let channelUserId = "";
 let searchTimer = null;
 
 function unsubscribeFriends() {
   if (!channel) return;
   try { getClient()?.removeChannel(channel); } catch {}
   channel = null;
+  channelUserId = "";
+}
+
+export function destroyAmigos() {
+  clearTimeout(searchTimer);
+  unsubscribeFriends();
 }
 
 function requireLogin() {
@@ -71,11 +79,13 @@ function resultRow(result) {
 }
 
 export async function renderAmigos() {
+  if (document.body.dataset.page !== "amigos") return;
   clearTimeout(searchTimer);
   if (!requireLogin()) return;
   qs("#page-content").innerHTML = `<div class="page-section"><div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i><h3>Carregando sua comunidade…</h3></div></div>`;
   try {
     const rows = await fetchFriendsState();
+    if (document.body.dataset.page !== "amigos") return;
     const friends = rows.filter((row) => row.status === "accepted").map(mapFriend);
     const requests = rows.filter((row) => row.status === "pending" && row.direction === "received").map(mapFriend);
     store.setSocialCache(friends, requests);
@@ -119,7 +129,7 @@ export async function renderAmigos() {
             <div class="section-kicker"><i class="fa-solid fa-tower-broadcast"></i> w00 Party</div>
             <h3 style="margin-top:6px">Convide para uma sala.</h3>
             <p class="tiny" style="margin-top:6px">Dentro de uma sala, o anfitrião pode convidar os amigos direto pela lista.</p>
-            <a class="btn btn-ghost btn-block btn-sm" href="pkparty.html" style="margin-top:12px"><i class="fa-solid fa-arrow-right"></i>Ir para o w00 Party</a>
+            <a class="btn btn-ghost btn-block btn-sm" href="/party" style="margin-top:12px"><i class="fa-solid fa-arrow-right"></i>Ir para o w00 Party</a>
           </div>
         </aside>
       </div>`;
@@ -127,6 +137,7 @@ export async function renderAmigos() {
     mountAmigos();
     subscribeFriends();
   } catch (error) {
+    if (document.body.dataset.page !== "amigos") return;
     qs("#page-content").innerHTML = `<div class="page-section">${emptyState("fa-triangle-exclamation", "Não foi possível carregar amigos", error.message)}</div>`;
   }
 }
@@ -208,14 +219,24 @@ function mountAmigos() {
 
 function subscribeFriends() {
   const user = store.getUser();
-  if (!user.cloud || channel) return;
+  if (!user.cloud) {
+    unsubscribeFriends();
+    return;
+  }
+  if (channel && channelUserId === user.id) return;
+  unsubscribeFriends();
   const sb = getClient();
+  channelUserId = user.id;
   channel = sb.channel(`friends:${user.id}`)
     .on("postgres_changes", { event: "*", schema: "public", table: "friendships" }, () => {
-      renderAmigos();
+      if (document.body.dataset.page === "amigos") renderAmigos();
+      else syncSocialCache().catch(() => {});
     })
     .subscribe();
-  window.addEventListener("beforeunload", () => {
-    unsubscribeFriends();
-  }, { once: true });
+  if (!window.__w00FriendsUnloadBound) {
+    window.__w00FriendsUnloadBound = true;
+    window.addEventListener("beforeunload", () => {
+      unsubscribeFriends();
+    }, { once: true });
+  }
 }

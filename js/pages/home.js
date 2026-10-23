@@ -66,8 +66,8 @@ export function renderHome() {
       <section class="page-section">
         ${emptyState("fa-film", "Catálogo vazio", "Adicione seus títulos em catalog.json para começar. O site já está pronto para carregar nome, capa, categoria, idade e player.")}
         <div class="row" style="justify-content:center;margin-top:16px">
-          <a class="btn btn-primary" href="catalogo.html"><i class="fa-solid fa-clapperboard"></i>Ver catálogo</a>
-          <a class="btn btn-ghost" href="amigos.html"><i class="fa-solid fa-user-group"></i>Encontrar amigos</a>
+          <a class="btn btn-primary" href="/catalogo"><i class="fa-solid fa-clapperboard"></i>Ver catálogo</a>
+          <a class="btn btn-ghost" href="/amigos"><i class="fa-solid fa-user-group"></i>Encontrar amigos</a>
         </div>
       </section>`;
     return;
@@ -81,15 +81,15 @@ export function renderHome() {
 
     ${historyItems.length ? mediaRow("Continuar assistindo", historyItems.map(({ item }) => item), {
       id: "continue-row",
-      href: "perfil.html#historico",
+      href: "/perfil#historico",
       progressMap,
       remove: true
     }) : ""}
 
     ${mediaRow("Filmes Populares", trending, { id: "trending-row" })}
     ${top10Row(top10)}
-    ${mediaRow("Filmes para a sua noite", movies, { id: "movies-row", href: "catalogo.html?tipo=movie" })}
-    ${mediaRow("Séries em destaque", series, { id: "series-row", href: "catalogo.html?tipo=series" })}
+    ${mediaRow("Filmes para a sua noite", movies, { id: "movies-row", href: "/catalogo?tipo=movie" })}
+    ${mediaRow("Séries em destaque", series, { id: "series-row", href: "/catalogo?tipo=series" })}
     ${mediaRow("Novidades no catálogo", newReleases, { id: "new-row" })}
     ${mediaRow("Família & animação", family, { id: "family-row" })}
 
@@ -99,7 +99,7 @@ export function renderHome() {
           <div>
             <h2 style="font-size:clamp(1.5rem,3vw,2.4rem)">Assistir junto ficou mais fácil.</h2>
             <p>Crie uma sala, escolha um título e convide seus amigos para assistir juntos, na mesma hora.</p>
-            <div class="row"><a class="btn btn-primary" href="pkparty.html"><i class="fa-solid fa-plus"></i>Criar sala</a><a class="btn btn-ghost" href="pkparty.html"><i class="fa-solid fa-right-to-bracket"></i>Entrar com código</a></div>
+            <div class="row"><a class="btn btn-primary" href="/party"><i class="fa-solid fa-plus"></i>Criar sala</a><a class="btn btn-ghost" href="/party"><i class="fa-solid fa-right-to-bracket"></i>Entrar com código</a></div>
           </div>
           <div class="badge badge-live"><i class="fa-solid fa-circle"></i> salas ao vivo</div>
         </div>
@@ -142,10 +142,6 @@ function mountHome() {
   hero.addEventListener("focusin", () => clearInterval(heroTimer));
   hero.addEventListener("focusout", start);
   start();
-  window.addEventListener("pk:history-changed", () => {
-    // The row is intentionally refreshed by a page reload-like re-render only when visible.
-    // Keeping the hero stable avoids interrupting the carousel.
-  }, { once: true });
 }
 
 export function destroyHome() {

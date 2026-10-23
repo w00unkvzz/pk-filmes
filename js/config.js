@@ -6,20 +6,20 @@ export const CONFIG = {
   version: "2.0.0",
   storagePrefix: "w00filmes.",
   nav: [
-    { page: "home", href: "index.html", label: "Início", icon: "fa-house", section: "Explorar" },
-    { page: "catalogo", href: "catalogo.html", label: "Catálogo", icon: "fa-clapperboard", section: "Explorar" },
-    { page: "search", href: "search.html", label: "Buscar", icon: "fa-magnifying-glass", section: "Explorar" },
-    { page: "cartaz", href: "cartaz.html", label: "Em breve", icon: "fa-calendar-days", section: "Explorar" },
-    { page: "pkparty", href: "pkparty.html", label: "w00 Party", icon: "fa-tower-broadcast", section: "Social" },
-    { page: "amigos", href: "amigos.html", label: "Amigos", icon: "fa-user-group", section: "Social", badge: "requests" },
-    { page: "perfil", href: "perfil.html", label: "Perfil", icon: "fa-user", section: "Conta" }
+    { page: "home", href: "/", label: "Início", icon: "fa-house", section: "Explorar" },
+    { page: "catalogo", href: "/catalogo", label: "Catálogo", icon: "fa-clapperboard", section: "Explorar" },
+    { page: "search", href: "/buscar", label: "Buscar", icon: "fa-magnifying-glass", section: "Explorar" },
+    { page: "cartaz", href: "/em-breve", label: "Em breve", icon: "fa-calendar-days", section: "Explorar" },
+    { page: "pkparty", href: "/party", label: "w00 Party", icon: "fa-tower-broadcast", section: "Social" },
+    { page: "amigos", href: "/amigos", label: "Amigos", icon: "fa-user-group", section: "Social", badge: "requests" },
+    { page: "perfil", href: "/perfil", label: "Perfil", icon: "fa-user", section: "Conta" }
   ],
   mobileNav: [
-    { page: "home", href: "index.html", label: "Início", icon: "fa-house" },
-    { page: "catalogo", href: "catalogo.html", label: "Catálogo", icon: "fa-clapperboard" },
-    { page: "search", href: "search.html", label: "Buscar", icon: "fa-magnifying-glass" },
-    { page: "pkparty", href: "pkparty.html", label: "Party", icon: "fa-tower-broadcast" },
-    { page: "perfil", href: "perfil.html", label: "Perfil", icon: "fa-user" }
+    { page: "home", href: "/", label: "Início", icon: "fa-house" },
+    { page: "catalogo", href: "/catalogo", label: "Catálogo", icon: "fa-clapperboard" },
+    { page: "search", href: "/buscar", label: "Buscar", icon: "fa-magnifying-glass" },
+    { page: "pkparty", href: "/party", label: "Party", icon: "fa-tower-broadcast" },
+    { page: "perfil", href: "/perfil", label: "Perfil", icon: "fa-user" }
   ],
   genres: [
     { name: "Ação", icon: "fa-fire", colors: ["#450a0a", "#dc2626"] },

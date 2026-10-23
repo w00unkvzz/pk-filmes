@@ -41,9 +41,11 @@ function achievements(watchlist, history, friends) {
 }
 
 export async function renderPerfil() {
+  if (document.body.dataset.page !== "perfil") return;
   const user = store.getUser();
   if (user.cloud) {
     try { await syncSocialCache(); } catch {}
+    if (document.body.dataset.page !== "perfil") return;
   }
   const watchlist = store.getWatchlist().map(byId).filter(Boolean);
   const history = store.getHistory();
@@ -98,7 +100,7 @@ export async function renderPerfil() {
               ${history.length ? `<div class="continue-grid">${history.map(historyItem).join("")}</div>` : emptyState("fa-clock-rotate-left", "Nada assistido ainda", "Quando você abrir um player, o progresso aparece aqui automaticamente.")}
             </div>
             <div class="profile-tab-panel ${tab === "amigos" ? "active" : ""}" id="profile-panel-amigos">
-              ${friends.length ? `<div class="my-friends-list">${friends.map((friend) => `<div class="friend-mini">${avatar(friend, "sm")}<div class="grow"><strong>${escapeHTML(friend.name)}</strong><span>${escapeHTML(friend.favoriteGenre || "amigo")}</span></div><span class="status-dot"></span></div>`).join("")}</div><a class="btn btn-ghost btn-sm" href="amigos.html" style="margin-top:13px"><i class="fa-solid fa-user-group"></i>Gerenciar amigos</a>` : emptyState("fa-user-group", "Conecte-se com alguém", "Adicione amigos para compartilhar sessões e salas do w00 Party.")}
+              ${friends.length ? `<div class="my-friends-list">${friends.map((friend) => `<div class="friend-mini">${avatar(friend, "sm")}<div class="grow"><strong>${escapeHTML(friend.name)}</strong><span>${escapeHTML(friend.favoriteGenre || "amigo")}</span></div><span class="status-dot"></span></div>`).join("")}</div><a class="btn btn-ghost btn-sm" href="/amigos" style="margin-top:13px"><i class="fa-solid fa-user-group"></i>Gerenciar amigos</a>` : emptyState("fa-user-group", "Conecte-se com alguém", "Adicione amigos para compartilhar sessões e salas do w00 Party.")}
             </div>
             <div class="profile-tab-panel ${tab === "conquistas" ? "active" : ""}" id="profile-panel-conquistas">
               <div class="badge-grid">${badgeList.map((badge) => `<div class="achievement ${badge.unlocked ? "" : "locked"}"><i class="fa-solid ${badge.icon}"></i><strong>${escapeHTML(badge.title)}</strong><span>${escapeHTML(badge.text)}</span></div>`).join("")}</div>
@@ -127,7 +129,7 @@ function mountPerfil() {
       const tab = button.dataset.profileTab;
       qsa("[data-profile-tab]").forEach((entry) => entry.classList.toggle("active", entry === button));
       qsa(".profile-tab-panel").forEach((panel) => panel.classList.toggle("active", panel.id === `profile-panel-${tab}`));
-      history.replaceState(null, "", `#${tab}`);
+      history.replaceState(history.state || {}, "", `#${tab}`);
     });
   });
 

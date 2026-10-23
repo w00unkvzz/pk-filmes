@@ -164,7 +164,7 @@ function updateUrl() {
   if (state.year) params.set("ano", state.year);
   if (state.query) params.set("q", state.query);
   const query = params.toString();
-  history.replaceState(null, "", `${location.pathname}${query ? `?${query}` : ""}`);
+  history.replaceState(history.state || {}, "", `${location.pathname}${query ? `?${query}` : ""}`);
 }
 
 function setDropdownLabel(kind, value) {
@@ -219,7 +219,10 @@ function mountCatalogo() {
     });
   });
 
-  document.addEventListener("click", () => closeMenus());
+  if (!window.__w00CatalogClickBound) {
+    window.__w00CatalogClickBound = true;
+    document.addEventListener("click", () => closeMenus());
+  }
 
   qs("#catalog-query")?.addEventListener("input", (event) => {
     clearTimeout(debounceTimer);

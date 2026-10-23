@@ -21,7 +21,9 @@ export function imageUrl(path, size = "w500") {
 }
 
 function cacheKey(kind, id, season = "") {
-  return `w00.tmdb.${kind}.${id}${season ? `.s${season}` : ""}`;
+  // v2 invalidates old trailer keys cached by previous builds. A stale key
+  // that YouTube no longer allows to be embedded looked like a broken player.
+  return `w00.tmdb.v2.${kind}.${id}${season ? `.s${season}` : ""}`;
 }
 
 function readCache(key) {

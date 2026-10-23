@@ -2,6 +2,7 @@
 // playback control. The host broadcasts play/pause/seek plus a heartbeat;
 // guests apply it immediately and self-correct drift automatically.
 import { CATALOG, byId } from "../data.js";
+import { getRoute, navigate, roomPath } from "../router.js";
 import * as store from "../store.js";
 import { getClient } from "../supabase.js";
 import {
@@ -30,7 +31,7 @@ import {
   openModal,
   closeModal,
   toast,
-  formatDuration
+  formatClock
 } from "../ui.js";
 
 let realtimeChannel = null;
@@ -43,8 +44,14 @@ let movie = null;
 let isHost = false;
 let user = null;
 let applyingRemote = false;
+let roomRequest = 0;
+let lobbyRequest = 0;
 
 const DIRECT_VIDEO = /\.(mp4|webm|ogv|mov|m3u8)(\?|#|$)/i;
+
+function activeRoomCode() {
+  return String(getRoute().roomCode || new URLSearchParams(location.search).get("sala") || "").toUpperCase();
+}
 
 function safePlay(video) {
   try {
@@ -109,13 +116,16 @@ function roomCard(item) {
       </div>
       <div class="row-between">
         <span class="tiny muted">${item.is_member ? "Você participa" : "Anfitrião convida"}</span>
-        <a class="btn btn-sm btn-primary" href="pkparty.html?sala=${encodeURIComponent(item.code)}">${item.is_member ? "Entrar" : "Participar"} <i class="fa-solid fa-arrow-right"></i></a>
+        <a class="btn btn-sm btn-primary" href="${roomPath(item.code)}">${item.is_member ? "Entrar" : "Participar"} <i class="fa-solid fa-arrow-right"></i></a>
       </div>
     </div>
   </article>`;
 }
 
 function cleanupParty() {
+  roomRequest += 1;
+  lobbyRequest += 1;
+  document.body.classList.remove("party-theater");
   clearInterval(heartbeat);
   heartbeat = null;
   try {
@@ -133,10 +143,18 @@ function cleanupParty() {
   applyingRemote = false;
 }
 
+export function hasActivePartyRoom() {
+  return Boolean(room?.id);
+}
+
+export function destroyPkparty() {
+  cleanupParty();
+}
+
 export async function renderPkparty() {
   cleanupParty();
   user = store.getUser();
-  const code = new URLSearchParams(location.search).get("sala");
+  const code = activeRoomCode();
   if (!user.cloud) {
     qs("#page-content").innerHTML = `<div class="page-section">${emptyState("fa-tower-broadcast", "Entre para assistir junto", "Entre para criar salas, conversar e assistir junto.")}<div class="row" style="justify-content:center;margin-top:14px"><button class="btn btn-primary" data-auth-open type="button"><i class="fa-solid fa-right-to-bracket"></i>Entrar ou criar conta</button></div></div>`;
     return;
@@ -150,8 +168,11 @@ export async function renderPkparty() {
 }
 
 async function renderLobby() {
+  if (document.body.dataset.page !== "pkparty" || activeRoomCode()) return;
+  const request = ++lobbyRequest;
   try {
     const [rooms, invites] = await Promise.all([listRooms(), myRoomInvites()]);
+    if (request !== lobbyRequest || document.body.dataset.page !== "pkparty" || activeRoomCode()) return;
     qs("#page-content").innerHTML = `
       <section class="party-hero">
         <div class="party-hero-inner">
@@ -189,6 +210,7 @@ async function renderLobby() {
     mountLobby();
     subscribeLobby();
   } catch (error) {
+    if (request !== lobbyRequest || document.body.dataset.page !== "pkparty" || activeRoomCode()) return;
     qs("#page-content").innerHTML = `<div class="page-section">${emptyState("fa-triangle-exclamation", "Não foi possível carregar o w00 Party", error.message)}</div>`;
   }
 }
@@ -197,7 +219,9 @@ function subscribeLobby() {
   if (lobbyChannel) return;
   const sb = getClient();
   lobbyChannel = sb.channel(`party-lobby:${user.id}`)
-    .on("postgres_changes", { event: "*", schema: "public", table: "room_invites", filter: `invitee=eq.${user.id}` }, () => renderLobby())
+    .on("postgres_changes", { event: "*", schema: "public", table: "room_invites", filter: `invitee=eq.${user.id}` }, () => {
+      if (document.body.dataset.page === "pkparty" && !activeRoomCode()) renderLobby();
+    })
     .subscribe();
 }
 
@@ -231,7 +255,7 @@ function mountLobby() {
 async function handleJoin(code) {
   try {
     await joinRoom(code);
-    location.href = `pkparty.html?sala=${encodeURIComponent(String(code).toUpperCase())}`;
+    navigate(roomPath(code));
   } catch (error) {
     toast(error.message === "invite required" ? "Esta sala é privada e exige convite." : error.message, "error", "Não foi possível entrar");
   }
@@ -268,7 +292,7 @@ function openCreateRoom() {
         try {
           const created = await createRoom({ name, movieId, isPrivate: qs("#room-private").checked });
           closeModal();
-          location.href = `pkparty.html?sala=${encodeURIComponent(created.code)}`;
+          navigate(roomPath(created.code));
         } catch (error) {
           toast(error.message, "error");
           submit.disabled = false;
@@ -280,27 +304,36 @@ function openCreateRoom() {
 }
 
 async function openRoom(code) {
+  const wanted = String(code || "").toUpperCase();
+  const request = ++roomRequest;
+  const stillActive = () => request === roomRequest && document.body.dataset.page === "pkparty" && activeRoomCode() === wanted;
   try {
     if (lobbyChannel) {
       getClient().removeChannel(lobbyChannel);
       lobbyChannel = null;
     }
-    const joined = await joinRoom(code);
+    const joined = await joinRoom(wanted);
+    if (!stillActive()) return;
     room = await getRoom(joined.id);
+    if (!stillActive()) return;
+    if (!room) throw new Error("room not found");
     movie = movieForRoom(room);
     isHost = room.host === user.id;
     members = await roomMembers(room.id);
+    if (!stillActive()) return;
     const messages = await loadMessages(room.id);
+    if (!stillActive()) return;
     chatRows = messages;
     renderRoom();
     mountRoom();
   } catch (error) {
+    if (!stillActive()) return;
     const message = error.message === "invite required"
       ? "Esta sala é privada. Peça um convite ao anfitrião."
       : error.message === "room not found"
         ? "Sala não encontrada. Confira o código."
         : error.message;
-    qs("#page-content").innerHTML = `<div class="page-section">${emptyState("fa-tower-broadcast", "Não foi possível entrar", message)}<div class="row" style="justify-content:center;margin-top:14px"><a class="btn btn-primary" href="pkparty.html"><i class="fa-solid fa-arrow-left"></i>Voltar ao lobby</a></div></div>`;
+    qs("#page-content").innerHTML = `<div class="page-section">${emptyState("fa-tower-broadcast", "Não foi possível entrar", message)}<div class="row" style="justify-content:center;margin-top:14px"><a class="btn btn-primary" href="/party"><i class="fa-solid fa-arrow-left"></i>Voltar ao lobby</a></div></div>`;
   }
 }
 
@@ -312,55 +345,69 @@ function renderRoom() {
   }));
   const hostMember = participants.find((person) => person.isHost);
   const canPlay = Boolean(movie && isDirectVideo(movie.stream));
+  const online = participants.filter((person) => person.online).length;
 
   qs("#page-content").innerHTML = `
-    <div class="party-room">
-      <div>
-        <div class="party-stage glass">
-          <div class="party-stage-head">
-            <span class="badge badge-live"><i class="fa-solid fa-circle"></i> ${isHost ? "você controla" : "sessão ao vivo"}</span>
-            <div class="grow"><h2 id="party-movie-title">${escapeHTML(movie?.title || "Sala sem título")}</h2><div class="meta"><span>${escapeHTML(room.name)}</span><span class="dot"></span><span class="tiny">${isHost ? "Só você pode pausar, tocar e avançar" : "O anfitrião controla a reprodução"}</span></div></div>
-            <span class="badge badge-soft" id="party-member-count"><i class="fa-solid fa-users"></i> ${participants.length}</span>
+    <section class="party-room party-room-v2">
+      <div class="party-watch">
+        <header class="party-room-head glass">
+          <div class="party-room-meta">
+            <span class="party-live-pill"><i class="fa-solid fa-circle"></i> ao vivo</span>
+            <span class="party-people-pill" id="party-member-count"><i class="fa-solid fa-users"></i> ${participants.length}</span>
           </div>
+          <div class="party-room-title">
+            <h1 id="party-room-name">${escapeHTML(room.name || movie?.title || "Sala sem título")}</h1>
+            <span id="party-movie-title">${escapeHTML(movie?.title || "Sala sem vídeo")}</span>
+          </div>
+        </header>
+
+        <div class="party-stage glass ${canPlay ? "has-video" : ""}" id="party-stage">
           ${movie
             ? canPlay
-              ? `<div class="party-video-wrap"><video id="party-video" ${isHost ? "controls" : ""} playsinline preload="metadata"></video>${isHost ? "" : '<div class="party-guest-note"><i class="fa-solid fa-lock"></i> O anfitrião controla o vídeo</div>'}</div>`
-              : `<div class="party-embed-wrap"><iframe id="party-iframe" src="${escapeHTML(movie.stream)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe><div class="party-guest-note"><i class="fa-solid fa-circle-info"></i> Este player incorporado não permite sincronização. Use links diretos MP4/WebM para o modo sincronizado.</div></div>`
+              ? `<div class="party-video-wrap">
+                  <video id="party-video" playsinline preload="metadata"></video>
+                  ${isHost ? "" : '<div class="party-guest-note"><i class="fa-solid fa-lock"></i> O anfitrião controla a reprodução</div>'}
+                  <div class="party-player-controls glass">
+                    <button class="party-ctl" data-party-play type="button" aria-label="Reproduzir"><i class="fa-solid fa-play"></i></button>
+                    <input class="party-seek" id="party-seek" type="range" min="0" max="1000" value="0" step="1" aria-label="Progresso do vídeo" ${isHost ? "" : "disabled"}>
+                    <span class="party-time" id="party-time">00:00 / 00:00</span>
+                    <button class="party-ctl" data-party-mute type="button" aria-label="Silenciar"><i class="fa-solid fa-volume-high"></i></button>
+                    <button class="party-ctl" data-party-fullscreen type="button" aria-label="Tela cheia"><i class="fa-solid fa-expand"></i></button>
+                  </div>
+                </div>`
+              : `<div class="party-embed-wrap">
+                  <iframe id="party-iframe" src="${escapeHTML(movie.stream)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>
+                  <div class="party-guest-note"><i class="fa-solid fa-circle-info"></i> Este player incorporado não sincroniza. Use links diretos MP4/WebM.</div>
+                </div>`
             : `<div class="party-stage-empty">${emptyState("fa-film", "Sala sem vídeo", "O anfitrião precisa escolher um título ou link direto.")}</div>`}
-          <div class="party-stage-foot">
-            <div class="grow"><strong>${escapeHTML(hostMember?.name || "Anfitrião")}</strong><span>${isHost ? "Você é o anfitrião" : "Anfitrião da sala"}</span></div>
-            ${isHost && CATALOG.length ? '<button class="btn btn-sm btn-ghost" data-change-media type="button"><i class="fa-solid fa-film"></i>Trocar título</button>' : ""}
-            ${isHost ? '<button class="btn btn-sm btn-ghost" data-invite-friends type="button"><i class="fa-solid fa-user-plus"></i>Convidar</button>' : ""}
-            ${!isHost && canPlay ? '<button class="btn btn-sm btn-ghost" data-party-fullscreen type="button"><i class="fa-solid fa-expand"></i>Tela cheia</button>' : ""}
-            <button class="btn btn-sm btn-ghost" data-copy-party-code type="button"><i class="fa-solid fa-copy"></i><span class="hide-xs">${escapeHTML(room.code)}</span></button>
-            <button class="btn btn-sm btn-danger" data-leave-room type="button"><i class="fa-solid fa-right-from-bracket"></i>Sair</button>
+        </div>
+
+        <div class="party-room-actions glass">
+          <div class="party-host-line">
+            ${avatar({ name: hostMember?.name || "Anfitrião", avatar_url: hostMember?.avatar_url || "" }, "xs")}
+            <div><strong>${escapeHTML(hostMember?.name || "Anfitrião")}</strong><span>${isHost ? "você é o anfitrião" : "anfitrião da sala"}</span></div>
+          </div>
+          <div class="party-actions">
+            ${isHost ? `<button class="party-action" data-share-room type="button"><i class="fa-solid fa-link"></i><span>Compartilhar</span></button>` : ""}
+            ${isHost ? `<button class="party-action" data-invite-friends type="button"><i class="fa-solid fa-user-plus"></i><span>Convidar</span></button>` : ""}
+            <button class="party-action" data-party-fullscreen type="button"><i class="fa-solid fa-expand"></i><span>Tela cheia</span></button>
+            <button class="party-action danger" data-leave-room type="button"><i class="fa-solid fa-right-from-bracket"></i><span>Sair</span></button>
           </div>
         </div>
-        ${movie ? `<div class="panel panel-pad" style="margin-top:12px"><div class="row-between"><div><div class="section-kicker"><i class="fa-solid fa-circle-info"></i> Sobre a sessão</div><h3>${escapeHTML(movie.title)}</h3></div><span class="badge badge-soft">${escapeHTML(movie.age || "L")}${movie.duration ? ` · ${formatDuration(movie.duration)}` : ""}</span></div><p class="small" style="margin-top:8px">${escapeHTML(movie.synopsis || "")}</p></div>` : ""}
       </div>
 
-      <aside class="party-side">
-        <div class="party-chat glass">
-          <div class="party-chat-head"><h3><i class="fa-solid fa-comments"></i> Chat</h3><span id="party-online-count">${participants.filter((person) => person.online).length} online</span></div>
-          <div class="party-chat-log" id="party-chat-log"></div>
-          <form class="party-chat-form" id="party-chat-form">
-            <input id="party-chat-input" maxlength="1000" placeholder="Escreva uma mensagem..." autocomplete="off" aria-label="Mensagem do chat">
-            <button type="submit" aria-label="Enviar mensagem"><i class="fa-solid fa-paper-plane"></i></button>
-          </form>
+      <aside class="party-chat glass">
+        <div class="party-chat-head">
+          <div class="party-chat-title"><h3><i class="fa-solid fa-comments"></i> Chat</h3><span id="party-online-count">${online} online</span></div>
+          <div class="party-chat-people" id="party-participants"></div>
         </div>
-
-        <div class="participants glass">
-          <div class="participants-head"><i class="fa-solid fa-users"></i> Participantes</div>
-          <div class="participants-list" id="party-participants"></div>
-        </div>
-
-        <div class="panel panel-pad">
-          <div class="section-kicker"><i class="fa-solid fa-link"></i> Convite</div>
-          <p class="tiny" style="margin-top:6px">Código: <strong>${escapeHTML(room.code)}</strong>. Compartilhe o código ou convide um amigo.</p>
-          <button class="btn btn-ghost btn-sm btn-block" data-copy-party-code type="button" style="margin-top:10px"><i class="fa-solid fa-copy"></i>Copiar código</button>
-        </div>
+        <div class="party-chat-log" id="party-chat-log"></div>
+        <form class="party-chat-form" id="party-chat-form">
+          <input id="party-chat-input" maxlength="1000" placeholder="Escreva uma mensagem..." autocomplete="off" aria-label="Mensagem do chat">
+          <button type="submit" aria-label="Enviar mensagem"><i class="fa-solid fa-paper-plane"></i></button>
+        </form>
       </aside>
-    </div>`;
+    </section>`;
 
   renderParticipants();
   renderChat();
@@ -374,7 +421,7 @@ function renderParticipants(onlineIds = new Set()) {
     online: member.user_id === user.id || onlineIds.has(member.user_id)
   }));
   all.sort((a, b) => Number(b.is_host) - Number(a.is_host));
-  list.innerHTML = all.map((person) => `<div class="participant">${avatar({ name: person.name, avatar_url: person.avatar_url }, "xs")}<strong>${escapeHTML(person.name)}</strong><span>${person.is_host ? '<i class="fa-solid fa-crown"></i> anfitrião' : person.online ? '<span class="status-dot"></span> online' : "offline"}</span></div>`).join("");
+  list.innerHTML = all.map((person) => `<span class="party-person ${person.is_host ? "is-host" : ""}" title="${escapeHTML(person.name)}${person.is_host ? " · anfitrião" : person.online ? " · online" : " · offline"}">${avatar({ name: person.name, avatar_url: person.avatar_url }, "xs")}${person.is_host ? '<i class="fa-solid fa-crown"></i>' : ""}</span>`).join("");
   const online = all.filter((person) => person.online).length;
   const count = qs("#party-member-count");
   if (count) count.innerHTML = `<i class="fa-solid fa-users"></i> ${all.length}`;
@@ -403,21 +450,89 @@ function appendChat(message) {
   renderChat();
 }
 
+function roomShareUrl() {
+  return new URL(roomPath(room.code), location.origin).toString();
+}
+
+async function copyText(text, message = "Link copiado.") {
+  try {
+    await navigator.clipboard.writeText(text);
+    toast(message, "success", "Compartilhar");
+  } catch {
+    const input = document.createElement("textarea");
+    input.value = text;
+    input.style.position = "fixed";
+    input.style.opacity = "0";
+    document.body.appendChild(input);
+    input.select();
+    try {
+      document.execCommand("copy");
+      toast(message, "success", "Compartilhar");
+    } catch {
+      toast(text, "info", "Copie manualmente");
+    }
+    input.remove();
+  }
+}
+
+function togglePartyTheater(force) {
+  const stage = qs("#party-stage");
+  if (!stage) return;
+  const active = typeof force === "boolean" ? force : !stage.classList.contains("is-theater");
+  stage.classList.toggle("is-theater", active);
+  document.body.classList.toggle("party-theater", active);
+  qsa("[data-party-fullscreen]").forEach((button) => {
+    const icon = button.querySelector("i");
+    if (icon) icon.className = `fa-solid fa-${active ? "compress" : "expand"}`;
+    button.setAttribute("aria-pressed", String(active));
+  });
+  if (!active) stage.scrollIntoView({ block: "nearest" });
+}
+
+function openShareRoomModal() {
+  if (!isHost) return;
+  const link = roomShareUrl();
+  const content = `
+    <button class="modal-close" data-close-modal type="button" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
+    <div class="share-room-head">
+      <span class="share-room-icon"><i class="fa-solid fa-link"></i></span>
+      <h2>Compartilhar sala</h2>
+      <p>Quem abrir este link entra direto na sessão.</p>
+    </div>
+    <div class="share-room-body">
+      <label class="share-room-label" for="share-room-link">Link da sala</label>
+      <div class="share-room-field">
+        <input id="share-room-link" class="input" readonly value="${escapeHTML(link)}">
+        <button class="btn btn-primary" data-copy-room-link type="button"><i class="fa-solid fa-copy"></i>Copiar Link</button>
+      </div>
+      <div class="share-room-code">
+        <span>Código <strong>${escapeHTML(room.code)}</strong></span>
+        <button class="btn btn-ghost btn-sm" data-copy-room-code type="button"><i class="fa-solid fa-copy"></i>Copiar código</button>
+      </div>
+      ${navigator.share ? `<button class="btn btn-ghost btn-block" data-share-native type="button"><i class="fa-solid fa-share-nodes"></i>Compartilhar pelo celular</button>` : ""}
+    </div>`;
+  openModal(content, {
+    className: "modal-share-room",
+    label: "Compartilhar sala",
+    onMount: () => {
+      qs("[data-copy-room-link]")?.addEventListener("click", () => copyText(link, "Link da sala copiado."));
+      qs("[data-copy-room-code]")?.addEventListener("click", () => copyText(room.code, `Código ${room.code} copiado.`));
+      qs("[data-share-native]")?.addEventListener("click", async () => {
+        try {
+          await navigator.share({ title: room.name, text: "Entra na minha sala do w00 Party", url: link });
+        } catch {}
+      });
+    }
+  });
+}
+
 function mountRoom() {
   renderParticipants();
   renderChat();
 
-  qsa("[data-copy-party-code]").forEach((button) => {
-    button.addEventListener("click", async () => {
-      try {
-        await navigator.clipboard.writeText(room.code);
-        toast(`Código ${room.code} copiado.`, "success", "Convite");
-      } catch {
-        toast(`Código: ${room.code}`, "info");
-      }
-    });
-  });
-
+  qs("[data-share-room]")?.addEventListener("click", openShareRoomModal);
+  qs("[data-invite-friends]")?.addEventListener("click", openInviteModal);
+  qsa("[data-party-fullscreen]").forEach((button) => button.addEventListener("click", () => togglePartyTheater()));
   qs("[data-leave-room]")?.addEventListener("click", async () => {
     if (isHost) realtimeChannel?.send({ type: "broadcast", event: "room-closed", payload: { sender_id: user.id } });
     try {
@@ -425,13 +540,7 @@ function mountRoom() {
     } catch (error) {
       console.warn("[party] sair:", error.message);
     }
-    location.href = "pkparty.html";
-  });
-
-  qs("[data-invite-friends]")?.addEventListener("click", openInviteModal);
-  qs("[data-change-media]")?.addEventListener("click", openMediaPicker);
-  qs("[data-party-fullscreen]")?.addEventListener("click", () => {
-    qs("#party-video")?.requestFullscreen?.().catch(() => {});
+    navigate("/party");
   });
 
   qs("#party-chat-form")?.addEventListener("submit", async (event) => {
@@ -465,8 +574,33 @@ function mountRoom() {
     }
   });
 
+  if (!window.__w00PartyKeyBound) {
+    window.__w00PartyKeyBound = true;
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && document.body.classList.contains("party-theater")) togglePartyTheater(false);
+    });
+  }
+
   connectRoomRealtime();
   setupPlayback();
+}
+
+async function refreshRoomState() {
+  const roomId = room?.id;
+  if (!roomId || document.body.dataset.page !== "pkparty") return;
+  try {
+    const updated = await getRoom(roomId);
+    if (!updated || room?.id !== roomId || document.body.dataset.page !== "pkparty") return;
+    const changed = updated.movie_id !== room.movie_id;
+    room = updated;
+    if (!changed) return;
+    if (document.body.classList.contains("party-theater")) togglePartyTheater(false);
+    movie = movieForRoom(room);
+    renderRoom();
+    mountRoom();
+  } catch (error) {
+    console.warn("[party] atualizar sala:", error.message);
+  }
 }
 
 function connectRoomRealtime() {
@@ -483,8 +617,7 @@ function connectRoomRealtime() {
     .on("broadcast", { event: "playback" }, ({ payload }) => applyPlayback(payload))
     .on("broadcast", { event: "media" }, ({ payload }) => {
       if (payload?.sender_id !== room.host || !payload.movie_id) return;
-      updateRoomMovie(room.id, payload.movie_id).catch(() => {});
-      location.reload();
+      updateRoomMovie(room.id, payload.movie_id).then(() => refreshRoomState()).catch(() => {});
     })
     .on("broadcast", { event: "state-request" }, ({ payload }) => {
       if (!isHost || payload?.sender_id === user.id) return;
@@ -493,7 +626,7 @@ function connectRoomRealtime() {
     .on("broadcast", { event: "room-closed" }, ({ payload }) => {
       if (payload?.sender_id !== room.host) return;
       toast("O anfitrião encerrou a sala.", "info", "Sessão encerrada");
-      setTimeout(() => { location.href = "pkparty.html"; }, 700);
+      setTimeout(() => navigate("/party"), 700);
     })
     .on("broadcast", { event: "chat" }, ({ payload }) => {
       if (payload?.room_id === room.id) appendChat(payload);
@@ -507,7 +640,7 @@ function connectRoomRealtime() {
       appendChat(message);
     })
     .on("postgres_changes", { event: "UPDATE", schema: "public", table: "rooms", filter: `id=eq.${room.id}` }, ({ new: updated }) => {
-      if (updated.movie_id !== room.movie_id) location.reload();
+      if (updated.movie_id !== room.movie_id) refreshRoomState();
     })
     .subscribe(async (status) => {
       if (status !== "SUBSCRIBED") return;
@@ -529,21 +662,42 @@ function connectRoomRealtime() {
       }
     });
 
-  window.addEventListener("beforeunload", () => {
-    clearInterval(heartbeat);
-    if (realtimeChannel) sb.removeChannel(realtimeChannel);
-    realtimeChannel = null;
-  }, { once: true });
+  if (!window.__w00PartyUnloadBound) {
+    window.__w00PartyUnloadBound = true;
+    window.addEventListener("beforeunload", () => {
+      clearInterval(heartbeat);
+      if (realtimeChannel) sb.removeChannel(realtimeChannel);
+      realtimeChannel = null;
+    }, { once: true });
+  }
+}
+
+function updatePartyControls() {
+  const video = qs("#party-video");
+  if (!video) return;
+  const duration = Number.isFinite(video.duration) ? video.duration : 0;
+  const time = qs("#party-time");
+  if (time) time.textContent = `${formatClock(video.currentTime || 0)} / ${formatClock(duration)}`;
+  const seek = qs("#party-seek");
+  if (seek && !seek.matches(":active")) {
+    seek.value = duration ? String(Math.round((video.currentTime / duration) * 1000)) : "0";
+  }
+  const playIcon = qs("[data-party-play] i");
+  if (playIcon) playIcon.className = `fa-solid fa-${video.paused ? "play" : "pause"}`;
+  const muteIcon = qs("[data-party-mute] i");
+  if (muteIcon) muteIcon.className = `fa-solid fa-volume-${video.muted || !video.volume ? "xmark" : "high"}`;
 }
 
 function setupPlayback() {
+  clearInterval(heartbeat);
+  heartbeat = null;
   const video = qs("#party-video");
   if (!video || !movie) return;
   video.src = movie.stream;
   video.preload = "metadata";
+  video.controls = false;
 
   if (!isHost) {
-    video.controls = false;
     video.addEventListener("play", () => { if (!applyingRemote) video.pause(); });
     video.addEventListener("pause", () => { if (!applyingRemote && !video.ended) safePlay(video); });
   } else {
@@ -555,8 +709,38 @@ function setupPlayback() {
       const saved = room.playback_state || {};
       if (Number(saved.time) > 0) video.currentTime = Number(saved.time);
       if (saved.paused === false) safePlay(video);
+      updatePartyControls();
     });
   }
+
+  qs("[data-party-play]")?.addEventListener("click", () => {
+    if (!isHost) {
+      // Guests cannot control the session, but they can start local playback
+      // once to satisfy the browser's autoplay policy.
+      applyingRemote = true;
+      safePlay(video);
+      setTimeout(() => { applyingRemote = false; }, 400);
+      return;
+    }
+    if (video.paused) safePlay(video);
+    else video.pause();
+  });
+
+  qs("#party-seek")?.addEventListener("input", (event) => {
+    if (!isHost || !Number.isFinite(video.duration)) return;
+    video.currentTime = (Number(event.target.value) / 1000) * video.duration;
+    updatePartyControls();
+  });
+
+  qs("[data-party-mute]")?.addEventListener("click", () => {
+    video.muted = !video.muted;
+    updatePartyControls();
+  });
+
+  ["timeupdate", "play", "pause", "loadedmetadata", "volumechange", "seeked"].forEach((eventName) => {
+    video.addEventListener(eventName, updatePartyControls);
+  });
+  updatePartyControls();
 
   heartbeat = setInterval(() => {
     if (!isHost || !video || video.paused) return;
@@ -577,7 +761,11 @@ function broadcastPlayback(force = false) {
     force
   };
   realtimeChannel.send({ type: "broadcast", event: "playback", payload });
-  if (!video.paused) savePlaybackState(room.id, { paused: false, time: video.currentTime, at: Date.now() }).catch(() => {});
+  savePlaybackState(room.id, {
+    paused: video.paused,
+    time: video.currentTime,
+    at: Date.now()
+  }).catch(() => {});
 }
 
 function applyPlayback(payload) {
@@ -594,7 +782,7 @@ function applyPlayback(payload) {
     if (Math.abs(video.currentTime - expected) > 0.8) video.currentTime = expected;
     safePlay(video);
   }
-  setTimeout(() => { applyingRemote = false; }, 120);
+  setTimeout(() => { applyingRemote = false; updatePartyControls(); }, 120);
 }
 
 async function openInviteModal() {
@@ -610,7 +798,7 @@ async function openInviteModal() {
     <button class="modal-close" data-close-modal type="button" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
     <div class="auth-head"><div class="brand-mark">w00</div><h2>Convidar amigos</h2><p>Eles recebem o convite no w00 Party.</p></div>
     <div class="auth-body">
-      ${friends.length ? friends.map((friend) => `<div class="user-card">${avatar(friend, "md")}<div class="grow"><strong>${escapeHTML(friend.name)}</strong><span>${escapeHTML(friend.favoriteGenre || "amigo")}</span></div><button class="btn btn-sm btn-ghost" data-send-room-invite="${escapeHTML(friend.id)}" type="button"><i class="fa-solid fa-paper-plane"></i>Convidar</button></div>`).join("") : `<p class="tiny muted">Você ainda não tem amigos. Adicione alguém na página Amigos.</p><a class="btn btn-ghost btn-block btn-sm" href="amigos.html">Ir para Amigos</a>`}
+      ${friends.length ? friends.map((friend) => `<div class="user-card">${avatar(friend, "md")}<div class="grow"><strong>${escapeHTML(friend.name)}</strong><span>${escapeHTML(friend.favoriteGenre || "amigo")}</span></div><button class="btn btn-sm btn-ghost" data-send-room-invite="${escapeHTML(friend.id)}" type="button"><i class="fa-solid fa-paper-plane"></i>Convidar</button></div>`).join("") : `<p class="tiny muted">Você ainda não tem amigos. Adicione alguém na página Amigos.</p><a class="btn btn-ghost btn-block btn-sm" href="/amigos">Ir para Amigos</a>`}
     </div>`;
   openModal(content, {
     className: "modal-sm",
@@ -627,33 +815,6 @@ async function openInviteModal() {
             toast(error.message, "error");
             button.disabled = false;
           }
-        });
-      });
-    }
-  });
-}
-
-function openMediaPicker() {
-  if (!isHost || !CATALOG.length) return;
-  const content = `
-    <button class="modal-close" data-close-modal type="button" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
-    <div class="auth-head"><div class="brand-mark">w00</div><h2>Trocar título</h2><p>Somente o anfitrião pode alterar a mídia.</p></div>
-    <div style="padding:20px 24px 26px"><div class="media-pick-grid">${CATALOG.map((item) => `<button class="media-pick" type="button" data-pick-media="${escapeHTML(item.id)}">
-      ${posterMarkup(item, "media-poster")}
-      <strong>${escapeHTML(item.title)}</strong><span>${item.year || ""} · ${escapeHTML(item.genres[0] || "")}</span>
-    </button>`).join("")}</div></div>`;
-  openModal(content, {
-    className: "modal-lg",
-    label: "Escolher mídia",
-    onMount: () => {
-      qsa("[data-pick-media]").forEach((button) => {
-        button.addEventListener("click", async () => {
-          const next = byId(button.dataset.pickMedia);
-          if (!next) return;
-          await updateRoomMovie(room.id, next.id);
-          realtimeChannel?.send({ type: "broadcast", event: "media", payload: { sender_id: user.id, movie_id: next.id } });
-          closeModal();
-          location.reload();
         });
       });
     }

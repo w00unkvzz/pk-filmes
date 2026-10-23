@@ -5,13 +5,14 @@
 //   HTML pages    → network-first, fallback to cache
 //   Supabase/fonts/FA → network-only (no cache)
 
-const VERSION = "w00-v10";
+const VERSION = "w00-v11";
 // Catalog stays on v2 on purpose: bumping it forces a multi-MB re-download.
 const CATALOG_CACHE = "w00-catalog-v2";
-const STATIC_CACHE  = "w00-static-v10";
-const HTML_CACHE    = "w00-html-v10";
+const STATIC_CACHE  = "w00-static-v11";
+const HTML_CACHE    = "w00-html-v11";
 
 const STATIC_ASSETS = [
+  "/",
   "/css/base.css",
   "/css/layout.css",
   "/css/components.css",
@@ -21,6 +22,7 @@ const STATIC_ASSETS = [
   "/js/tmdb.js",
   "/js/trailer.js",
   "/js/watchparty.js",
+  "/js/router.js",
   "/js/main.js",
   "/js/config.js",
   "/js/data.js",
@@ -95,8 +97,8 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // HTML pages → network-first, fallback cache
-  if (request.headers.get("accept")?.includes("text/html") || url.pathname.endsWith(".html") || url.pathname === "/") {
+  // HTML pages and clean SPA routes → network-first, fallback cache
+  if (request.mode === "navigate" || request.headers.get("accept")?.includes("text/html") || url.pathname.endsWith(".html") || url.pathname === "/") {
     event.respondWith(networkFirstHtml(request));
     return;
   }
@@ -147,7 +149,9 @@ async function networkFirstHtml(request) {
     if (response.ok) cache.put(request, response.clone());
     return response;
   } catch {
-    const cached = await cache.match(request);
+    const cached = await cache.match(request)
+      || await caches.match("/index.html")
+      || await caches.match("/");
     return cached || fetch(request);
   }
 }

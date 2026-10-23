@@ -5,17 +5,94 @@
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
-        { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
-        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=()" }
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=()"
+        }
       ]
     },
     {
       "source": "/js/vendor/(.*)",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
       ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/filme/:slug",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/serie/:slug",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/assistir/:slug",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/sala/:code",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/catalogo",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/buscar",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/perfil",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/amigos",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/party",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/em-breve",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/cartaz",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/inicio",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/w00-party",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/detalhes/:slug",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/player/:slug",
+      "destination": "/index.html"
     }
   ]
 }

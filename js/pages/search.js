@@ -84,8 +84,8 @@ function popularMarkup() {
 
 function genresMarkup() {
   return `<section class="page-section tight">
-    <div class="section-head"><div><div class="section-kicker"><i class="fa-solid fa-palette"></i> Descubra</div><h2>Explorar gêneros</h2></div><a class="section-link" href="catalogo.html">Catálogo <i class="fa-solid fa-arrow-right"></i></a></div>
-    <div class="genre-explore">${CONFIG.genres.map((genre) => `<a class="genre-tile" style="--c1:${genre.colors[0]};--c2:${genre.colors[1]}" href="catalogo.html?genero=${encodeURIComponent(genre.name)}"><i class="fa-solid ${genre.icon}"></i><span>${escapeHTML(genre.name)}</span></a>`).join("")}</div>
+    <div class="section-head"><div><div class="section-kicker"><i class="fa-solid fa-palette"></i> Descubra</div><h2>Explorar gêneros</h2></div><a class="section-link" href="/catalogo">Catálogo <i class="fa-solid fa-arrow-right"></i></a></div>
+    <div class="genre-explore">${CONFIG.genres.map((genre) => `<a class="genre-tile" style="--c1:${genre.colors[0]};--c2:${genre.colors[1]}" href="/catalogo?genero=${encodeURIComponent(genre.name)}"><i class="fa-solid ${genre.icon}"></i><span>${escapeHTML(genre.name)}</span></a>`).join("")}</div>
   </section>`;
 }
 
@@ -98,6 +98,9 @@ function recommendMarkup() {
 }
 
 export function renderSearch() {
+  if (document.body.dataset.page !== "search") return;
+  clearTimeout(debounceTimer);
+  debounceTimer = null;
   const query = new URLSearchParams(location.search).get("q") || "";
   qs("#page-content").innerHTML = `
     <div class="search-hero">
@@ -130,6 +133,7 @@ export function renderSearch() {
 function setResults(term, save = false) {
   const clean = term.trim();
   const discovery = qs("#search-discovery");
+  if (!discovery) return;
   const section = qs("#search-results-section");
   const grid = qs("#search-results");
   const title = qs("#search-results-title");
@@ -150,7 +154,7 @@ function setResults(term, save = false) {
   grid.innerHTML = results.length ? results.map((item) => posterCard(item)).join("") : emptyState("fa-magnifying-glass", "Nada por aqui", "Tente outro termo, confira a ortografia ou explore os gêneros abaixo.");
   const url = new URL(location.href);
   if (clean) url.searchParams.set("q", clean); else url.searchParams.delete("q");
-  history.replaceState(null, "", `${url.pathname}${url.search}`);
+  history.replaceState(history.state || {}, "", `${url.pathname}${url.search}`);
   if (save) store.addSearchHistory(clean);
 }
 
@@ -179,14 +183,22 @@ function mountSearch(initialQuery) {
     input.focus();
   });
 
+  bindSearchHistory();
+}
+
+function bindSearchHistory() {
+  if (window.__w00SearchHistoryBound) return;
+  window.__w00SearchHistoryBound = true;
   document.addEventListener("click", (event) => {
+    const input = qs("#search-input");
+    if (!input) return;
     const removeTerm = event.target.closest("[data-remove-history-term]");
     if (removeTerm) {
       event.preventDefault(); event.stopPropagation();
       const term = removeTerm.dataset.removeHistoryTerm;
       const next = store.getSearchHistory().filter((entry) => entry !== term);
       localStorage.setItem(`${CONFIG.storagePrefix}searchHistory`, JSON.stringify(next));
-      window.location.reload();
+      renderSearch();
       return;
     }
     const historyTerm = event.target.closest("[data-history-term]");
@@ -195,10 +207,11 @@ function mountSearch(initialQuery) {
       input.value = historyTerm.dataset.historyTerm;
       setResults(input.value, true);
       qs("#search-results-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
     }
     if (event.target.closest("#clear-history")) {
       store.clearSearchHistory();
-      window.location.reload();
+      renderSearch();
     }
-  }, { once: false });
+  });
 }

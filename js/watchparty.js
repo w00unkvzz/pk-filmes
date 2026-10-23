@@ -2,6 +2,7 @@
 import { openModal, closeModal, toast, escapeHTML, openAuthModal } from "./ui.js";
 import * as store from "./store.js";
 import { createRoom } from "./social.js";
+import { navigate, roomPath } from "./router.js";
 
 export function openWatchPartyModal(item, options = {}) {
   if (!item) return;
@@ -80,7 +81,7 @@ export function openWatchPartyModal(item, options = {}) {
         try {
           const room = await createRoom({ name, movieId, isPrivate });
           closeModal();
-          location.href = `pkparty.html?sala=${encodeURIComponent(room.code)}`;
+          navigate(roomPath(room.code));
         } catch (error) {
           toast(error.message || "Não foi possível criar a sala.", "error", "Watch Party");
           submit.disabled = false;

@@ -95,7 +95,7 @@ export async function signInWithGoogle() {
 export async function sendPasswordReset(email) {
   const sb = getClient();
   if (!sb) throw new Error("Supabase não configurado.");
-  const redirect = new URL(authRedirectUrl("/perfil.html"));
+  const redirect = new URL(authRedirectUrl("/perfil"));
   redirect.searchParams.set("recovery", "1");
   const { error } = await sb.auth.resetPasswordForEmail(String(email || "").trim(), {
     redirectTo: redirect.toString()

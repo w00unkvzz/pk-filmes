@@ -37,11 +37,13 @@ export function openTrailerModal(item) {
       const trailer = await getTrailer(item);
       if (!root.isConnected) return;
       if (trailer?.key) {
+        const key = encodeURIComponent(trailer.key);
         root.innerHTML = `<iframe
-          src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(trailer.key)}?autoplay=1&rel=0&modestbranding=1"
+          src="https://www.youtube.com/embed/${key}?autoplay=1&rel=0&modestbranding=1&playsinline=1"
           title="${escapeHTML(trailer.name || `Trailer de ${title}`)}"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          allowfullscreen></iframe>`;
+          allowfullscreen></iframe>
+          <a class="trailer-open-link" href="https://www.youtube.com/watch?v=${key}" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-youtube"></i>Abrir no YouTube</a>`;
         return;
       }
       root.innerHTML = `${poster ? `<img class="trailer-poster" src="${escapeHTML(poster)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">` : ""}${trailerFallback(title)}`;

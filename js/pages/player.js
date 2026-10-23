@@ -1,6 +1,7 @@
 // Immersive player page: custom overlay controls, resume prompt, skip intro,
 // next episode and a season carousel matching the reference player.
 import { byId, getSeriesGroup } from "../data.js";
+import { getRoute, detailsPath, playerPath, replaceRoute } from "../router.js";
 import * as store from "../store.js";
 import { qs, escapeHTML, formatDuration, formatClock, toast, emptyState } from "../ui.js";
 import { getTitleDetails, getSeasonDetails, tmdbIdFromItem, imageUrl, yearOf, runtimeOf, ratingOf } from "../tmdb.js";
@@ -9,7 +10,39 @@ import { openWatchPartyModal } from "../watchparty.js";
 const DIRECT_VIDEO = /\.(mp4|m4v|webm|ogv|ogg|mov|m3u8)(\?|#|$)/i;
 const EMBED_HOST = /youtube\.com|youtu\.be|vimeo\.com|dailymotion\.com|\/embed\/|player\./i;
 let stripRequest = 0;
+let playerRequest = 0;
 let controlsTimer = 0;
+
+function setPlayerControlsHidden(hidden) {
+  const overlay = qs("#player-overlay");
+  if (!overlay) return;
+  const prompt = qs("#player-continue");
+  if (hidden && prompt && !prompt.hidden) return;
+  overlay.classList.toggle("controls-hidden", hidden);
+  overlay.classList.toggle("hide-controls", hidden);
+}
+
+function revealPlayerControls() {
+  const overlay = qs("#player-overlay");
+  if (!overlay || overlay.hidden) return;
+  setPlayerControlsHidden(false);
+  clearTimeout(controlsTimer);
+  controlsTimer = window.setTimeout(() => setPlayerControlsHidden(true), 3000);
+}
+
+function bindOverlayAutoHide() {
+  const viewport = qs("#player-viewport");
+  if (!viewport || viewport.dataset.hideBound) return;
+  viewport.dataset.hideBound = "1";
+  ["pointermove", "mousemove", "pointerdown", "touchstart", "click"].forEach((eventName) => {
+    viewport.addEventListener(eventName, revealPlayerControls, { passive: true });
+  });
+  if (!window.__w00PlayerKeyBound) {
+    window.__w00PlayerKeyBound = true;
+    document.addEventListener("keydown", revealPlayerControls);
+  }
+  revealPlayerControls();
+}
 
 function streamFor(item) {
   return String(item?.player || item?.stream || "").trim().replace(/^http:\/\//i, "https://");
@@ -27,13 +60,15 @@ function episodeName(entry) {
 }
 
 export function renderPlayer() {
-  const params = new URLSearchParams(location.search);
-  const id = params.get("id") || params.get("filme") || "";
-  const item = byId(id);
+  const request = ++playerRequest;
+  const route = getRoute();
+  const params = route.params;
+  const id = route.itemId || params.get("id") || params.get("filme") || "";
+  const item = route.item || byId(id);
   const content = qs("#page-content");
 
   if (!item) {
-    content.innerHTML = `<div class="player-page"><div class="player-missing">${emptyState("fa-film", "Título não encontrado", "Volte ao catálogo e escolha um título para assistir.")}<a class="btn btn-primary" href="catalogo.html"><i class="fa-solid fa-clapperboard"></i>Ver catálogo</a></div></div>`;
+    content.innerHTML = `<div class="player-page"><div class="player-missing">${emptyState("fa-film", "Título não encontrado", "Volte ao catálogo e escolha um título para assistir.")}<a class="btn btn-primary" href="/catalogo"><i class="fa-solid fa-clapperboard"></i>Ver catálogo</a></div></div>`;
     return;
   }
 
@@ -90,14 +125,14 @@ export function renderPlayer() {
             <span id="player-movie-meta">${escapeHTML(playerSubtitle(current, group, show, null))}</span>
           </div>
           <div class="player-movie-actions">
-            <a class="btn btn-ghost" href="detalhes.html?id=${encodeURIComponent(current.item.id)}"><i class="fa-solid fa-circle-info"></i>Detalhes</a>
+            <a class="btn btn-ghost" href="${detailsPath(current.item)}"><i class="fa-solid fa-circle-info"></i>Detalhes</a>
             <button class="btn btn-party" id="player-party" type="button"><i class="fa-solid fa-users"></i>Criar Watch Party</button>
           </div>
         </section>`}
     </div>`;
 
   mountPlayer({ item, group, show, current });
-  hydratePlayer({ item, group, show, current });
+  hydratePlayer({ item, group, show, current, request });
 }
 
 function playerSubtitle(current, group, show, data) {
@@ -117,7 +152,7 @@ function playerSubtitle(current, group, show, data) {
 function stageMarkup(item) {
   const stream = streamFor(item);
   if (!stream) {
-    return { mode: "none", html: `<div class="player-fallback"><i class="fa-solid fa-triangle-exclamation"></i><h3>Player indisponível</h3><p>Este título ainda não tem um link de reprodução.</p><a class="btn btn-ghost" href="detalhes.html?id=${encodeURIComponent(item.id)}">Voltar aos detalhes</a></div>` };
+    return { mode: "none", html: `<div class="player-fallback"><i class="fa-solid fa-triangle-exclamation"></i><h3>Player indisponível</h3><p>Este título ainda não tem um link de reprodução.</p><a class="btn btn-ghost" href="${detailsPath(item)}">Voltar aos detalhes</a></div>` };
   }
   if (isDirectVideo(stream)) {
     return {
@@ -139,13 +174,13 @@ function overlayMarkup(mode, current, group, show) {
   return `
     <div class="player-top-bar">
       <div class="player-top-left">
-        <a class="back-btn" href="detalhes.html?id=${encodeURIComponent(current.item.id)}" aria-label="Voltar aos detalhes"><i class="fa-solid fa-arrow-left"></i></a>
+        <a class="back-btn" href="${detailsPath(current.item)}" aria-label="Voltar aos detalhes"><i class="fa-solid fa-arrow-left"></i></a>
         <div class="meta-info">
           <span class="meta-title" id="player-title">${escapeHTML(show.title)}</span>
           <span class="meta-subtitle" id="player-subtitle">${escapeHTML(playerSubtitle(current, group, show, null))}</span>
         </div>
       </div>
-      <a class="brand-logo-pk" href="index.html" aria-label="Início">W00</a>
+      <a class="brand-logo-pk" href="/" aria-label="Início">W00</a>
     </div>
 
     <div class="player-bottom-wrapper">
@@ -198,7 +233,7 @@ function mountPlayer({ item, group, show, current }) {
   const { mode, html } = stageMarkup(activeItem);
   stage.innerHTML = html;
   overlay.hidden = mode === "none";
-  overlay.classList.remove("controls-hidden");
+  overlay.classList.remove("controls-hidden", "hide-controls");
   overlay.innerHTML = overlayMarkup(mode, current, group, show);
   const page = qs("#player-page");
   if (page) page.dataset.activeId = activeItem.id;
@@ -211,6 +246,7 @@ function mountPlayer({ item, group, show, current }) {
   }
 
   bindSharedControls({ item, group, show, current, activeItem });
+  bindOverlayAutoHide();
   if (mode === "direct") bindVideoControls({ group, show, current, activeItem });
   updatePlayerHeading(current, group, show, null);
 }
@@ -235,10 +271,13 @@ function bindSharedControls({ group, show, activeItem }) {
       const open = seasonDropdown?.classList.toggle("open");
       seasonButton.setAttribute("aria-expanded", open ? "true" : "false");
     });
-    document.addEventListener("click", () => {
-      seasonDropdown?.classList.remove("open");
-      seasonButton.setAttribute("aria-expanded", "false");
-    });
+    if (!window.__w00PlayerSeasonClickBound) {
+      window.__w00PlayerSeasonClickBound = true;
+      document.addEventListener("click", () => {
+        qs("#player-season-dropdown")?.classList.remove("open");
+        qs("#player-season-btn")?.setAttribute("aria-expanded", "false");
+      });
+    }
   }
   if (seasonDropdown && !seasonDropdown.dataset.bound) {
     seasonDropdown.dataset.bound = "1";
@@ -289,7 +328,6 @@ function bindSharedControls({ group, show, activeItem }) {
 function bindVideoControls({ group, show, current, activeItem }) {
   const video = qs("#player-video");
   if (!video) return;
-  const overlay = qs("#player-overlay");
   const playPause = qs("#player-playpause");
   const timeline = qs("#player-timeline");
   const progress = qs("#player-progress");
@@ -301,7 +339,6 @@ function bindVideoControls({ group, show, current, activeItem }) {
   const continueTime = qs("#player-continue-time");
   const volume = qs("#player-volume");
   const mute = qs("#player-mute");
-  const fullscreen = qs("#player-fullscreen");
   const settings = store.getSettings();
   const history = store.getHistoryEntry(activeItem.id);
   const next = group ? nextEpisode(group, current) : null;
@@ -333,13 +370,7 @@ function bindVideoControls({ group, show, current, activeItem }) {
     if (playPause) playPause.setAttribute("aria-label", playing ? "Pausar" : "Reproduzir");
   };
 
-  const showControls = () => {
-    overlay?.classList.remove("controls-hidden");
-    clearTimeout(controlsTimer);
-    if (!video.paused) {
-      controlsTimer = window.setTimeout(() => overlay?.classList.add("controls-hidden"), 3000);
-    }
-  };
+  const showControls = () => revealPlayerControls();
 
   const hidePrompt = () => {
     continuePrompt?.setAttribute("hidden", "");
@@ -431,21 +462,18 @@ function bindVideoControls({ group, show, current, activeItem }) {
     }
   });
 
-  qs("#player-fullscreen")?.addEventListener("click", async () => {
+  qs("#player-fullscreen")?.addEventListener("click", () => {
     const viewport = qs("#player-viewport");
-    try {
-      if (document.fullscreenElement || document.webkitFullscreenElement) {
-        await (document.exitFullscreen ? document.exitFullscreen() : Promise.resolve(document.webkitExitFullscreen?.()));
-      } else if (viewport?.requestFullscreen) {
-        await viewport.requestFullscreen();
-      } else if (viewport?.webkitRequestFullscreen) {
-        viewport.webkitRequestFullscreen();
-      } else if (video.webkitEnterFullscreen) {
-        video.webkitEnterFullscreen();
-      }
-    } catch {
-      toast("Tela cheia não está disponível neste navegador.", "info");
-    }
+    if (!viewport) return;
+    // In-app theater mode instead of the native Fullscreen API. This keeps
+    // the video edge-to-edge without the browser's "press Esc to exit"
+    // overlay/banner, which cannot be styled or removed by the site.
+    const active = viewport.classList.toggle("is-faux-fullscreen");
+    document.body.classList.toggle("player-faux-fullscreen", active);
+    const icon = qs("#player-fullscreen i");
+    if (icon) icon.className = `fa-solid fa-${active ? "compress" : "expand"}`;
+    qs("#player-fullscreen")?.setAttribute("aria-pressed", String(active));
+    revealPlayerControls();
   });
 
   qs("#player-report")?.addEventListener("click", () => {
@@ -468,8 +496,7 @@ function bindVideoControls({ group, show, current, activeItem }) {
   video.addEventListener("pause", () => {
     save(true);
     setPlayIcon(false);
-    overlay?.classList.remove("controls-hidden");
-    clearTimeout(controlsTimer);
+    revealPlayerControls();
   });
   video.addEventListener("playing", () => {
     qs("#player-buffering")?.classList.remove("is-visible");
@@ -514,7 +541,7 @@ function bindVideoControls({ group, show, current, activeItem }) {
     } : {});
     window.dispatchEvent(new CustomEvent("pk:history-changed"));
     setPlayIcon(false);
-    overlay?.classList.remove("controls-hidden");
+    revealPlayerControls();
     if (group && next) {
       toast("Próximo episódio disponível.", "info", "Maratona");
       if (store.getSettings().autoNextEpisode) setTimeout(() => selectEpisode({ group, show, entry: next }), 2000);
@@ -536,10 +563,13 @@ function bindVideoControls({ group, show, current, activeItem }) {
 
   qs("#player-viewport")?.addEventListener("pointermove", showControls, { passive: true });
   qs("#player-viewport")?.addEventListener("touchstart", showControls, { passive: true });
-  document.addEventListener("fullscreenchange", () => {
-    const icon = qs("#player-fullscreen i");
-    if (icon) icon.className = document.fullscreenElement ? "fa-solid fa-compress" : "fa-solid fa-expand";
-  });
+  if (!window.__w00FullscreenBound) {
+    window.__w00FullscreenBound = true;
+    document.addEventListener("fullscreenchange", () => {
+      const icon = qs("#player-fullscreen i");
+      if (icon) icon.className = document.fullscreenElement ? "fa-solid fa-compress" : "fa-solid fa-expand";
+    });
+  }
 
   if (volume) volume.value = String(video.volume);
   updateVolumeIcon();
@@ -551,8 +581,8 @@ function stageError(activeItem, group) {
   const stage = qs("#player-stage");
   if (!stage) return;
   qs("#player-buffering")?.classList.remove("is-visible");
-  qs("#player-overlay")?.classList.add("controls-hidden");
-  stage.innerHTML = `<div class="player-fallback"><i class="fa-solid fa-triangle-exclamation"></i><h3>Não foi possível carregar o vídeo</h3><p>O servidor pode ter bloqueado a reprodução interna. Tente abrir o arquivo diretamente.</p><a class="btn btn-primary" href="${escapeHTML(streamFor(activeItem))}" target="_blank" rel="noopener"><i class="fa-solid fa-up-right-from-square"></i>Abrir vídeo</a>${group ? `<a class="btn btn-ghost" href="detalhes.html?id=${encodeURIComponent(activeItem.id)}">Escolher outro episódio</a>` : ""}</div>`;
+  qs("#player-overlay")?.classList.add("controls-hidden", "hide-controls");
+  stage.innerHTML = `<div class="player-fallback"><i class="fa-solid fa-triangle-exclamation"></i><h3>Não foi possível carregar o vídeo</h3><p>O servidor pode ter bloqueado a reprodução interna. Tente abrir o arquivo diretamente.</p><a class="btn btn-primary" href="${escapeHTML(streamFor(activeItem))}" target="_blank" rel="noopener"><i class="fa-solid fa-up-right-from-square"></i>Abrir vídeo</a>${group ? `<a class="btn btn-ghost" href="${detailsPath(activeItem)}">Escolher outro episódio</a>` : ""}</div>`;
 }
 
 function updateSeasonLabel(seasonNumber) {
@@ -584,13 +614,10 @@ function selectEpisode({ group, show, entry }) {
   if (!qs("#player-page")) return;
   const previousVideo = qs("#player-video");
   if (previousVideo && !previousVideo.paused) previousVideo.pause();
-  const url = new URL(location.href);
-  url.searchParams.set("id", entry.item.id);
-  url.searchParams.set("temporada", String(entry.season));
-  url.searchParams.set("episodio", String(entry.episode));
-  history.replaceState(null, "", url);
+  replaceRoute(`${playerPath(entry.item)}?temporada=${encodeURIComponent(entry.season)}&episodio=${encodeURIComponent(entry.episode)}`);
+  const request = ++playerRequest;
   mountPlayer({ item: entry.item, group, show, current: entry });
-  hydratePlayer({ item: entry.item, group, show, current: entry });
+  hydratePlayer({ item: entry.item, group, show, current: entry, request });
   qs("#player-viewport")?.scrollIntoView?.({ behavior: "smooth", block: "start" });
 }
 
@@ -687,9 +714,10 @@ function updatePlayerHeading(current, group, show, data) {
   document.title = `${name} — assistir`;
 }
 
-async function hydratePlayer({ item, group, show, current }) {
+async function hydratePlayer({ item, group, show, current, request }) {
   const data = await getTitleDetails(group?.first.item || item);
   if (!data) return;
+  if (request !== playerRequest || document.body.dataset.page !== "player") return;
   updatePlayerHeading(current, group, show, data);
 }
 
@@ -712,6 +740,8 @@ if (!window.__w00PlayerKeysBound) {
     } else if (event.key === "m") {
       video.muted = !video.muted;
     } else if (event.key === "f") {
+      qs("#player-fullscreen")?.click();
+    } else if (event.key === "Escape" && document.body.classList.contains("player-faux-fullscreen")) {
       qs("#player-fullscreen")?.click();
     }
   });

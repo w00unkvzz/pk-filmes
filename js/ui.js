@@ -1,6 +1,7 @@
 // Shared UI: shell, cards, rows, modals, details, player, toasts and auth.
 import { CONFIG } from "./config.js";
 import { byId, getGenreMeta } from "./data.js";
+import { navigate, detailsPath, playerPath } from "./router.js";
 import * as store from "./store.js";
 import { authEnabled, logout as authLogout } from "./auth.js";
 import { signIn, signUp, signInWithGitHub, sendPasswordReset, updatePassword } from "./supabase.js";
@@ -106,7 +107,7 @@ export function renderShell() {
 
   const sections = [...new Set(CONFIG.nav.map((item) => item.section))];
   sidebar.innerHTML = `
-    <a class="sidebar-brand" href="index.html" aria-label="${escapeHTML(CONFIG.brand)} — início">
+    <a class="sidebar-brand" href="/" aria-label="${escapeHTML(CONFIG.brand)} — início">
       <span class="brand-mark">${escapeHTML(CONFIG.brandShort)}</span>
       <span class="brand-text"><strong>${escapeHTML(CONFIG.brand)}</strong><span>${escapeHTML(CONFIG.tagline)}</span></span>
     </a>
@@ -124,20 +125,20 @@ export function renderShell() {
     </nav>
     <div class="sidebar-foot">
       ${user.authed
-        ? `<a class="sidebar-user" href="perfil.html">${avatar(user, "sm")}<div><strong>${escapeHTML(user.name)}</strong><span>online</span></div></a>`
+        ? `<a class="sidebar-user" href="/perfil">${avatar(user, "sm")}<div><strong>${escapeHTML(user.name)}</strong><span>online</span></div></a>`
         : `<button class="sidebar-user" data-auth-open type="button">${avatar(user, "sm")}<div><strong>Entrar</strong><span>Sua conta</span></div></button>`}
     </div>`;
 
   topbar.innerHTML = `
     <button class="mobile-menu-btn" data-sidebar-toggle type="button" aria-label="Abrir menu"><i class="fa-solid fa-bars"></i></button>
-    <a class="mobile-top-logo" href="index.html"><span class="brand-mark">${escapeHTML(CONFIG.brandShort)}</span><strong>${escapeHTML(CONFIG.brand)}</strong></a>
-    <form class="topbar-search" action="search.html" method="get" role="search">
+    <a class="mobile-top-logo" href="/"><span class="brand-mark">${escapeHTML(CONFIG.brandShort)}</span><strong>${escapeHTML(CONFIG.brand)}</strong></a>
+    <form class="topbar-search" action="/buscar" method="get" role="search">
       <i class="fa-solid fa-magnifying-glass"></i>
       <input type="search" name="q" placeholder="Buscar filmes, séries ou gêneros..." autocomplete="off" aria-label="Buscar no catálogo">
     </form>
     <div class="topbar-spacer"></div>
     <div class="topbar-actions">
-      <a class="topbar-icon" href="amigos.html" aria-label="Amigos e pedidos" title="Amigos">
+      <a class="topbar-icon" href="/amigos" aria-label="Amigos e pedidos" title="Amigos">
         <i class="fa-regular fa-bell"></i>${requestCount ? '<span class="dot-badge"></span>' : ""}
       </a>
       <div class="topbar-menu">
@@ -145,9 +146,9 @@ export function renderShell() {
         <div class="profile-menu" id="profile-menu">
           <div class="profile-menu-head"><strong>${escapeHTML(user.name)}</strong><span>${escapeHTML(user.authed ? user.email : "Não conectado")}</span></div>
           ${user.authed
-            ? `<a href="perfil.html"><i class="fa-solid fa-user"></i>Meu perfil</a>
-               <a href="perfil.html#minha-lista"><i class="fa-solid fa-bookmark"></i>Minha lista</a>
-               <a href="amigos.html"><i class="fa-solid fa-user-group"></i>Amigos</a>
+            ? `<a href="/perfil"><i class="fa-solid fa-user"></i>Meu perfil</a>
+               <a href="/perfil#minha-lista"><i class="fa-solid fa-bookmark"></i>Minha lista</a>
+               <a href="/amigos"><i class="fa-solid fa-user-group"></i>Amigos</a>
                <div class="sep"></div>
                <button data-logout type="button"><i class="fa-solid fa-right-from-bracket"></i>Sair</button>`
             : `<button data-auth-open type="button"><i class="fa-solid fa-right-to-bracket"></i>Entrar</button>`}
@@ -171,11 +172,11 @@ export function renderFooter() {
       <div class="row-between">
         <div class="footer-brand"><span class="brand-mark">${escapeHTML(CONFIG.brandShort)}</span>${escapeHTML(CONFIG.brand)}</div>
         <div class="footer-links">
-          <a href="catalogo.html">Catálogo</a>
-          <a href="cartaz.html">Em breve</a>
-          <a href="pkparty.html">w00 Party</a>
-          <a href="amigos.html">Amigos</a>
-          <a href="perfil.html">Perfil</a>
+          <a href="/catalogo">Catálogo</a>
+          <a href="/em-breve">Em breve</a>
+          <a href="/party">w00 Party</a>
+          <a href="/amigos">Amigos</a>
+          <a href="/perfil">Perfil</a>
         </div>
         <span>© ${new Date().getFullYear()} w00filmes</span>
       </div>
@@ -349,7 +350,7 @@ export function mediaRow(title, items, options = {}) {
   const html = `<section class="page-section ${options.tight ? "tight" : ""}">
     <div class="section-head">
       <div>${options.kicker ? `<div class="section-kicker">${options.kicker}</div>` : ""}<h2>${title}</h2></div>
-      <a class="section-link" href="${options.href || "catalogo.html"}">Ver tudo <i class="fa-solid fa-arrow-right"></i></a>
+      <a class="section-link" href="${options.href || "/catalogo"}">Ver tudo <i class="fa-solid fa-arrow-right"></i></a>
     </div>
     <div class="media-row-wrap">
       <button class="row-arrow left" data-row-scroll="left" data-target="${rowId}" type="button" aria-label="Rolar para a esquerda"><i class="fa-solid fa-chevron-left"></i></button>
@@ -377,7 +378,7 @@ export function top10Row(items) {
   return `<section class="page-section">
     <div class="section-head">
       <h2>Top 10 da semana</h2>
-      <a class="section-link" href="catalogo.html?ordenar=popular">Ver catálogo <i class="fa-solid fa-arrow-right"></i></a>
+      <a class="section-link" href="/catalogo?ordenar=popular">Ver catálogo <i class="fa-solid fa-arrow-right"></i></a>
     </div>
     <div class="media-row-wrap">
       <button class="row-arrow left" data-row-scroll="left" data-target="top10-row" type="button" aria-label="Rolar para a esquerda"><i class="fa-solid fa-chevron-left"></i></button>
@@ -395,7 +396,7 @@ export function top10Row(items) {
 export function genreStrip(genres) {
   return `<div class="genre-strip">${genres.map((genre) => {
     const meta = getGenreMeta(genre);
-    return `<a class="genre-pill" href="catalogo.html?genero=${encodeURIComponent(genre)}"><i class="fa-solid ${meta.icon}"></i>${escapeHTML(genre)}</a>`;
+    return `<a class="genre-pill" href="/catalogo?genero=${encodeURIComponent(genre)}"><i class="fa-solid ${meta.icon}"></i>${escapeHTML(genre)}</a>`;
   }).join("")}</div>`;
 }
 
@@ -457,7 +458,7 @@ function syncWatchlistButtons(id) {
 // backdrop, cast, episodes and watch-party entry point.
 export function openDetails(item) {
   if (!item) return;
-  location.href = `detalhes.html?id=${encodeURIComponent(item.id)}`;
+  navigate(detailsPath(item));
 }
 
 export function daysUntil(date) {
@@ -469,8 +470,8 @@ export function daysUntil(date) {
 // Playback now happens on a dedicated immersive page (player.html).
 export function openPlayer(item, options = {}) {
   if (!item) return;
-  const id = options.episode?.id || item.id;
-  location.href = `player.html?id=${encodeURIComponent(id)}`;
+  const target = options.episode?.item || (options.episode?.id ? byId(options.episode.id) : null) || item;
+  navigate(playerPath(target));
 }
 
 export function playItem(id, options = {}) {
@@ -490,10 +491,7 @@ export function playItem(id, options = {}) {
 /* Share */
 export async function shareItem(item) {
   if (!item) return;
-  const url = new URL("detalhes.html", location.href);
-  url.search = "";
-  url.hash = "";
-  url.searchParams.set("id", item.id);
+  const url = new URL(detailsPath(item), location.origin);
   try {
     await navigator.clipboard.writeText(url.toString());
     toast("Link copiado para a área de transferência.", "success", "Compartilhar");
@@ -515,8 +513,9 @@ export function openDetailsFromUrl() {
   if (page === "detalhes" || page === "player") return false;
   const params = new URLSearchParams(location.search);
   const id = params.get("filme") || params.get("id");
-  if (!id || !byId(id)) return false;
-  location.replace(`detalhes.html?id=${encodeURIComponent(id)}`);
+  const item = id ? byId(id) : null;
+  if (!item) return false;
+  navigate(detailsPath(item), { replace: true });
   return true;
 }
 

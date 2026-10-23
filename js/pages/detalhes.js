@@ -1,5 +1,6 @@
 // Dedicated details page: full-bleed backdrop, centered hero, tabs, cast and episodes.
 import { byId, getSeriesGroup, catalogTitles } from "../data.js";
+import { getRoute, detailsPath, playerPath } from "../router.js";
 import * as store from "../store.js";
 import {
   qs, qsa, escapeHTML, initials, formatDuration,
@@ -13,6 +14,7 @@ import { openWatchPartyModal } from "../watchparty.js";
 
 let seasonRequest = 0;
 let trailerRequest = 0;
+let detailsRequest = 0;
 
 const TAB_NAMES = new Set(["detalhes", "similares", "trailer"]);
 const CATEGORY_LABELS = new Set(["filmes", "séries", "series", "movie", "movies"]);
@@ -109,7 +111,7 @@ function episodeCard(entry, show, tmdbEpisode) {
   const still = tmdbEpisode?.still_path ? imageUrl(tmdbEpisode.still_path, "w300") : show.poster;
   const name = tmdbEpisode?.name || entry.name || `Episódio ${entry.episode}`;
   const rating = Number(tmdbEpisode?.vote_average) || 0;
-  return `<a class="ep-card" href="player.html?id=${encodeURIComponent(entry.item.id)}" aria-label="Assistir ${escapeHTML(name)}">
+  return `<a class="ep-card" href="${playerPath(entry.item)}" aria-label="Assistir ${escapeHTML(name)}">
     <div class="ep-thumb">
       ${still ? `<img src="${escapeHTML(still)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">` : ""}
       <span class="ep-number">T${entry.season} E${entry.episode}</span>
@@ -123,15 +125,17 @@ function episodeCard(entry, show, tmdbEpisode) {
 }
 
 export function renderDetalhes() {
-  const params = new URLSearchParams(location.search);
-  const id = params.get("id") || params.get("filme") || "";
-  const item = byId(id);
+  const request = ++detailsRequest;
+  const route = getRoute();
+  const params = route.params;
+  const id = route.itemId || params.get("id") || params.get("filme") || "";
+  const item = route.item || byId(id);
   const content = qs("#page-content");
 
   if (!item) {
     content.innerHTML = `<section class="page-section details-missing">
       ${emptyState("fa-film", "Título não encontrado", "O link pode estar incompleto ou o título saiu do catálogo.")}
-      <div class="row" style="justify-content:center"><a class="btn btn-primary" href="catalogo.html"><i class="fa-solid fa-clapperboard"></i>Voltar ao catálogo</a></div>
+      <div class="row" style="justify-content:center"><a class="btn btn-primary" href="/catalogo"><i class="fa-solid fa-clapperboard"></i>Voltar ao catálogo</a></div>
     </section>`;
     return;
   }
@@ -153,7 +157,7 @@ export function renderDetalhes() {
       <div class="details-veil" aria-hidden="true"></div>
 
       <div class="details-inner">
-        <a class="details-back" href="index.html"><i class="fa-solid fa-arrow-left"></i><span>Voltar</span></a>
+        <a class="details-back" href="/"><i class="fa-solid fa-arrow-left"></i><span>Voltar</span></a>
 
         <header class="details-hero">
           <div class="brand-label"><span class="brand-logo-s">W00</span><span>original</span></div>
@@ -171,7 +175,7 @@ export function renderDetalhes() {
           <button class="details-more hidden" id="details-more" type="button">Ler mais <i class="fa-solid fa-chevron-down"></i></button>
 
           <div class="details-actions">
-            <a class="details-cta details-cta-play" id="details-play" href="player.html?id=${encodeURIComponent(playId)}">
+            <a class="details-cta details-cta-play" id="details-play" href="${playerPath(byId(playId) || show)}">
               <span class="details-cta-icon"><i class="fa-solid fa-play"></i></span>
               <span>Assistir${group && selected ? ` T${selected.season} E${selected.episode}` : ""}</span>
             </a>
@@ -231,7 +235,7 @@ export function renderDetalhes() {
     </section>`;
 
   mountDetails({ item, group, show, selected, playId });
-  hydrateDetails({ item, group, show, selected });
+  hydrateDetails({ item, group, show, selected, request });
 }
 
 function mountDetails({ group, show, selected, playId }) {
@@ -277,7 +281,7 @@ function mountDetails({ group, show, selected, playId }) {
     });
     panels.forEach((panel) => panel.classList.toggle("active", panel.id === `tab-${name}`));
     if (name === "trailer") loadTrailer(show);
-    if (updateHash) history.replaceState(null, "", `#${name}`);
+    if (updateHash) history.replaceState(history.state, "", `#${name}`);
   };
 
   tabs.forEach((tab) => {
@@ -333,20 +337,23 @@ async function loadTrailer(show) {
   if (!root.isConnected || request !== trailerRequest) return;
   if (trailer?.key) {
     root.dataset.state = "ready";
+    const key = encodeURIComponent(trailer.key);
     root.innerHTML = `<div class="trailer-frame"><iframe
-      src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(trailer.key)}?autoplay=1&rel=0&modestbranding=1"
+      src="https://www.youtube.com/embed/${key}?autoplay=1&rel=0&modestbranding=1&playsinline=1"
       title="${escapeHTML(trailer.name || `Trailer de ${show.title}`)}"
       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-      allowfullscreen></iframe></div>`;
+      allowfullscreen></iframe></div>
+      <a class="trailer-open-link" href="https://www.youtube.com/watch?v=${key}" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-youtube"></i>Abrir no YouTube</a>`;
     return;
   }
   root.dataset.state = "empty";
   root.innerHTML = trailerFallback(show.title);
 }
 
-async function hydrateDetails({ item, group, show, selected }) {
+async function hydrateDetails({ item, group, show, selected, request }) {
   const metaItem = group?.first?.item || item;
   const data = await getTitleDetails(metaItem);
+  if (request !== detailsRequest || document.body.dataset.page !== "detalhes") return;
   if (!data) {
     if (group) setupSeasons(group, show, null, selected?.season);
     return;
