@@ -1215,3 +1215,7 @@ body[data-page="player"] .app { display: block; min-height: 100vh; }
   .timeline-container { gap: 6px; }
   .time-display { min-width: 58px; font-size: 8px; }
 }
+
+.player-overlay.controls-hidden .skip-next-btn {
+  display: none !important;
+}
