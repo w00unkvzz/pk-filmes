@@ -270,8 +270,8 @@ function mountPlayer({ item, group, show, current }) {
   }
   const _pbw = qs("#player-page .player-bottom-wrapper");
   const _tz = qs("#player-overlay #fsTopHoverZone"), _bz = qs("#player-overlay #fsBottomHoverZone");
-  if (_tz) overlay.parentElement?.appendChild(_tz);
-  if (_bz) overlay.parentElement?.appendChild(_bz);
+  if (_tz) { overlay.parentElement?.appendChild(_tz); ["touchstart","click"].forEach(ev => _tz.addEventListener(ev, () => { const o = qs("#player-overlay"); if(o) { o.classList.remove("controls-hidden","hide-controls"); clearTimeout(controlsTimer); controlsTimer = window.setTimeout(() => { o.classList.add("controls-hidden","hide-controls"); }, 3000); } }, {passive:true})); }
+  if (_bz) { overlay.parentElement?.appendChild(_bz); ["touchstart","click"].forEach(ev => _bz.addEventListener(ev, () => { const o = qs("#player-overlay"); if(o) { o.classList.remove("controls-hidden","hide-controls"); clearTimeout(controlsTimer); controlsTimer = window.setTimeout(() => { o.classList.add("controls-hidden","hide-controls"); }, 3000); } }, {passive:true})); }
   if (_pbw) overlay.appendChild(_pbw);
   if (mode === "direct") bindVideoControls({ group, show, current, activeItem });
   updatePlayerHeading(current, group, show, null);
