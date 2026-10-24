@@ -1,0 +1,22 @@
+{
+  "name": "w00filmes — cinema sem limites",
+  "short_name": "w00filmes",
+  "description": "Streaming, amigos e sessões sincronizadas. Seu cinema, sua comunidade.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["fullscreen", "standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#05060f",
+  "theme_color": "#05060f",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "/assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

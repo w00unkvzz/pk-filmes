@@ -1110,18 +1110,8 @@ body[data-page="pkparty"] .page-shell { min-height: calc(100dvh - var(--topbar-h
 .party-chat-form button { width: 38px; height: 38px; flex: 0 0 38px; display: grid; place-items: center; border-radius: 10px; color: #fff; background: linear-gradient(135deg, #6366f1, #8b5cf6); border: 1px solid rgba(255, 255, 255, 0.12); }
 .party-chat-form button:hover { filter: brightness(1.08); }
 
-/* Theater mode is CSS-only: no native fullscreen banner from the browser. */
-.party-stage.is-theater {
-  position: fixed;
-  inset: 0;
-  z-index: 3000;
-  width: 100vw;
-  height: 100dvh;
-  max-height: none;
-  border: 0;
-  border-radius: 0;
-  background: #000;
-}
+/* Fullscreen is handled by the Fullscreen API on #party-stage (see JS); these
+   rules only tune spacing while the stage is fullscreen. */
 .party-stage.is-theater .party-player-controls { left: 22px; right: 22px; bottom: 22px; }
 body.party-theater { overflow: hidden; }
 body.party-theater .topbar,
@@ -1163,7 +1153,9 @@ body.party-theater .sidebar-backdrop { display: none !important; }
 }
 
 /* -------------------------------------------------------------------------
-   Player polish: true contain, in-app theater mode and glass controls.
+   Player polish: true contain and glass controls. Fullscreen uses the native
+   Fullscreen API on the stage/viewport container so the overlay controls stay
+   visible (same approach as the reference player).
    ------------------------------------------------------------------------- */
 .player-stage { display: flex; align-items: center; justify-content: center; }
 .player-stage video,
@@ -1181,18 +1173,19 @@ body.party-theater .sidebar-backdrop { display: none !important; }
   pointer-events: none;
   cursor: none;
 }
-.player-viewport.is-faux-fullscreen {
-  position: fixed;
-  inset: 0;
-  z-index: 3000;
+/* Fullscreen targets the container element (never the <video>), keeping the
+   custom controls on screen and letting the browser hide the OS/mobile chrome. */
+.player-viewport:fullscreen,
+.player-viewport:-webkit-full-screen,
+.party-stage:fullscreen,
+.party-stage:-webkit-full-screen {
   width: 100vw;
   height: 100dvh;
   max-height: none;
+  border: 0;
+  border-radius: 0;
   background: #000;
 }
-body.player-faux-fullscreen { overflow: hidden; }
-.player-viewport.is-faux-fullscreen .player-top-bar { padding: 22px 28px; }
-.player-viewport.is-faux-fullscreen .player-bottom-wrapper { padding: 0 28px 22px; }
 
 .player-overlay .control-icon,
 .player-overlay .capsule-btn,
@@ -1240,8 +1233,10 @@ body.player-faux-fullscreen { overflow: hidden; }
 .player-overlay .volume-slider { accent-color: #a5b4fc; }
 
 @media (max-width: 760px) {
-  .player-viewport.is-faux-fullscreen .player-top-bar { padding: 14px 14px; }
-  .player-viewport.is-faux-fullscreen .player-bottom-wrapper { padding: 0 14px 16px; }
+  .player-viewport:fullscreen .player-top-bar,
+  .player-viewport:-webkit-full-screen .player-top-bar { padding: 14px 14px; }
+  .player-viewport:fullscreen .player-bottom-wrapper,
+  .player-viewport:-webkit-full-screen .player-bottom-wrapper { padding: 0 14px 16px; }
   .player-overlay .control-icon { width: 34px; height: 34px; }
   .player-overlay .skip-intro-btn,
   .player-overlay .skip-next-btn { min-height: 34px; padding: 7px 14px; font-size: 10px; }
@@ -1300,7 +1295,7 @@ body[data-page="detalhes"] .page-content { padding-bottom: 0; }
    ========================================= */
 
 /* 1. Arrumar o quadradinho W00 para não cortar */
-.badge-original, .w00-badge, .tag-original, .player-top span {
+.badge-original, .w00-badge, .tag-original {
   padding: 4px 12px !important;
   display: inline-flex !important;
   align-items: center !important;
@@ -1328,93 +1323,26 @@ body[data-page="detalhes"] .page-content { padding-bottom: 0; }
   position: absolute !important;
 }
 
-/* 4. Arrumar o tamanho do vídeo e Tela Cheia (Solo e Party) */
+/* 4. Tamanho do vídeo do player (Solo e Party) — fullscreen é feito no
+   container (#player-viewport / #party-stage), não no <video>. */
 #player-video, #party-video {
   width: 100% !important;
   max-height: 80vh !important;
   object-fit: contain !important;
   background-color: #000 !important;
 }
-
-/* Tela cheia real no mobile */
-#player-video:fullscreen, #party-video:fullscreen,
-#player-video:-webkit-full-screen, #party-video:-webkit-full-screen {
-  width: 100vw !important;
-  height: 100vh !important;
-  max-height: 100vh !important;
-  object-fit: contain !important;
-}
-
-/* 5. Fazer os botões Pular Abertura e Próximo sumirem com o player */
-.player-top, .player-next {
-  transition: opacity 0.3s ease-in-out !important;
-}
-
-.player-stage.hide-controls ~ .player-top,
-.player-stage.hide-controls ~ .player-next,
-.player-stage.hide-controls .player-next {
-  opacity: 0 !important;
-  pointer-events: none !important;
-}
-
-/* FIX: Proporção do Player e Tela Cheia */
-.player-stage {
-  aspect-ratio: 16 / 9 !important;
-  width: 100% !important;
-  background: #000 !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  overflow: hidden !important;
-}
-
-#player-video, #party-video {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: contain !important;
-}
-
-/* Tela cheia correta */
-.player-stage:fullscreen, .player-stage:-webkit-full-screen {
-  width: 100vw !important;
-  height: 100vh !important;
-  aspect-ratio: auto !important;
-}
-
-/* Auto-hide dos controles */
-.hide-controls .player-top,
-.hide-controls .player-next,
-.hide-controls .player-controls {
-  opacity: 0 !important;
-  pointer-events: none !important;
-  transition: opacity 0.3s ease !important;
-}
-
-/* FIX: Centralizar Mensagem do Convidado */
-.party-guest-note {
-  position: absolute !important;
-  top: 50% !important;
-  left: 50% !important;
-  transform: translate(-50%, -50%) !important;
-  background: rgba(0, 0, 0, 0.75) !important;
-  padding: 12px 20px !important;
-  border-radius: 8px !important;
-  display: flex !important;
-  align-items: center !important;
-  gap: 10px !important;
-  z-index: 50 !important;
-  font-size: 14px !important;
-  font-weight: 600 !important;
-  color: #fff !important;
-  pointer-events: none !important;
-  border: 1px solid rgba(255,255,255,0.1) !important;
+.player-viewport:fullscreen #player-video,
+.player-viewport:-webkit-full-screen #player-video,
+.party-stage:fullscreen #party-video,
+.party-stage:-webkit-full-screen #party-video {
+  max-height: 100dvh !important;
 }
 
 /* =========================================
-   FIX DEFINITIVO: BUGS VISUAIS 
+   FIXES MANUAIS - SELO, DROPDOWN E CONVIDADO
    ========================================= */
 
-/* 1. Corrigir o Selo W00 cortado (Baseado no DevTools) */
+/* Corrigir o Selo W00 cortado */
 .brand-logo-s, .brand-logo {
   width: auto !important;
   min-width: 24px !important;
@@ -1429,22 +1357,8 @@ body[data-page="detalhes"] .page-content { padding-bottom: 0; }
   border-radius: 6px !important;
 }
 
-/* 2. Corrigir o Dropdown do Catálogo vazando (Baseado no DevTools) */
-.catalog-dropdown, .catalog-menu {
-  position: absolute !important;
-  top: 100% !important;
-  left: 0 !important;
-  width: 100% !important;
-  z-index: 99999 !important;
-  background-color: #111827 !important; /* Fundo escuro sólido */
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  border-radius: 8px !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9) !important;
-  max-height: 250px !important;
-  overflow-y: auto !important;
-}
-
-/* 3. Centralizar mensagem "O anfitrião controla a reprodução" */
+/* Centralizar mensagem "O anfitrião controla a reprodução" e permitir que o
+   listener de playback a esconda quando o anfitrião retoma o vídeo. */
 .party-video-wrap {
   position: relative !important;
 }
@@ -1465,16 +1379,6 @@ body[data-page="detalhes"] .page-content { padding-bottom: 0; }
   font-weight: 500 !important;
   pointer-events: none !important;
   white-space: nowrap !important;
+  transition: none !important;
 }
-
-/* 4. Tela cheia real no celular (escondendo a barra de status) */
-.player-stage:fullscreen, 
-.player-stage:-webkit-full-screen,
-.player-stage:fullscreen .party-video-wrap,
-.player-stage:fullscreen #player-video {
-  width: 100vw !important;
-  height: 100dvh !important; /* dvh resolve o problema do celular */
-  max-height: 100dvh !important;
-  object-fit: contain !important;
-  background: #000 !important;
-}
+.party-guest-note.is-hidden { display: none !important; }

@@ -69,7 +69,13 @@ async function applyRoute(route) {
   currentRoute = route;
   currentPage = route.page;
   document.body.dataset.page = currentPage;
-  document.body.classList.remove("player-faux-fullscreen", "party-theater");
+  document.body.classList.remove("party-theater");
+  if (document.fullscreenElement || document.webkitFullscreenElement) {
+    try {
+      if (document.exitFullscreen) document.exitFullscreen();
+      else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+    } catch {}
+  }
   closeModal();
   sidebarClose();
   renderShell();

@@ -575,8 +575,17 @@ body[data-page="player"] .app { display: block; min-height: 100vh; }
   background: #000;
   overflow: hidden;
 }
+/* Native Fullscreen API (like the reference player): the whole viewport goes
+   fullscreen, so its overlay controls stay visible and the browser chrome /
+   mobile nav bar is hidden. */
 .player-viewport:fullscreen,
-.player-viewport:-webkit-full-screen { width: 100vw; height: 100vh; max-height: none; }
+.player-viewport:-webkit-full-screen {
+  width: 100vw;
+  height: 100dvh;
+  max-height: none;
+}
+.player-viewport:fullscreen .player-stage,
+.player-viewport:-webkit-full-screen .player-stage { position: absolute; inset: 0; }
 .player-stage { position: absolute; inset: 0; background: #000; }
 .player-stage video,
 .player-stage iframe {

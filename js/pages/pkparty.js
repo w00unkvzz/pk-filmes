@@ -120,10 +120,19 @@ function roomCard(item) {
   </article>`;
 }
 
+function destroyPartyVideo() {
+  const video = qs("#party-video");
+  if (!video) return;
+  try { video.pause(); } catch {}
+  try { video.removeAttribute("src"); video.load(); } catch {}
+  try { video.remove(); } catch {}
+}
+
 function cleanupParty() {
   roomRequest += 1;
   lobbyRequest += 1;
   document.body.classList.remove("party-theater");
+  destroyPartyVideo();
   clearInterval(heartbeat);
   heartbeat = null;
   try {
@@ -497,18 +506,62 @@ async function copyText(text, message = "Link copiado.") {
   }
 }
 
-function togglePartyTheater(force) {
+function partyFullscreenElement() {
+  return document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement || null;
+}
+
+// Native fullscreen on the stage container (same approach as the reference
+// player) so the in-room controls stay visible while the browser hides its
+// chrome and the mobile navigation bar.
+async function togglePartyTheater(force) {
   const stage = qs("#party-stage");
   if (!stage) return;
-  const active = typeof force === "boolean" ? force : !stage.classList.contains("is-theater");
-  stage.classList.toggle("is-theater", active);
+  const isFullscreen = partyFullscreenElement() === stage;
+  const wantFullscreen = typeof force === "boolean" ? force : !isFullscreen;
+  if (wantFullscreen === isFullscreen) return;
+
+  if (!wantFullscreen) {
+    try {
+      if (document.exitFullscreen) await document.exitFullscreen();
+      else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+      else if (document.msExitFullscreen) document.msExitFullscreen();
+    } catch {}
+    return;
+  }
+
+  const request = stage.requestFullscreen || stage.webkitRequestFullscreen || stage.msRequestFullscreen;
+  if (request) {
+    try {
+      await request.call(stage, { navigationUI: "hide" });
+      return;
+    } catch {}
+  }
+  // iOS Safari cannot fullscreen a container; fullscreen the video element.
+  const video = qs("#party-video");
+  if (video && typeof video.webkitEnterFullscreen === "function") {
+    try { video.webkitEnterFullscreen(); } catch {}
+  }
+}
+
+function syncPartyFullscreenUi() {
+  const stage = qs("#party-stage");
+  const active = Boolean(stage && partyFullscreenElement() === stage);
+  stage?.classList.toggle("is-theater", active);
   document.body.classList.toggle("party-theater", active);
   qsa("[data-party-fullscreen]").forEach((button) => {
     const icon = button.querySelector("i");
     if (icon) icon.className = `fa-solid fa-${active ? "compress" : "expand"}`;
     button.setAttribute("aria-pressed", String(active));
   });
-  if (!active) stage.scrollIntoView({ block: "nearest" });
+  if (!active) stage?.scrollIntoView({ block: "nearest" });
+}
+
+function bindPartyFullscreenListener() {
+  if (window.__w00PartyFullscreenBound) return;
+  window.__w00PartyFullscreenBound = true;
+  ["fullscreenchange", "webkitfullscreenchange", "MSFullscreenChange"].forEach((eventName) => {
+    document.addEventListener(eventName, syncPartyFullscreenUi);
+  });
 }
 
 function mountRoom() {
@@ -517,6 +570,7 @@ function mountRoom() {
 
   qs("[data-copy-room-link]")?.addEventListener("click", () => copyText(roomShareUrl(), "Link da sala copiado."));
   qsa("[data-party-fullscreen]").forEach((button) => button.addEventListener("click", () => togglePartyTheater()));
+  bindPartyFullscreenListener();
   qs("[data-leave-room]")?.addEventListener("click", async () => {
     const currentRoomId = room?.id;
     if (!currentRoomId) return;
@@ -688,6 +742,7 @@ function connectRoomRealtime() {
     window.__w00PartyUnloadBound = true;
     window.addEventListener("beforeunload", () => {
       clearInterval(heartbeat);
+      destroyPartyVideo();
       if (realtimeChannel) sb.removeChannel(realtimeChannel);
       realtimeChannel = null;
     }, { once: true });
@@ -792,12 +847,21 @@ function broadcastPlayback(force = false) {
   }).catch(() => {});
 }
 
+function setGuestNoteVisible(visible) {
+  const note = qs(".party-guest-note");
+  if (!note || isHost) return;
+  note.classList.toggle("is-hidden", !visible);
+}
+
 function applyPlayback(payload) {
   if (!payload || payload.sender_id !== room.host || isHost) return;
   const video = qs("#party-video");
   if (!video || !Number.isFinite(Number(payload.time))) return;
   const expected = Number(payload.time);
   applyingRemote = true;
+
+  // "O anfitrião controla" only matters while the host has it paused.
+  setGuestNoteVisible(Boolean(payload.paused));
 
   if (payload.paused) {
     if (Math.abs(video.currentTime - expected) > 0.3) video.currentTime = expected;

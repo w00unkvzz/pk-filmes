@@ -44,6 +44,48 @@ function bindOverlayAutoHide() {
   revealPlayerControls();
 }
 
+function fullscreenElement() {
+  return document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement || null;
+}
+
+// Mirrors the reference player: request fullscreen on the viewport container so
+// the custom controls (and their overlay) remain visible, with the native
+// iOS `webkitEnterFullscreen` fallback on the video element when needed.
+async function togglePlayerFullscreen() {
+  const viewport = qs("#player-viewport");
+  const video = qs("#player-video");
+  if (!viewport) return;
+
+  if (fullscreenElement()) {
+    try {
+      if (document.exitFullscreen) await document.exitFullscreen();
+      else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+      else if (document.msExitFullscreen) document.msExitFullscreen();
+    } catch {}
+    return;
+  }
+
+  const request = viewport.requestFullscreen || viewport.webkitRequestFullscreen || viewport.msRequestFullscreen;
+  if (request) {
+    try {
+      await request.call(viewport, { navigationUI: "hide" });
+      revealPlayerControls();
+      return;
+    } catch {}
+  }
+  // iOS Safari cannot fullscreen a container; fall back to the native player.
+  if (video && typeof video.webkitEnterFullscreen === "function") {
+    try { video.webkitEnterFullscreen(); } catch {}
+  }
+}
+
+function syncFullscreenUi() {
+  const active = Boolean(fullscreenElement());
+  qs("#player-fullscreen i")?.setAttribute("class", `fa-solid fa-${active ? "compress" : "expand"}`);
+  qs("#player-fullscreen")?.setAttribute("aria-pressed", String(active));
+  if (active) revealPlayerControls();
+}
+
 function streamFor(item) {
   return String(item?.player || item?.stream || "").trim().replace(/^http:\/\//i, "https://");
 }
@@ -462,19 +504,7 @@ function bindVideoControls({ group, show, current, activeItem }) {
     }
   });
 
-  qs("#player-fullscreen")?.addEventListener("click", () => {
-    const viewport = qs("#player-viewport");
-    if (!viewport) return;
-    // In-app theater mode instead of the native Fullscreen API. This keeps
-    // the video edge-to-edge without the browser's "press Esc to exit"
-    // overlay/banner, which cannot be styled or removed by the site.
-    const active = viewport.classList.toggle("is-faux-fullscreen");
-    document.body.classList.toggle("player-faux-fullscreen", active);
-    const icon = qs("#player-fullscreen i");
-    if (icon) icon.className = `fa-solid fa-${active ? "compress" : "expand"}`;
-    qs("#player-fullscreen")?.setAttribute("aria-pressed", String(active));
-    revealPlayerControls();
-  });
+  qs("#player-fullscreen")?.addEventListener("click", togglePlayerFullscreen);
 
   qs("#player-report")?.addEventListener("click", () => {
     toast("Para reportar um problema, use o suporte do w00filmes.", "info", "Reportar");
@@ -565,11 +595,11 @@ function bindVideoControls({ group, show, current, activeItem }) {
   qs("#player-viewport")?.addEventListener("touchstart", showControls, { passive: true });
   if (!window.__w00FullscreenBound) {
     window.__w00FullscreenBound = true;
-    document.addEventListener("fullscreenchange", () => {
-      const icon = qs("#player-fullscreen i");
-      if (icon) icon.className = document.fullscreenElement ? "fa-solid fa-compress" : "fa-solid fa-expand";
+    ["fullscreenchange", "webkitfullscreenchange", "MSFullscreenChange"].forEach((eventName) => {
+      document.addEventListener(eventName, syncFullscreenUi);
     });
   }
+  syncFullscreenUi();
 
   if (volume) volume.value = String(video.volume);
   updateVolumeIcon();
@@ -741,7 +771,7 @@ if (!window.__w00PlayerKeysBound) {
       video.muted = !video.muted;
     } else if (event.key === "f") {
       qs("#player-fullscreen")?.click();
-    } else if (event.key === "Escape" && document.body.classList.contains("player-faux-fullscreen")) {
+    } else if (event.key === "Escape" && fullscreenElement()) {
       qs("#player-fullscreen")?.click();
     }
   });
