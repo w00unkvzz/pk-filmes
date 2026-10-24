@@ -651,7 +651,7 @@ function connectRoomRealtime() {
       setTimeout(() => navigate("/party"), 700);
     })
     .on("broadcast", { event: "chat" }, ({ payload }) => {
-      if (payload?.room_id === room.id && payload.user_id !== user.id) appendChat(payload);
+      if (payload?.room_id === room.id && payload.user_id !== user.id && payload.sender_name !== "Você") appendChat(payload);
     })
     .on("presence", { event: "sync" }, () => {
       const state = realtimeChannel.presenceState();
