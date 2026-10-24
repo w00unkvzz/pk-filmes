@@ -1230,3 +1230,19 @@ body[data-page="player"] .app { display: block; min-height: 100vh; }
   background: linear-gradient(to top, rgba(0,0,0,.8) 0%, transparent 100%);
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
+
+/* ── Faux-fullscreen (in-app theater mode) ── */
+.player-viewport.is-faux-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  width: 100dvw;
+  height: 100dvh;
+  max-height: none;
+  aspect-ratio: unset;
+  border-radius: 0;
+}
+
+body.player-faux-fullscreen {
+  overflow: hidden;
+}
