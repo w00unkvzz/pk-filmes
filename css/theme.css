@@ -1478,3 +1478,28 @@ body[data-page="detalhes"] .page-content { padding-bottom: 0; }
   object-fit: contain !important;
   background: #000 !important;
 }
+
+/* TELA CHEIA LIMPA (Esconde a barra do celular sem aviso do sistema) */
+body.player-faux-fullscreen .player-stage,
+body.party-theater .party-video-wrap,
+body.player-faux-fullscreen .party-video-wrap {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 99999 !important;
+  width: 100vw !important;
+  height: 100dvh !important; /* O segredo para esconder a barra do Android */
+  background: #000 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+body.player-faux-fullscreen .player-stage video,
+body.party-theater .party-video-wrap video,
+body.player-faux-fullscreen .party-video-wrap video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+}
