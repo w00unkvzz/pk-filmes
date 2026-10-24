@@ -188,3 +188,36 @@ if (document.readyState === "loading") {
 } else {
   boot();
 }
+
+// =========================================
+// FIX: TELA CHEIA NATIVA (ESCONDE BARRA DO CELULAR)
+// =========================================
+document.body.addEventListener("click", (e) => {
+  const btnSolo = e.target.closest("#player-fullscreen");
+  const btnParty = e.target.closest("[data-party-fullscreen]");
+  
+  if (btnSolo || btnParty) {
+    // Encontra o container do vídeo
+    const target = btnSolo 
+      ? document.querySelector(".player-stage") 
+      : document.querySelector(".party-video-wrap");
+      
+    if (target) {
+      if (!document.fullscreenElement) {
+        // Entra em tela cheia real
+        if (target.requestFullscreen) {
+          target.requestFullscreen().catch(err => console.log("Erro fullscreen:", err));
+        } else if (target.webkitRequestFullscreen) {
+          target.webkitRequestFullscreen(); // Para Safari/iOS
+        }
+      } else {
+        // Sai da tela cheia
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        }
+      }
+    }
+  }
+});
