@@ -1219,3 +1219,14 @@ body[data-page="player"] .app { display: block; min-height: 100vh; }
 .player-overlay.controls-hidden .skip-next-btn {
   display: none !important;
 }
+
+/* player-bottom-wrapper movido pro overlay via JS */
+.player-overlay .player-bottom-wrapper {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  background: linear-gradient(to top, rgba(0,0,0,.8) 0%, transparent 100%);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}

@@ -247,6 +247,8 @@ function mountPlayer({ item, group, show, current }) {
 
   bindSharedControls({ item, group, show, current, activeItem });
   bindOverlayAutoHide();
+  const _pbw = qs("#player-page .player-bottom-wrapper");
+  if (_pbw) overlay.appendChild(_pbw);
   if (mode === "direct") bindVideoControls({ group, show, current, activeItem });
   updatePlayerHeading(current, group, show, null);
 }
