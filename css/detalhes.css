@@ -140,6 +140,7 @@
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
+  aspect-ratio: 16 / 9;
   overflow: hidden;
 }
 .details-more {
@@ -328,6 +329,7 @@
   font-weight: 600;
   line-height: 1.25;
   white-space: nowrap;
+  aspect-ratio: 16 / 9;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -337,6 +339,7 @@
   font-size: 10px;
   line-height: 1.3;
   white-space: nowrap;
+  aspect-ratio: 16 / 9;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -380,6 +383,7 @@
   position: relative;
   width: 100%;
   aspect-ratio: 16 / 9;
+  aspect-ratio: 16 / 9;
   overflow: hidden;
   border-radius: 16px;
   border: 1px solid rgba(129,140,248,.24);
@@ -392,6 +396,7 @@
   min-height: 360px;
   display: grid;
   place-items: center;
+  aspect-ratio: 16 / 9;
   overflow: hidden;
   border-radius: 16px;
   border: 1px solid rgba(129,140,248,.2);
@@ -474,12 +479,14 @@
 .episode-strip::-webkit-scrollbar { display: none; }
 .ep-card {
   flex: 0 0 228px; min-width: 0; scroll-snap-align: start;
-  border: 1px solid var(--line); border-radius: 13px; overflow: hidden;
+  border: 1px solid var(--line); border-radius: 13px; aspect-ratio: 16 / 9;
+  overflow: hidden;
   background: rgba(15,23,42,.62); text-align: left;
   transition: transform .18s var(--ease), border-color .18s, background .18s;
 }
 .ep-card:hover, .ep-card.active { transform: translateY(-2px); border-color: rgba(129,140,248,.45); background: rgba(30,27,75,.72); }
-.ep-thumb { position: relative; aspect-ratio: 16 / 9; overflow: hidden; background: #0b1020; }
+.ep-thumb { position: relative; aspect-ratio: 16 / 9; aspect-ratio: 16 / 9;
+  overflow: hidden; background: #0b1020; }
 .ep-thumb img { width: 100%; height: 100%; object-fit: cover; }
 .ep-thumb::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(5,6,15,.7), transparent 58%); }
 .ep-number {
@@ -499,7 +506,8 @@
 @media (hover: none) { .ep-play { opacity: 1; } }
 .ep-body { padding: 9px 10px 10px; }
 .ep-title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 7px; }
-.ep-title-row strong { font-size: 10.5px; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ep-title-row strong { font-size: 10.5px; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; aspect-ratio: 16 / 9;
+  overflow: hidden; }
 .ep-rating { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 3px; color: var(--gold); font-size: 8.5px; font-weight: 700; }
 .ep-rating i { font-size: 7px; }
 .ep-sub { display: block; margin-top: 4px; color: var(--muted-2); font-size: 8.5px; }
@@ -570,9 +578,10 @@ body[data-page="player"] .app { display: block; min-height: 100vh; }
 .player-viewport {
   position: relative;
   width: 100%;
-  height: 56.25vw;
-  max-height: 80vh;
+  
+  
   background: #000;
+  aspect-ratio: 16 / 9;
   overflow: hidden;
 }
 .player-viewport:fullscreen,
@@ -672,6 +681,7 @@ body[data-page="player"] .app { display: block; min-height: 100vh; }
 .back-btn:hover { background: rgba(255,255,255,.2); transform: scale(1.05); }
 .meta-info { display: flex; flex-direction: column; min-width: 0; }
 .meta-title {
+  aspect-ratio: 16 / 9;
   overflow: hidden;
   color: #fff;
   font-family: var(--font-display);
@@ -684,6 +694,7 @@ body[data-page="player"] .app { display: block; min-height: 100vh; }
 }
 .meta-subtitle {
   margin-top: 4px;
+  aspect-ratio: 16 / 9;
   overflow: hidden;
   color: #a1a1aa;
   font-size: 13px;
@@ -866,6 +877,7 @@ body[data-page="player"] .app { display: block; min-height: 100vh; }
 .volume-slider {
   width: 0;
   height: 4px;
+  aspect-ratio: 16 / 9;
   overflow: hidden;
   border-radius: 2px;
   outline: none;
@@ -971,6 +983,7 @@ body[data-page="player"] .app { display: block; min-height: 100vh; }
   z-index: 100;
   display: none;
   width: 180px;
+  aspect-ratio: 16 / 9;
   overflow: hidden;
   border: 1px solid rgba(255,255,255,.1);
   border-radius: 8px;
@@ -1019,6 +1032,7 @@ body[data-page="player"] .app { display: block; min-height: 100vh; }
   height: 285px;
   display: flex;
   flex-direction: column;
+  aspect-ratio: 16 / 9;
   overflow: hidden;
   padding: 0;
   border: 1px solid rgba(255,255,255,.1);
@@ -1060,6 +1074,7 @@ body[data-page="player"] .app { display: block; min-height: 100vh; }
 }
 .player-page .ep-card-title {
   display: -webkit-box;
+  aspect-ratio: 16 / 9;
   overflow: hidden;
   color: #fff;
   font-size: 14px;
