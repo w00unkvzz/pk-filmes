@@ -574,7 +574,7 @@ body[data-page="player"] .page-shell { margin-left: 0; }
 body[data-page="player"] .page-content { max-width: none; padding: 0; }
 body[data-page="player"] .app { display: block; min-height: 100vh; }
 
-.player-page { min-height: 100vh; background: #000; color: #fff; }
+.player-page { background: #000; color: #fff; }
 .player-viewport {
   position: relative;
   width: 100%;
