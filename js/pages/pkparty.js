@@ -232,6 +232,12 @@ function subscribeLobby() {
   if (lobbyChannel) return;
   const sb = getClient();
   lobbyChannel = sb.channel(`party-lobby:${user.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "rooms" }, () => {
+        if (document.body.dataset.page === "pkparty" && !activeRoomCode()) renderLobby();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "friendships" }, () => {
+        if (typeof window.refreshSocialCache === "function") window.refreshSocialCache();
+      })
     .on("postgres_changes", { event: "*", schema: "public", table: "room_invites", filter: `invitee=eq.${user.id}` }, () => {
       if (document.body.dataset.page === "pkparty" && !activeRoomCode()) renderLobby();
     })
@@ -645,7 +651,7 @@ function connectRoomRealtime() {
       setTimeout(() => navigate("/party"), 700);
     })
     .on("broadcast", { event: "chat" }, ({ payload }) => {
-      if (payload?.room_id === room.id) appendChat(payload);
+      if (payload?.room_id === room.id && payload.user_id !== user.id) appendChat(payload);
     })
     .on("presence", { event: "sync" }, () => {
       const state = realtimeChannel.presenceState();
@@ -714,8 +720,10 @@ function setupPlayback() {
   video.controls = false;
 
   if (!isHost) {
-    video.addEventListener("play", () => { if (!applyingRemote) video.pause(); });
-    video.addEventListener("pause", () => { if (!applyingRemote && !video.ended) safePlay(video); });
+          video.style.pointerEvents = "none";
+          const pBtn = qs("[data-party-play]"); if (pBtn) pBtn.style.display = "none";
+          video.addEventListener("play", () => { if (!applyingRemote) video.pause(); });
+          video.addEventListener("pause", () => { if (!applyingRemote && !video.ended) safePlay(video); });
   } else {
     const send = () => { if (!applyingRemote) broadcastPlayback(); };
     video.addEventListener("play", send);
