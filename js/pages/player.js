@@ -34,6 +34,11 @@ function bindOverlayAutoHide() {
   const viewport = qs("#player-viewport");
   if (!viewport || viewport.dataset.hideBound) return;
   viewport.dataset.hideBound = "1";
+  const _tz = qs("#fsTopHoverZone"), _bz = qs("#fsBottomHoverZone");
+  ["touchstart","click","mousemove","mouseenter"].forEach(ev => {
+    _tz?.addEventListener(ev, revealPlayerControls, { passive: true });
+    _bz?.addEventListener(ev, revealPlayerControls, { passive: true });
+  });
   ["pointermove", "mousemove", "pointerdown", "touchstart", "click"].forEach((eventName) => {
     viewport.addEventListener(eventName, revealPlayerControls, { passive: true });
   });
@@ -172,6 +177,8 @@ function overlayMarkup(mode, current, group, show) {
   if (mode === "none") return "";
   const canControl = mode === "direct";
   return `
+    <div id="fsTopHoverZone" class="fs-hover-zone" style="top:0;height:64px;"></div>
+    <div id="fsBottomHoverZone" class="fs-hover-zone" style="bottom:0;height:80px;"></div>
     <div class="player-top-bar">
       <div class="player-top-left">
         <a class="back-btn" href="${detailsPath(current.item)}" aria-label="Voltar aos detalhes"><i class="fa-solid fa-arrow-left"></i></a>
