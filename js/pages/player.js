@@ -253,6 +253,15 @@ function mountPlayer({ item, group, show, current }) {
   }
 
   bindSharedControls({ item, group, show, current, activeItem });
+  const viewport = qs("#player-viewport");
+  if (viewport && !qs("#fsTopHoverZone")) {
+    ["fsTopHoverZone","fsBottomHoverZone"].forEach((id, i) => {
+      const z = document.createElement("div");
+      z.id = id; z.className = "fs-hover-zone";
+      z.style.cssText = i === 0 ? "top:0;height:64px;" : "bottom:0;height:80px;";
+      viewport.appendChild(z);
+    });
+  }
   bindOverlayAutoHide();
   const _overlay = qs("#player-overlay");
   if (_overlay && !_overlay.dataset.fsBound) {
