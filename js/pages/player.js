@@ -266,7 +266,7 @@ function mountPlayer({ item, group, show, current }) {
   const _overlay = qs("#player-overlay");
   if (_overlay && !_overlay.dataset.fsBound) {
     _overlay.dataset.fsBound = "1";
-    _overlay.addEventListener("touchstart", () => { if (document.body.classList.contains("player-faux-fullscreen")) revealPlayerControls(); }, { passive: true });
+    _overlay.addEventListener("touchstart", () => revealPlayerControls(), { passive: true });
   }
   const _pbw = qs("#player-page .player-bottom-wrapper");
   const _tz = qs("#player-overlay #fsTopHoverZone"), _bz = qs("#player-overlay #fsBottomHoverZone");
