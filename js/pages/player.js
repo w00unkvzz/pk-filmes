@@ -247,6 +247,11 @@ function mountPlayer({ item, group, show, current }) {
 
   bindSharedControls({ item, group, show, current, activeItem });
   bindOverlayAutoHide();
+  const _overlay = qs("#player-overlay");
+  if (_overlay && !_overlay.dataset.fsBound) {
+    _overlay.dataset.fsBound = "1";
+    _overlay.addEventListener("touchstart", () => { if (document.body.classList.contains("player-faux-fullscreen")) revealPlayerControls(); }, { passive: true });
+  }
   const _pbw = qs("#player-page .player-bottom-wrapper");
   if (_pbw) overlay.appendChild(_pbw);
   if (mode === "direct") bindVideoControls({ group, show, current, activeItem });

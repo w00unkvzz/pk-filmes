@@ -1246,3 +1246,10 @@ body[data-page="player"] .app { display: block; min-height: 100vh; }
 body.player-faux-fullscreen {
   overflow: hidden;
 }
+
+/* faux-fullscreen: overlay mantém pointer-events mesmo com controles ocultos */
+body.player-faux-fullscreen .player-overlay.controls-hidden {
+  opacity: 0;
+  pointer-events: auto;
+  cursor: auto;
+}
