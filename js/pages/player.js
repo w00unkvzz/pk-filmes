@@ -260,6 +260,9 @@ function mountPlayer({ item, group, show, current }) {
     _overlay.addEventListener("touchstart", () => { if (document.body.classList.contains("player-faux-fullscreen")) revealPlayerControls(); }, { passive: true });
   }
   const _pbw = qs("#player-page .player-bottom-wrapper");
+  const _tz = qs("#player-overlay #fsTopHoverZone"), _bz = qs("#player-overlay #fsBottomHoverZone");
+  if (_tz) overlay.parentElement?.appendChild(_tz);
+  if (_bz) overlay.parentElement?.appendChild(_bz);
   if (_pbw) overlay.appendChild(_pbw);
   if (mode === "direct") bindVideoControls({ group, show, current, activeItem });
   updatePlayerHeading(current, group, show, null);
