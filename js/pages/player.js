@@ -565,6 +565,8 @@ function bindVideoControls({ group, show, current, activeItem }) {
 
   qs("#player-viewport")?.addEventListener("pointermove", showControls, { passive: true });
   qs("#player-viewport")?.addEventListener("touchstart", showControls, { passive: true });
+  document.addEventListener("touchstart", function _fsTouch() { if (document.body.classList.contains("player-faux-fullscreen")) revealPlayerControls(); }, { passive: true });
+  document.addEventListener("touchstart", (e) => { if (document.body.classList.contains("player-faux-fullscreen")) showControls(); }, { passive: true });
   if (!window.__w00FullscreenBound) {
     window.__w00FullscreenBound = true;
     document.addEventListener("fullscreenchange", () => {
