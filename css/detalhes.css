@@ -575,6 +575,8 @@ body[data-page="player"] .app { display: block; min-height: 100vh; }
      an off-screen box: a large black band on top and a cropped bottom edge. */
   height: min(56.25vw, 100vh);
   height: min(56.25vw, 100dvh);
+  max-height: 100vh;
+  max-height: 100dvh;
   background: #000;
   overflow: hidden;
 }
@@ -584,8 +586,10 @@ body[data-page="player"] .app { display: block; min-height: 100vh; }
 .player-viewport:fullscreen,
 .player-viewport:-webkit-full-screen {
   width: 100vw;
-  height: 100dvh;
-  max-height: none;
+  /* !important beats the inline height set by syncPlayerViewportHeight(), so
+     entering fullscreen never keeps the normal-mode height for a frame. */
+  height: 100dvh !important;
+  max-height: none !important;
   aspect-ratio: unset;
   border-radius: 0;
 }

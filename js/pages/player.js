@@ -44,6 +44,36 @@ function bindOverlayAutoHide() {
   revealPlayerControls();
 }
 
+// The CSS uses min(56.25vw, 100dvh), but some Android browsers report a stale
+// 100vh (or keep an old cached stylesheet) and end up centring the video inside
+// an off-screen 16:9 box — a big black band on top and a cropped bottom edge.
+// This inline height is the safety net: it always matches the visible screen.
+function syncPlayerViewportHeight() {
+  const viewport = qs("#player-viewport");
+  if (!viewport) return;
+  if (fullscreenElement()) {
+    viewport.style.removeProperty("height");
+    return;
+  }
+  const visible = window.visualViewport?.height || window.innerHeight || 0;
+  if (!visible) return;
+  const width = viewport.clientWidth || window.innerWidth || 0;
+  const height = Math.max(140, Math.round(Math.min(width * 0.5625, visible)));
+  viewport.style.height = `${height}px`;
+}
+
+function bindPlayerViewportHeight() {
+  syncPlayerViewportHeight();
+  if (window.__w00PlayerViewportHeightBound) return;
+  window.__w00PlayerViewportHeightBound = true;
+  const sync = () => syncPlayerViewportHeight();
+  window.addEventListener("resize", sync, { passive: true });
+  window.addEventListener("orientationchange", sync, { passive: true });
+  window.visualViewport?.addEventListener("resize", sync, { passive: true });
+  document.addEventListener("fullscreenchange", sync);
+  document.addEventListener("webkitfullscreenchange", sync);
+}
+
 function fullscreenElement() {
   return document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement || null;
 }
@@ -289,6 +319,7 @@ function mountPlayer({ item, group, show, current }) {
 
   bindSharedControls({ item, group, show, current, activeItem });
   bindOverlayAutoHide();
+  bindPlayerViewportHeight();
   if (mode === "direct") bindVideoControls({ group, show, current, activeItem });
   updatePlayerHeading(current, group, show, null);
 }

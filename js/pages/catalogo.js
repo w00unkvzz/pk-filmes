@@ -214,6 +214,17 @@ function mountCatalogo() {
         if (menu) {
           const available = openUp ? spaceAbove : spaceBelow;
           menu.style.maxHeight = `${Math.max(160, Math.min(420, Math.round(available)))}px`;
+          if (window.innerWidth <= 760) {
+            // On phones the trigger can sit close to the right edge, so a
+            // left-aligned 210px menu used to be cut by the screen. Centre the
+            // menu on the viewport and cap its width to the usable area.
+            const width = Math.min(window.innerWidth - 28, 340);
+            menu.style.width = `${width}px`;
+            menu.style.left = `${Math.round((window.innerWidth - width) / 2 - rect.left)}px`;
+          } else {
+            menu.style.width = "";
+            menu.style.left = "";
+          }
         }
       }
       dropdown.classList.toggle("open", open);
@@ -237,6 +248,14 @@ function mountCatalogo() {
   if (!window.__w00CatalogClickBound) {
     window.__w00CatalogClickBound = true;
     document.addEventListener("click", () => closeMenus());
+  }
+
+  if (!window.__w00CatalogResizeBound) {
+    window.__w00CatalogResizeBound = true;
+    // Rotating the phone or resizing the window would leave an open menu at
+    // its old coordinates, often half outside the screen. Close it instead.
+    window.addEventListener("resize", () => closeMenus(), { passive: true });
+    window.addEventListener("orientationchange", () => closeMenus(), { passive: true });
   }
 
   qs("#catalog-query")?.addEventListener("input", (event) => {

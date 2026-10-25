@@ -91,20 +91,7 @@ export function renderHome() {
     ${mediaRow("Filmes para a sua noite", movies, { id: "movies-row", href: "/catalogo?tipo=movie" })}
     ${mediaRow("Séries em destaque", series, { id: "series-row", href: "/catalogo?tipo=series" })}
     ${mediaRow("Novidades no catálogo", newReleases, { id: "new-row" })}
-    ${mediaRow("Família & animação", family, { id: "family-row" })}
-
-    <section class="page-section">
-      <div class="party-hero" style="margin:0">
-        <div class="party-hero-inner">
-          <div>
-            <h2 style="font-size:clamp(1.5rem,3vw,2.4rem)">Assistir junto ficou mais fácil.</h2>
-            <p>Crie uma sala, escolha um título e convide seus amigos para assistir juntos, na mesma hora.</p>
-            <div class="row"><a class="btn btn-primary" href="/party"><i class="fa-solid fa-plus"></i>Criar sala</a><a class="btn btn-ghost" href="/party"><i class="fa-solid fa-right-to-bracket"></i>Entrar com código</a></div>
-          </div>
-          <div class="badge badge-live"><i class="fa-solid fa-circle"></i> salas ao vivo</div>
-        </div>
-      </div>
-    </section>`;
+    ${mediaRow("Família & animação", family, { id: "family-row" })}`;
 
   qs("#page-content").innerHTML = content;
   mountHome();
