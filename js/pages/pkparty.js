@@ -147,15 +147,28 @@ function roomsMarkup(rooms = []) {
 
 function paintLobby(rooms, invites) {
   const inviteSection = qs("#invite-section");
-  if (inviteSection) inviteSection.innerHTML = invitesMarkup(invites);
+  if (inviteSection) {
+    const signature = JSON.stringify(invites.map((invite) => `${invite.id}:${invite.room_name}:${invite.host_name}`));
+    if (inviteSection.dataset.signature !== signature) {
+      inviteSection.innerHTML = invitesMarkup(invites);
+      inviteSection.dataset.signature = signature;
+    }
+  }
   const grid = qs("#rooms-grid");
-  if (grid) grid.innerHTML = roomsMarkup(rooms);
+  if (grid) {
+    const signature = JSON.stringify(rooms.map((room) => `${room.id}:${room.name}:${room.member_count}:${room.is_member}`));
+    if (grid.dataset.signature !== signature) {
+      grid.innerHTML = roomsMarkup(rooms);
+      grid.dataset.signature = signature;
+    }
+  }
   const badge = qs("#rooms-count-badge");
   if (badge) badge.innerHTML = `<i class="fa-solid fa-users"></i> ${rooms.length} salas`;
   mountLobby();
 }
 
 function roomCard(item) {
+  const itemMovie = movieForRoom({ movie_id: item.movie_id });
   return `<article class="room-card">
     ${posterMarkup(itemMovie)}
     <div class="room-info">
@@ -279,6 +292,15 @@ async function renderLobby() {
 
 `;
 
+    const inviteSection = qs("#invite-section");
+    if (inviteSection) {
+      inviteSection.dataset.signature = JSON.stringify(invites.map((invite) => `${invite.id}:${invite.room_name}:${invite.host_name}`));
+    }
+    const grid = qs("#rooms-grid");
+    if (grid) {
+      grid.dataset.signature = JSON.stringify(rooms.map((room) => `${room.id}:${room.name}:${room.member_count}:${room.is_member}`));
+    }
+
     mountLobby();
     subscribeLobby();
   } catch (error) {
@@ -290,17 +312,25 @@ async function renderLobby() {
 function subscribeLobby() {
   if (lobbyChannel) return;
   const sb = getClient();
+  // Só criação/remoção de sala muda o lobby. O UPDATE a cada 2s é o
+  // playback_state do anfitrião e não deve redesenhar nada.
   lobbyChannel = sb.channel(`party-lobby:${user.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "rooms" }, () => {
-        if (document.body.dataset.page === "pkparty" && !activeRoomCode()) refreshLobby();
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "friendships" }, () => {
-        if (typeof window.refreshSocialCache === "function") window.refreshSocialCache();
-      })
-    .on("postgres_changes", { event: "*", schema: "public", table: "room_invites", filter: `invitee=eq.${user.id}` }, () => {
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "rooms" }, () => {
+      if (document.body.dataset.page === "pkparty" && !activeRoomCode()) refreshLobby();
+    })
+    .on("postgres_changes", { event: "DELETE", schema: "public", table: "rooms" }, () => {
       if (document.body.dataset.page === "pkparty" && !activeRoomCode()) refreshLobby();
     })
     .subscribe();
+}
+
+// Convites de sala chegam pelo feed global do Supabase (js/social.js), então
+// aparecem em qualquer página. Aqui só atualizamos o lobby, sem recarregar.
+if (typeof window !== "undefined" && !window.__w00PartyInvitesBound) {
+  window.__w00PartyInvitesBound = true;
+  window.addEventListener("pk:room-invites-changed", () => {
+    if (document.body.dataset.page === "pkparty" && !activeRoomCode()) refreshLobby();
+  });
 }
 
 // Atualiza convites e salas em segundo plano, sem reconstruir a página inteira
@@ -335,6 +365,8 @@ function mountLobby() {
     });
   }
   qsa("[data-accept-invite]").forEach((button) => {
+    if (button.dataset.bound) return;
+    button.dataset.bound = "1";
     button.addEventListener("click", async () => {
       try {
         await respondRoomInvite(button.dataset.acceptInvite, true);
@@ -343,6 +375,8 @@ function mountLobby() {
     });
   });
   qsa("[data-decline-invite]").forEach((button) => {
+    if (button.dataset.bound) return;
+    button.dataset.bound = "1";
     button.addEventListener("click", async () => {
       try {
         await respondRoomInvite(button.dataset.declineInvite, false);

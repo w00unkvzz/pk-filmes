@@ -97,13 +97,36 @@ export function pageTitle(title, subtitle = "", eyebrow = "") {
 }
 
 /* Shell */
+let lastShellSignature = "";
+
 export function renderShell() {
   const page = document.body.dataset.page || "home";
   const user = store.getUser();
   const requestCount = store.getFriendRequests().length;
+  const inviteCount = store.getRoomInvites().length;
   const sidebar = qs("#sidebar");
   const topbar = qs("#topbar");
   if (!sidebar || !topbar) return;
+
+  // Reconstruir sidebar/topbar a cada evento (social, auth, storage) dava a
+  // sensação de recarregar. Só redesenha quando algo visível mudou de fato.
+  const signature = [
+    page,
+    location.pathname,
+    location.search,
+    user.authed ? 1 : 0,
+    user.id || "",
+    user.name || "",
+    user.cloud ? 1 : 0,
+    user.avatar_url || "",
+    requestCount,
+    inviteCount
+  ].join("|");
+  if (signature === lastShellSignature && sidebar.childElementCount && topbar.childElementCount) {
+    syncSidebarBackdrop();
+    return;
+  }
+  lastShellSignature = signature;
 
   const sections = [...new Set(CONFIG.nav.map((item) => item.section))];
   sidebar.innerHTML = `
@@ -116,7 +139,8 @@ export function renderShell() {
         <div class="nav-section-label">${escapeHTML(section)}</div>
         ${CONFIG.nav.filter((item) => item.section === section).map((item) => {
           const active = page === item.page;
-          const badge = item.badge === "requests" && requestCount ? `<span class="sidebar-badge">${requestCount}</span>` : "";
+          const badgeCount = item.badge === "requests" ? requestCount : item.badge === "invites" ? inviteCount : 0;
+          const badge = badgeCount ? `<span class="sidebar-badge">${badgeCount}</span>` : "";
           return `<a class="sidebar-link ${active ? "active" : ""}" href="${item.href}" ${active ? 'aria-current="page"' : ""}>
             <i class="fa-solid ${item.icon}"></i><span class="sidebar-label">${escapeHTML(item.label)}</span>${badge}
           </a>`;
@@ -772,6 +796,45 @@ export function refreshShell() {
   refreshAvatars();
 }
 
+/**
+ * Atualiza apenas os contadores sociais (badge da sidebar e sino do topo).
+ * Evita reconstruir a sidebar/topbar inteira a cada mudança em tempo real,
+ * que era o que dava a sensação de recarregar a página.
+ */
+export function refreshSocialBadges() {
+  syncSidebarBadge('.sidebar-link[href="/amigos"]', store.getFriendRequests().length);
+  syncSidebarBadge('.sidebar-link[href="/party"]', store.getRoomInvites().length);
+
+  const count = store.getFriendRequests().length;
+  const bell = qs('.topbar-icon[href="/amigos"]');
+  if (bell) {
+    let dot = bell.querySelector(".dot-badge");
+    if (count && !dot) {
+      dot = document.createElement("span");
+      dot.className = "dot-badge";
+      bell.appendChild(dot);
+    } else if (!count) {
+      dot?.remove();
+    }
+  }
+}
+
+function syncSidebarBadge(selector, count) {
+  const link = qs(selector);
+  if (!link) return;
+  let badge = link.querySelector(".sidebar-badge");
+  if (count) {
+    if (!badge) {
+      badge = document.createElement("span");
+      badge.className = "sidebar-badge";
+      link.appendChild(badge);
+    }
+    if (badge.textContent !== String(count)) badge.textContent = String(count);
+  } else {
+    badge?.remove();
+  }
+}
+
 /* Sidebar: will-change só durante a animação (evita GPU/memória presos) */
 let sidebarAnimTimer = null;
 
@@ -940,7 +1003,6 @@ export function bindGlobalEvents() {
   });
 
   store.subscribe(() => {
-    const badge = store.getFriendRequests().length;
-    qsa(".sidebar-badge").forEach((el) => { el.textContent = badge; el.style.display = badge ? "grid" : "none"; });
+    refreshSocialBadges();
   });
 }

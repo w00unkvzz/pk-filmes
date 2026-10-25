@@ -99,18 +99,18 @@ export async function renderAmigos() {
           </div>
 
           <div class="panel" style="margin-top:14px">
-            <div class="panel-head"><h3>Meus amigos</h3><span class="badge badge-soft">${friends.length}</span></div>
+            <div class="panel-head"><h3>Meus amigos</h3><span class="badge badge-soft" id="friends-count-badge">${friends.length}</span></div>
             <div class="panel-body">
-              ${friends.length ? `<div class="my-friends-list">${friends.map(friendRow).join("")}</div>` : emptyState("fa-user-group", "Sua lista está vazia", "Busque alguém pelo nome ou e-mail e envie um pedido.")}
+              <div id="my-friends-list">${friends.length ? `<div class="my-friends-list">${friends.map(friendRow).join("")}</div>` : emptyState("fa-user-group", "Sua lista está vazia", "Busque alguém pelo nome ou e-mail e envie um pedido.")}</div>
             </div>
           </div>
         </div>
 
         <aside class="profile-side">
           <div class="panel">
-            <div class="panel-head"><h3>Pedidos recebidos</h3><span class="badge ${requests.length ? "badge-live" : "badge-soft"}">${requests.length}</span></div>
+            <div class="panel-head"><h3>Pedidos recebidos</h3><span class="badge ${requests.length ? "badge-live" : "badge-soft"}" id="requests-count-badge">${requests.length}</span></div>
             <div class="panel-body">
-              ${requests.length ? requests.map(requestRow).join("") : `<p class="tiny muted">Nenhum pedido pendente.</p>`}
+              <div id="requests-list">${requests.length ? requests.map(requestRow).join("") : `<p class="tiny muted">Nenhum pedido pendente.</p>`}</div>
             </div>
           </div>
 
@@ -142,7 +142,7 @@ function bindAction(button) {
       try {
         await sendFriendRequest(add);
         toast("Pedido enviado.", "success", "Amizade");
-        await renderAmigos();
+        await refreshAmigos();
       } catch (error) {
         toast(error.message, "error");
         button.disabled = false;
@@ -154,7 +154,7 @@ function bindAction(button) {
       try {
         await respondFriendRequest(accept, true);
         toast("Pedido aceito.", "success", "Novo amigo");
-        await renderAmigos();
+        await refreshAmigos();
       } catch (error) { toast(error.message, "error"); }
     });
   }
@@ -163,7 +163,7 @@ function bindAction(button) {
       try {
         await respondFriendRequest(reject, false);
         toast("Pedido recusado.", "info");
-        await renderAmigos();
+        await refreshAmigos();
       } catch (error) { toast(error.message, "error"); }
     });
   }
@@ -172,43 +172,100 @@ function bindAction(button) {
       try {
         await removeFriendship(remove);
         toast("Amizade removida.", "info");
-        await renderAmigos();
+        await refreshAmigos();
       } catch (error) { toast(error.message, "error"); }
     });
   }
 }
 
+let searchRequest = 0;
+
+async function runSearch(term) {
+  const request = ++searchRequest;
+  try {
+    const results = await searchProfiles(term);
+    if (request !== searchRequest || document.body.dataset.page !== "amigos") return;
+    const grid = qs("#community-grid");
+    if (!grid) return;
+    grid.innerHTML = results.length
+      ? results.map(resultRow).join("")
+      : `<div class="empty-state"><i class="fa-solid fa-magnifying-glass"></i><h3>Ninguém encontrado</h3><p>Tente outro nome ou e-mail.</p></div>`;
+    grid.querySelectorAll("[data-add-friend], [data-accept-request]").forEach(bindAction);
+  } catch (error) {
+    toast(error.message, "error");
+  }
+}
+
+/** Atualiza só as listas/badges, sem tocar no campo de busca nem nos resultados. */
+function paintAmigos(friends, requests) {
+  const friendBadge = qs("#friend-count-badge");
+  if (friendBadge) friendBadge.textContent = `${friends.length} amigos`;
+  const friendsBadge = qs("#friends-count-badge");
+  if (friendsBadge) friendsBadge.textContent = String(friends.length);
+  const requestsBadge = qs("#requests-count-badge");
+  if (requestsBadge) {
+    requestsBadge.textContent = String(requests.length);
+    requestsBadge.className = `badge ${requests.length ? "badge-live" : "badge-soft"}`;
+  }
+  const friendsList = qs("#my-friends-list");
+  if (friendsList) {
+    friendsList.innerHTML = friends.length
+      ? `<div class="my-friends-list">${friends.map(friendRow).join("")}</div>`
+      : emptyState("fa-user-group", "Sua lista está vazia", "Busque alguém pelo nome ou e-mail e envie um pedido.");
+  }
+  const requestsList = qs("#requests-list");
+  if (requestsList) {
+    requestsList.innerHTML = requests.length
+      ? requests.map(requestRow).join("")
+      : `<p class="tiny muted">Nenhum pedido pendente.</p>`;
+  }
+  qsa("[data-remove-friend], [data-accept-request], [data-reject-request]").forEach((button) => {
+    if (button.dataset.bound) return;
+    button.dataset.bound = "1";
+    bindAction(button);
+  });
+}
+
+async function refreshAmigos() {
+  if (document.body.dataset.page !== "amigos") return;
+  try {
+    const rows = await fetchFriendsState();
+    if (document.body.dataset.page !== "amigos") return;
+    const friends = rows.filter((row) => row.status === "accepted").map(mapFriend);
+    const requests = rows.filter((row) => row.status === "pending" && row.direction === "received").map(mapFriend);
+    store.setSocialCache(friends, requests);
+    paintAmigos(friends, requests);
+    const term = qs("#friend-search")?.value.trim();
+    if (term) await runSearch(term);
+  } catch (error) {
+    console.warn("[amigos] atualização:", error.message);
+  }
+}
+
 function mountAmigos() {
-  qsa("[data-add-friend], [data-accept-request], [data-reject-request], [data-remove-friend]").forEach(bindAction);
+  qsa("[data-add-friend], [data-accept-request], [data-reject-request], [data-remove-friend]").forEach((button) => {
+    if (button.dataset.bound) return;
+    button.dataset.bound = "1";
+    bindAction(button);
+  });
 
   const input = qs("#friend-search");
   input?.addEventListener("input", () => {
     clearTimeout(searchTimer);
     const term = input.value.trim();
     if (!term) {
+      searchRequest += 1;
       qs("#community-grid").innerHTML = `<p class="tiny muted" id="search-hint">Digite um nome ou e-mail para buscar pessoas.</p>`;
       return;
     }
-    searchTimer = setTimeout(async () => {
-      try {
-        const results = await searchProfiles(term);
-        const grid = qs("#community-grid");
-        if (!grid) return;
-        grid.innerHTML = results.length
-          ? results.map(resultRow).join("")
-          : `<div class="empty-state"><i class="fa-solid fa-magnifying-glass"></i><h3>Ninguém encontrado</h3><p>Tente outro nome ou e-mail.</p></div>`;
-        grid.querySelectorAll("[data-add-friend], [data-accept-request]").forEach(bindAction);
-      } catch (error) {
-        toast(error.message, "error");
-      }
-    }, 280);
+    searchTimer = setTimeout(() => runSearch(term), 280);
   });
 }
 
 // A lista e o badge são alimentados pelo feed global em js/social.js.
-// Aqui só reagimos à mudança para redesenhar a página aberta.
+// Aqui só atualizamos os painéis — o campo de busca e os resultados ficam.
 window.addEventListener("pk:social-changed", () => {
   if (document.body.dataset.page !== "amigos") return;
   clearTimeout(socialRenderTimer);
-  socialRenderTimer = setTimeout(() => { renderAmigos(); }, 150);
+  socialRenderTimer = setTimeout(() => { refreshAmigos(); }, 150);
 });

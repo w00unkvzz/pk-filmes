@@ -1,5 +1,5 @@
 // Application entry: shell, History API routing and cross-page events.
-import { renderShell, bindGlobalEvents, refreshShell, setupRowArrows, openPasswordModal, resetRowObservers, closeModal, sidebarClose, toast } from "./ui.js";
+import { renderShell, bindGlobalEvents, refreshShell, refreshSocialBadges, setupRowArrows, openPasswordModal, resetRowObservers, closeModal, sidebarClose, toast } from "./ui.js";
 import { CONFIG } from "./config.js";
 import * as store from "./store.js";
 import { initAuth } from "./auth.js";
@@ -166,7 +166,8 @@ async function boot() {
   });
 
   window.addEventListener("pk:social-changed", (event) => {
-    refreshShell();
+    // Só o contador muda; nada de reconstruir a sidebar/topbar inteira.
+    refreshSocialBadges();
     const added = event.detail?.addedRequests || [];
     if (!added.length) return;
     const first = added[0];
@@ -176,6 +177,20 @@ async function boot() {
         : `${added.length} novos pedidos de amizade.`,
       "info",
       "Amizade"
+    );
+  });
+
+  window.addEventListener("pk:room-invites-changed", (event) => {
+    refreshSocialBadges();
+    const added = event.detail?.added || [];
+    if (!added.length) return;
+    const first = added[0];
+    toast(
+      added.length === 1
+        ? `${first.host_name} te convidou para "${first.room_name}".`
+        : `${added.length} novos convites de sala.`,
+      "info",
+      "w00 Party"
     );
   });
 

@@ -65,6 +65,8 @@ let socialChannel = null;
 let socialChannelUserId = "";
 let socialPollTimer = null;
 let lastSocialSignature = "";
+let lastRoomInviteIds = new Set();
+let roomInvitesFirst = true;
 
 function socialSignature(friends, requests) {
   const f = friends.map((row) => `${row.id}:${row.status}:${row.name}`).sort();
@@ -80,7 +82,9 @@ function stopSocialPolling() {
 function startSocialPolling() {
   stopSocialPolling();
   socialPollTimer = setInterval(() => {
-    if (document.visibilityState === "visible") syncSocialCache().catch(() => {});
+    if (document.visibilityState !== "visible") return;
+    syncSocialCache().catch(() => {});
+    syncRoomInvites().catch(() => {});
   }, 20000);
 }
 
@@ -93,6 +97,9 @@ export function stopSocialRealtime() {
   socialChannel = null;
   socialChannelUserId = "";
   lastSocialSignature = "";
+  lastRoomInviteIds = new Set();
+  roomInvitesFirst = true;
+  store.setRoomInvites([]);
 }
 
 /**
@@ -121,8 +128,12 @@ export function startSocialRealtime(userId) {
     .on("postgres_changes", { event: "*", schema: "public", table: "friendships" }, () => {
       syncSocialCache().catch(() => {});
     })
+    .on("postgres_changes", { event: "*", schema: "public", table: "room_invites", filter: `invitee=eq.${uid}` }, () => {
+      syncRoomInvites().catch(() => {});
+    })
     .subscribe();
   startSocialPolling();
+  syncRoomInvites().catch(() => {});
 }
 
 if (typeof document !== "undefined" && !window.__w00SocialVisibilityBound) {
@@ -130,6 +141,7 @@ if (typeof document !== "undefined" && !window.__w00SocialVisibilityBound) {
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible" && store.getUser().cloud) {
       syncSocialCache().catch(() => {});
+      syncRoomInvites().catch(() => {});
     }
   });
 }
@@ -162,6 +174,45 @@ export async function syncSocialCache() {
   } catch (error) {
     console.warn("[social] não foi possível atualizar amigos:", error.message);
     return { friends: [], requests: [] };
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Room invites (global Supabase Realtime feed, any page)
+ * ------------------------------------------------------------------------ */
+/**
+ * Mantém os convites de sala sincronizados em qualquer página. Quando um
+ * convite novo chega, dispara `pk:room-invites-changed` para o app avisar e
+ * para o lobby se atualizar sem recarregar nada.
+ */
+export async function syncRoomInvites() {
+  if (!cloudEnabled() || !store.getUser().cloud) {
+    lastRoomInviteIds = new Set();
+    roomInvitesFirst = true;
+    store.setRoomInvites([]);
+    return [];
+  }
+  try {
+    const invites = await myRoomInvites();
+    const ids = new Set(invites.map((invite) => invite.id));
+    const added = roomInvitesFirst
+      ? []
+      : invites.filter((invite) => !lastRoomInviteIds.has(invite.id));
+    const changed =
+      ids.size !== lastRoomInviteIds.size ||
+      [...ids].some((id) => !lastRoomInviteIds.has(id));
+    lastRoomInviteIds = ids;
+    roomInvitesFirst = false;
+    store.setRoomInvites(invites);
+    if (changed) {
+      window.dispatchEvent(new CustomEvent("pk:room-invites-changed", {
+        detail: { invites, added }
+      }));
+    }
+    return invites;
+  } catch (error) {
+    console.warn("[social] não foi possível atualizar convites:", error.message);
+    return [];
   }
 }
 

@@ -9,7 +9,7 @@ export const CONFIG = {
     { page: "home", href: "/", label: "Início", icon: "fa-house", section: "Explorar" },
     { page: "catalogo", href: "/catalogo", label: "Catálogo", icon: "fa-clapperboard", section: "Explorar" },
     { page: "cartaz", href: "/em-breve", label: "Em breve", icon: "fa-calendar-days", section: "Explorar" },
-    { page: "pkparty", href: "/party", label: "w00 Party", icon: "fa-tower-broadcast", section: "Social" },
+    { page: "pkparty", href: "/party", label: "w00 Party", icon: "fa-tower-broadcast", section: "Social", badge: "invites" },
     { page: "amigos", href: "/amigos", label: "Amigos", icon: "fa-user-group", section: "Social", badge: "requests" },
     { page: "perfil", href: "/perfil", label: "Perfil", icon: "fa-user", section: "Conta" }
   ],

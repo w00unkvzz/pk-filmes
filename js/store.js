@@ -181,6 +181,17 @@ export function setSocialCache(friends = [], requests = []) {
   return { friends, requests };
 }
 
+/* Room invites (cached from Supabase by js/social.js) */
+export function getRoomInvites() {
+  return read("roomInvites", []);
+}
+
+export function setRoomInvites(invites = []) {
+  write("roomInvites", invites, true);
+  listeners.forEach((fn) => fn("roomInvites", invites));
+  return invites;
+}
+
 export function addFriend(user) {
   const friends = getFriends();
   if (friends.some((friend) => friend.id === user.id || friend.email === user.email)) {

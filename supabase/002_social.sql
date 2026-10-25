@@ -69,9 +69,14 @@ as $$
     f.id
   from public.profiles p
   cross join me
-  left join public.friendships f
-    on (f.requester = me.uid and f.addressee = p.id)
-    or (f.addressee = me.uid and f.requester = p.id)
+  left join lateral (
+    select f.*
+    from public.friendships f
+    where (f.requester = me.uid and f.addressee = p.id)
+       or (f.addressee = me.uid and f.requester = p.id)
+    order by (f.status = 'accepted') desc, f.updated_at desc
+    limit 1
+  ) f on true
   where me.uid is not null
     and p.id <> me.uid
     and coalesce(p.email, '') not ilike '%@example.com'
