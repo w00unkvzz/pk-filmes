@@ -201,6 +201,21 @@ function mountCatalogo() {
       event.stopPropagation();
       const open = !dropdown.classList.contains("open");
       closeMenus();
+      if (open) {
+        // Size the menu to the space actually available on screen and flip it
+        // upwards near the bottom edge so the year list is never clipped.
+        const rect = trigger.getBoundingClientRect();
+        const gap = 16;
+        const spaceBelow = window.innerHeight - rect.bottom - gap;
+        const spaceAbove = rect.top - gap;
+        const openUp = spaceBelow < 260 && spaceAbove > spaceBelow;
+        dropdown.classList.toggle("drop-up", openUp);
+        const menu = dropdown.querySelector(".catalog-menu");
+        if (menu) {
+          const available = openUp ? spaceAbove : spaceBelow;
+          menu.style.maxHeight = `${Math.max(160, Math.min(420, Math.round(available)))}px`;
+        }
+      }
       dropdown.classList.toggle("open", open);
       trigger.setAttribute("aria-expanded", String(open));
     });

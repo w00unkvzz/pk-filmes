@@ -44,6 +44,7 @@ let user = null;
 let applyingRemote = false;
 let roomRequest = 0;
 let lobbyRequest = 0;
+let partyControlsTimer = 0;
 
 const DIRECT_VIDEO = /\.(mp4|webm|ogv|mov|m3u8)(\?|#|$)/i;
 
@@ -135,6 +136,8 @@ function cleanupParty() {
   destroyPartyVideo();
   clearInterval(heartbeat);
   heartbeat = null;
+  clearTimeout(partyControlsTimer);
+  partyControlsTimer = 0;
   try {
     const sb = getClient();
     if (realtimeChannel) sb?.removeChannel(realtimeChannel);
@@ -395,12 +398,39 @@ function renderRoom() {
               ? `<div class="party-video-wrap">
                   <video id="party-video" playsinline preload="metadata"></video>
                   ${isHost ? "" : '<div class="party-guest-note"><i class="fa-solid fa-lock"></i> O anfitrião controla a reprodução</div>'}
-                  <div class="party-player-controls glass">
-                    <button class="party-ctl" data-party-play type="button" aria-label="Reproduzir"><i class="fa-solid fa-play"></i></button>
-                    <input class="party-seek" id="party-seek" type="range" min="0" max="1000" value="0" step="1" aria-label="Progresso do vídeo" ${isHost ? "" : "disabled"}>
-                    <span class="party-time" id="party-time">00:00 / 00:00</span>
-                    <button class="party-ctl" data-party-mute type="button" aria-label="Silenciar"><i class="fa-solid fa-volume-high"></i></button>
-                    <button class="party-ctl" data-party-fullscreen type="button" aria-label="Tela cheia"><i class="fa-solid fa-expand"></i></button>
+                  <div class="player-overlay party-overlay" id="party-overlay">
+                    <div class="player-top-bar">
+                      <div class="player-top-left">
+                        <div class="meta-info">
+                          <span class="meta-title">${escapeHTML(movie.title || "Sala")}</span>
+                          <span class="meta-subtitle">${escapeHTML(room.name || "")}</span>
+                        </div>
+                      </div>
+                      <span class="brand-logo-pk">W00</span>
+                    </div>
+                    <div class="player-bottom-wrapper">
+                      <div class="timeline-container">
+                        <button class="control-icon" data-party-play type="button" aria-label="Reproduzir"><i class="fa-solid fa-play"></i></button>
+                        <div class="timeline ${isHost ? "" : "is-disabled"}" id="party-timeline" role="slider" aria-label="Progresso do vídeo" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0">
+                          <div class="timeline-buffered" id="party-buffered"></div>
+                          <div class="timeline-progress" id="party-progress"><div class="timeline-handle"></div></div>
+                        </div>
+                        <span class="time-display" id="party-time">00:00 / 00:00</span>
+                      </div>
+                      <div class="controls-bar">
+                        <div class="controls-left">
+                          <button class="control-icon" data-party-back10 type="button" title="Voltar 10s" aria-label="Voltar 10 segundos" ${isHost ? "" : "disabled"}><i class="fa-solid fa-rotate-left"></i></button>
+                          <button class="control-icon" data-party-forward10 type="button" title="Avançar 10s" aria-label="Avançar 10 segundos" ${isHost ? "" : "disabled"}><i class="fa-solid fa-rotate-right"></i></button>
+                          <div class="volume-container">
+                            <button class="control-icon" data-party-mute type="button" aria-label="Silenciar"><i class="fa-solid fa-volume-high"></i></button>
+                            <input type="range" class="volume-slider" id="party-volume" min="0" max="1" step="0.05" value="1" aria-label="Volume">
+                          </div>
+                        </div>
+                        <div class="controls-right">
+                          <button class="control-icon" data-party-fullscreen type="button" title="Tela cheia" aria-label="Tela cheia"><i class="fa-solid fa-expand"></i></button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>`
               : `<div class="party-embed-wrap">
@@ -749,20 +779,93 @@ function connectRoomRealtime() {
   }
 }
 
+function setPartyControlsHidden(hidden) {
+  const overlay = qs("#party-overlay");
+  if (!overlay) return;
+  overlay.classList.toggle("controls-hidden", hidden);
+  overlay.classList.toggle("hide-controls", hidden);
+}
+
+function revealPartyControls() {
+  const overlay = qs("#party-overlay");
+  if (!overlay) return;
+  setPartyControlsHidden(false);
+  clearTimeout(partyControlsTimer);
+  partyControlsTimer = window.setTimeout(() => setPartyControlsHidden(true), 3000);
+}
+
+function bindPartyOverlayAutoHide() {
+  const stage = qs("#party-stage");
+  if (!stage || stage.dataset.hideBound) return;
+  stage.dataset.hideBound = "1";
+  ["pointermove", "mousemove", "pointerdown", "touchstart", "click"].forEach((eventName) => {
+    stage.addEventListener(eventName, revealPartyControls, { passive: true });
+  });
+  if (!window.__w00PartyOverlayKeyBound) {
+    window.__w00PartyOverlayKeyBound = true;
+    document.addEventListener("keydown", revealPartyControls);
+  }
+  revealPartyControls();
+}
+
+function seekPartyToClientX(clientX) {
+  const video = qs("#party-video");
+  const timeline = qs("#party-timeline");
+  if (!video || !timeline || !isHost || !Number.isFinite(video.duration)) return;
+  const rect = timeline.getBoundingClientRect();
+  const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / (rect.width || 1)));
+  video.currentTime = ratio * video.duration;
+  updatePartyControls();
+}
+
+function bindPartyTimeline() {
+  const timeline = qs("#party-timeline");
+  if (!timeline || timeline.dataset.bound) return;
+  timeline.dataset.bound = "1";
+  timeline.addEventListener("pointerdown", (event) => {
+    if (!isHost) return;
+    event.preventDefault();
+    seekPartyToClientX(event.clientX);
+    const move = (moveEvent) => seekPartyToClientX(moveEvent.clientX);
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      updatePartyControls();
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up, { once: true });
+  });
+  timeline.addEventListener("keydown", (event) => {
+    if (!isHost) return;
+    const video = qs("#party-video");
+    if (!video || !Number.isFinite(video.duration)) return;
+    if (event.key === "ArrowRight") { video.currentTime = Math.min(video.duration, video.currentTime + 5); event.preventDefault(); }
+    if (event.key === "ArrowLeft") { video.currentTime = Math.max(0, video.currentTime - 5); event.preventDefault(); }
+    updatePartyControls();
+  });
+}
+
 function updatePartyControls() {
   const video = qs("#party-video");
   if (!video) return;
   const duration = Number.isFinite(video.duration) ? video.duration : 0;
   const time = qs("#party-time");
   if (time) time.textContent = `${formatClock(video.currentTime || 0)} / ${formatClock(duration)}`;
-  const seek = qs("#party-seek");
-  if (seek && !seek.matches(":active")) {
-    seek.value = duration ? String(Math.round((video.currentTime / duration) * 1000)) : "0";
+  const progress = qs("#party-progress");
+  if (progress) progress.style.width = duration ? `${(video.currentTime / duration) * 100}%` : "0%";
+  const buffered = qs("#party-buffered");
+  if (buffered) {
+    const end = video.buffered && video.buffered.length ? video.buffered.end(video.buffered.length - 1) : 0;
+    buffered.style.width = duration ? `${(end / duration) * 100}%` : "0%";
   }
+  const timeline = qs("#party-timeline");
+  if (timeline) timeline.setAttribute("aria-valuenow", duration ? String(Math.round((video.currentTime / duration) * 100)) : "0");
   const playIcon = qs("[data-party-play] i");
   if (playIcon) playIcon.className = `fa-solid fa-${video.paused ? "play" : "pause"}`;
   const muteIcon = qs("[data-party-mute] i");
   if (muteIcon) muteIcon.className = `fa-solid fa-volume-${video.muted || !video.volume ? "xmark" : "high"}`;
+  const volume = qs("#party-volume");
+  if (volume && document.activeElement !== volume) volume.value = String(video.muted ? 0 : (video.volume || 0));
 }
 
 function setupPlayback() {
@@ -775,10 +878,9 @@ function setupPlayback() {
   video.controls = false;
 
   if (!isHost) {
-          video.style.pointerEvents = "none";
-          const pBtn = qs("[data-party-play]"); if (pBtn) pBtn.style.display = "none";
-          video.addEventListener("play", () => { if (!applyingRemote) video.pause(); });
-          video.addEventListener("pause", () => { if (!applyingRemote && !video.ended) safePlay(video); });
+    video.style.pointerEvents = "none";
+    video.addEventListener("play", () => { if (!applyingRemote) video.pause(); });
+    video.addEventListener("pause", () => { if (!applyingRemote && !video.ended) safePlay(video); });
   } else {
     const send = () => { if (!applyingRemote) broadcastPlayback(); };
     video.addEventListener("play", send);
@@ -793,6 +895,7 @@ function setupPlayback() {
   }
 
   qs("[data-party-play]")?.addEventListener("click", () => {
+    revealPartyControls();
     if (!isHost) {
       // Guests cannot control the session, but they can start local playback
       // once to satisfy the browser's autoplay policy.
@@ -805,16 +908,38 @@ function setupPlayback() {
     else video.pause();
   });
 
-  qs("#party-seek")?.addEventListener("input", (event) => {
+  bindPartyTimeline();
+
+  qs("[data-party-back10]")?.addEventListener("click", () => {
     if (!isHost || !Number.isFinite(video.duration)) return;
-    video.currentTime = (Number(event.target.value) / 1000) * video.duration;
+    video.currentTime = Math.max(0, video.currentTime - 10);
+    updatePartyControls();
+  });
+
+  qs("[data-party-forward10]")?.addEventListener("click", () => {
+    if (!isHost || !Number.isFinite(video.duration)) return;
+    video.currentTime = Math.min(video.duration, video.currentTime + 10);
     updatePartyControls();
   });
 
   qs("[data-party-mute]")?.addEventListener("click", () => {
-    video.muted = !video.muted;
+    if (video.muted || video.volume === 0) {
+      video.muted = false;
+      if (video.volume === 0) video.volume = 1;
+    } else {
+      video.muted = true;
+    }
     updatePartyControls();
   });
+
+  qs("#party-volume")?.addEventListener("input", (event) => {
+    const value = Number(event.target.value);
+    video.volume = value;
+    video.muted = value === 0;
+    updatePartyControls();
+  });
+
+  bindPartyOverlayAutoHide();
 
   ["timeupdate", "play", "pause", "loadedmetadata", "volumechange", "seeked"].forEach((eventName) => {
     video.addEventListener(eventName, updatePartyControls);
