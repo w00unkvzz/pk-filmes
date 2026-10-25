@@ -1,37 +1,26 @@
 // Friends: real Supabase directory, requests and friendships.
 import * as store from "../store.js";
-import { getClient } from "../supabase.js";
 import {
   fetchFriendsState,
   searchProfiles,
   sendFriendRequest,
   respondFriendRequest,
   removeFriendship,
-  mapFriend,
-  syncSocialCache
+  mapFriend
 } from "../social.js";
 import { qs, qsa, avatar, escapeHTML, toast, emptyState } from "../ui.js";
 
-let channel = null;
-let channelUserId = "";
 let searchTimer = null;
-
-function unsubscribeFriends() {
-  if (!channel) return;
-  try { getClient()?.removeChannel(channel); } catch {}
-  channel = null;
-  channelUserId = "";
-}
+let socialRenderTimer = null;
 
 export function destroyAmigos() {
   clearTimeout(searchTimer);
-  unsubscribeFriends();
+  clearTimeout(socialRenderTimer);
 }
 
 function requireLogin() {
   const user = store.getUser();
   if (!user.cloud) {
-    unsubscribeFriends();
     qs("#page-content").innerHTML = `
       <div class="friends-hero">
         <div class="section-kicker"><i class="fa-solid fa-user-group"></i> Comunidade</div>
@@ -135,7 +124,6 @@ export async function renderAmigos() {
       </div>`;
 
     mountAmigos();
-    subscribeFriends();
   } catch (error) {
     if (document.body.dataset.page !== "amigos") return;
     qs("#page-content").innerHTML = `<div class="page-section">${emptyState("fa-triangle-exclamation", "Não foi possível carregar amigos", error.message)}</div>`;
@@ -217,26 +205,10 @@ function mountAmigos() {
   });
 }
 
-function subscribeFriends() {
-  const user = store.getUser();
-  if (!user.cloud) {
-    unsubscribeFriends();
-    return;
-  }
-  if (channel && channelUserId === user.id) return;
-  unsubscribeFriends();
-  const sb = getClient();
-  channelUserId = user.id;
-  channel = sb.channel(`friends:${user.id}`)
-    .on("postgres_changes", { event: "*", schema: "public", table: "friendships" }, () => {
-      if (document.body.dataset.page === "amigos") renderAmigos();
-      else syncSocialCache().catch(() => {});
-    })
-    .subscribe();
-  if (!window.__w00FriendsUnloadBound) {
-    window.__w00FriendsUnloadBound = true;
-    window.addEventListener("beforeunload", () => {
-      unsubscribeFriends();
-    }, { once: true });
-  }
-}
+// A lista e o badge são alimentados pelo feed global em js/social.js.
+// Aqui só reagimos à mudança para redesenhar a página aberta.
+window.addEventListener("pk:social-changed", () => {
+  if (document.body.dataset.page !== "amigos") return;
+  clearTimeout(socialRenderTimer);
+  socialRenderTimer = setTimeout(() => { renderAmigos(); }, 150);
+});

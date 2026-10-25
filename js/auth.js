@@ -11,7 +11,7 @@ import {
   getSession,
   getClient
 } from "./supabase.js";
-import { syncSocialCache } from "./social.js";
+import { syncSocialCache, startSocialRealtime, stopSocialRealtime } from "./social.js";
 
 let started = false;
 let profileChannel = null;
@@ -65,6 +65,7 @@ export async function initAuth() {
   return initCloudSession((session, profile) => {
     if (!session?.user) {
       unsubscribeProfileRealtime();
+      stopSocialRealtime();
       const current = store.getUser();
       if (current.cloud) store.logout();
       window.dispatchEvent(new CustomEvent("pk:auth-changed"));
@@ -73,6 +74,7 @@ export async function initAuth() {
     const user = appUserFromSession(session, profile);
     store.saveUser(user);
     subscribeProfileRealtime(session.user.id);
+    startSocialRealtime(session.user.id);
     window.dispatchEvent(new CustomEvent("pk:auth-changed"));
     syncSocialCache();
   });
@@ -85,6 +87,7 @@ export async function logout() {
     console.warn("[auth] falha ao encerrar sessão remota:", error.message);
   }
   unsubscribeProfileRealtime();
+  stopSocialRealtime();
   store.logout();
   window.dispatchEvent(new CustomEvent("pk:auth-changed"));
 }

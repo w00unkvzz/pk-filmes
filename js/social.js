@@ -61,10 +61,84 @@ export function mapFriend(row) {
   };
 }
 
+let socialChannel = null;
+let socialChannelUserId = "";
+let socialPollTimer = null;
+let lastSocialSignature = "";
+
+function socialSignature(friends, requests) {
+  const f = friends.map((row) => `${row.id}:${row.status}:${row.name}`).sort();
+  const r = requests.map((row) => `${row.id}:${row.name}`).sort();
+  return JSON.stringify({ f, r });
+}
+
+function stopSocialPolling() {
+  if (socialPollTimer) clearInterval(socialPollTimer);
+  socialPollTimer = null;
+}
+
+function startSocialPolling() {
+  stopSocialPolling();
+  socialPollTimer = setInterval(() => {
+    if (document.visibilityState === "visible") syncSocialCache().catch(() => {});
+  }, 20000);
+}
+
+/** Drop the global friendships feed (logout / troca de conta). */
+export function stopSocialRealtime() {
+  stopSocialPolling();
+  if (socialChannel) {
+    try { getClient()?.removeChannel(socialChannel); } catch {}
+  }
+  socialChannel = null;
+  socialChannelUserId = "";
+  lastSocialSignature = "";
+}
+
+/**
+ * Global friendships feed. Fica ativo em qualquer página, não só em /amigos.
+ * Usa Realtime quando a tabela está publicada e um polling leve como rede de
+ * segurança para o convite aparecer sem recarregar a página.
+ */
+export function startSocialRealtime(userId) {
+  const user = store.getUser();
+  const uid = userId || user?.id;
+  if (!cloudEnabled() || !user?.cloud || !uid) {
+    stopSocialRealtime();
+    return;
+  }
+  if (socialChannel && socialChannelUserId === uid) {
+    startSocialPolling();
+    return;
+  }
+  let sb = null;
+  try { sb = getClient(); } catch { return; }
+  if (!sb) return;
+  stopSocialRealtime();
+  socialChannelUserId = uid;
+  socialChannel = sb
+    .channel(`w00-social:${uid}`)
+    .on("postgres_changes", { event: "*", schema: "public", table: "friendships" }, () => {
+      syncSocialCache().catch(() => {});
+    })
+    .subscribe();
+  startSocialPolling();
+}
+
+if (typeof document !== "undefined" && !window.__w00SocialVisibilityBound) {
+  window.__w00SocialVisibilityBound = true;
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && store.getUser().cloud) {
+      syncSocialCache().catch(() => {});
+    }
+  });
+}
+
 /** Refresh the local badge/list cache from Supabase. */
 export async function syncSocialCache() {
   if (!cloudEnabled() || !store.getUser().cloud) {
     store.setSocialCache([], []);
+    lastSocialSignature = "";
     return { friends: [], requests: [] };
   }
   try {
@@ -73,8 +147,17 @@ export async function syncSocialCache() {
     const requests = rows
       .filter((row) => row.status === "pending" && row.direction === "received")
       .map(mapFriend);
+    const firstSync = !lastSocialSignature;
+    const previousIds = new Set(store.getFriendRequests().map((row) => row.id));
     store.setSocialCache(friends, requests);
-    window.dispatchEvent(new CustomEvent("pk:social-changed"));
+    const signature = socialSignature(friends, requests);
+    if (signature !== lastSocialSignature) {
+      const addedRequests = firstSync ? [] : requests.filter((row) => !previousIds.has(row.id));
+      lastSocialSignature = signature;
+      window.dispatchEvent(new CustomEvent("pk:social-changed", {
+        detail: { friends, requests, addedRequests }
+      }));
+    }
     return { friends, requests };
   } catch (error) {
     console.warn("[social] não foi possível atualizar amigos:", error.message);
@@ -167,16 +250,15 @@ export async function loadMessages(roomId) {
   return data || [];
 }
 
-export async function sendMessage(roomId, body) {
+export async function sendMessage(roomId, body, clientId) {
   const user = store.getUser();
   const text = String(body || "").trim().slice(0, 1000);
   if (!text) throw new Error("Mensagem vazia.");
-  const clientId = crypto.randomUUID();
   const row = {
     room_id: roomId,
     user_id: user.id,
     body: text,
-    client_id: clientId,
+    client_id: clientId || crypto.randomUUID(),
     sender_name: user.name,
     sender_avatar: user.avatar_url || ""
   };
