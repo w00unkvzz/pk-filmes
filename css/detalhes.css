@@ -15,11 +15,11 @@
   z-index: 0;
   pointer-events: none;
   background-color: #0b0c10;
-  background-position: center 20%;
+  background-position: center top;
   background-repeat: no-repeat;
   background-size: cover;
-  filter: blur(22px) brightness(.46) saturate(1.25);
-  transform: scale(1.08);
+  filter: brightness(.75) saturate(1.08);
+  transform: scale(1.02);
 }
 .details-veil {
   position: fixed;
@@ -27,9 +27,10 @@
   z-index: 1;
   pointer-events: none;
   background:
-    radial-gradient(ellipse at 50% 18%, rgba(30, 27, 75, .04) 0%, rgba(5, 6, 15, .62) 68%, #05060f 100%),
-    linear-gradient(180deg, rgba(5, 6, 15, .14) 0%, rgba(5, 6, 15, .36) 52%, #05060f 94%),
-    linear-gradient(90deg, rgba(5, 6, 15, .78), transparent 30%, transparent 70%, rgba(5, 6, 15, .78));
+    radial-gradient(ellipse 75% 60% at 50% 38%, rgba(5, 6, 15, .5) 0%, rgba(5, 6, 15, .22) 55%, transparent 82%),
+    linear-gradient(90deg, rgba(5, 6, 15, .8) 0%, rgba(5, 6, 15, .18) 28%, rgba(5, 6, 15, .18) 72%, rgba(5, 6, 15, .8) 100%),
+    linear-gradient(0deg, #05060f 0%, rgba(5, 6, 15, .36) 42%, transparent 74%),
+    linear-gradient(180deg, rgba(5, 6, 15, .48) 0%, transparent 30%);
 }
 .details-inner {
   position: relative;

@@ -550,7 +550,6 @@ function accountModal(user) {
     <div class="auth-head">
       <div class="brand-mark">${escapeHTML(CONFIG.brandShort)}</div>
       <h2>Sua conta</h2>
-      <p>${cloud ? "Sessão sincronizada na sua conta." : "Perfil salvo neste navegador."}</p>
     </div>
     <div class="auth-account">
       ${avatar(user, "md", "self")}
@@ -560,7 +559,6 @@ function accountModal(user) {
     <form class="auth-body">
       ${cloud ? `<button class="btn btn-primary btn-block" data-password-change type="button"><i class="fa-solid fa-key"></i>Alterar senha</button>` : ""}
       <button class="btn btn-ghost btn-block" data-logout type="button"><i class="fa-solid fa-right-from-bracket"></i>Sair da conta</button>
-      <p class="auth-note">${cloud ? "Seus dados ficam salvos na sua conta." : "Entre para sincronizar seu perfil e sua lista."}</p>
     </form>`;
   openModal(content, {
     className: "modal-sm",
@@ -743,7 +741,7 @@ export function openAuthModal() {
     <div class="auth-head">
       <div class="brand-mark">${escapeHTML(CONFIG.brandShort)}</div>
       <h2>Entrar no w00filmes</h2>
-      <p>Sua conta sincroniza perfil, foto, amigos e salas do w00 Party.</p>
+      <p>Entre para continuar.</p>
     </div>
     <div class="auth-tabs" role="tablist" aria-label="Entrar ou criar conta">
       <button class="auth-tab active" data-auth-mode="login" type="button" role="tab" aria-selected="true">Entrar</button>
@@ -766,19 +764,18 @@ export function openAuthModal() {
       <button class="btn btn-primary btn-block" id="auth-submit" type="submit"><i class="fa-solid fa-right-to-bracket"></i>Entrar</button>
       ${SUPABASE_CONFIG.githubOAuth ? `<button class="btn btn-ghost btn-block" id="auth-github" type="button"><i class="fa-brands fa-github"></i>Continuar com GitHub</button>` : ""}
       <button class="btn btn-link btn-block" id="auth-reset" type="button">Esqueci minha senha</button>
-      <p class="auth-note">Conta sincronizada · seus dados ficam salvos.</p>
     </form>` : `
     <button class="modal-close" data-close-modal type="button" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
     <div class="auth-head">
       <div class="brand-mark">${escapeHTML(CONFIG.brandShort)}</div>
       <h2>Entrar no w00filmes</h2>
-      <p>Entre para salvar seu perfil e sua lista.</p>
+      <p>Entre para continuar.</p>
     </div>
     <form class="auth-body" id="auth-form">
       <div class="field"><label for="auth-name">Nome de exibição</label><input class="input" id="auth-name" name="name" required maxlength="28" placeholder="Como podemos chamar você?"></div>
       <div class="field"><label for="auth-email">E-mail (opcional)</label><input class="input" id="auth-email" name="email" type="email" placeholder="voce@exemplo.com"></div>
       <button class="btn btn-primary btn-block" type="submit"><i class="fa-solid fa-right-to-bracket"></i>Entrar no modo local</button>
-      <p class="auth-note">Crie sua conta para sincronizar seus dados entre dispositivos.</p>
+      <p class="auth-note">Crie sua conta para continuar.</p>
     </form>`;
 
   openModal(content, {

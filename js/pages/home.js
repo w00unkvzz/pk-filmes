@@ -7,7 +7,9 @@ import { openTrailerModal } from "../trailer.js";
 let heroTimer = null;
 
 function heroImage(item) {
-  return item.backdrop || item.poster || "";
+  const image = item.backdrop || item.poster || "";
+  // Posters do catálogo vêm em w500; no hero full-bleed isso fica borrado.
+  return image.replace(/\/t\/p\/w\d+\//, "/t/p/original/");
 }
 
 function heroMeta(item) {
@@ -101,12 +103,63 @@ function mountHome() {
   const hero = qs("#hero");
   if (!hero) return;
   let index = 0;
+  let paintToken = 0;
   const paint = (next) => {
-    index = (next + featured.length) % featured.length;
+    const target = (next + featured.length) % featured.length;
+    if (target === index) return;
+    index = target;
     const item = featured[index];
+    const token = ++paintToken;
     hero.style.setProperty("--c1", item.colors[0]);
     hero.style.setProperty("--c2", item.colors[1]);
-    hero.innerHTML = `${heroMarkup(item)}${heroDots(index)}`;
+
+    const bg = hero.querySelector(".hero-bg");
+    const image = heroImage(item);
+    if (bg) {
+      bg.classList.toggle("no-image", !image);
+      const old = bg.querySelector("img");
+      if (image) {
+        const img = document.createElement("img");
+        img.src = image;
+        img.alt = "";
+        img.decoding = "async";
+        img.referrerPolicy = "no-referrer";
+        img.className = "hero-img-next";
+        const swap = () => {
+          if (token !== paintToken) return;
+          bg.appendChild(img);
+          setTimeout(() => {
+            if (token === paintToken) img.classList.add("is-ready");
+          }, 20);
+          if (old) {
+            old.classList.add("is-out");
+            setTimeout(() => old.remove(), 760);
+          }
+        };
+        if (img.complete) swap();
+        else {
+          img.addEventListener("load", swap, { once: true });
+          img.addEventListener("error", () => { if (token === paintToken) img.remove(); }, { once: true });
+        }
+      } else if (old) {
+        old.remove();
+      }
+    }
+
+    const title = hero.querySelector(".hero-title");
+    if (title) title.textContent = item.title;
+    const meta = hero.querySelector(".hero-meta");
+    if (meta) meta.innerHTML = heroMeta(item);
+    const desc = hero.querySelector(".hero-desc");
+    if (desc) desc.textContent = item.synopsis;
+    const play = hero.querySelector("[data-play]");
+    if (play) play.dataset.play = item.id;
+    const trailer = hero.querySelector("[data-trailer]");
+    if (trailer) trailer.dataset.trailer = item.id;
+    hero.querySelectorAll("[data-hero-index]").forEach((dot, i) => {
+      dot.classList.toggle("active", i === index);
+      dot.setAttribute("aria-selected", i === index ? "true" : "false");
+    });
   };
   const start = () => {
     clearInterval(heroTimer);

@@ -173,7 +173,7 @@ function openEditProfile() {
   if (!user.authed) { toast("Entre na sua conta para editar o perfil.", "info"); return; }
   const content = `
     <button class="modal-close" data-close-modal type="button" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
-    <div class="auth-head"><div class="brand-mark">w00</div><h2>Editar perfil</h2><p>Seus dados ficam sincronizados na sua conta.</p></div>
+    <div class="auth-head"><div class="brand-mark">w00</div><h2>Editar perfil</h2></div>
     <form class="auth-body" id="edit-profile-form">
       <div class="field"><label for="edit-name">Nome</label><input class="input" id="edit-name" name="name" required maxlength="40" value="${escapeHTML(user.name)}"></div>
       <div class="field"><label for="edit-email">E-mail</label><input class="input" id="edit-email" type="email" value="${escapeHTML(user.email)}" disabled></div>

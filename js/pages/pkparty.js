@@ -268,18 +268,13 @@ async function renderLobby() {
       <section class="party-hero">
         <div class="party-hero-inner">
           <div>
-            <div class="section-kicker"><i class="fa-solid fa-tower-broadcast"></i> Sessão sincronizada</div>
+            <div class="section-kicker"><i class="fa-solid fa-tower-broadcast"></i> Sessão ao vivo</div>
             <h1>w00 Party</h1>
-            <p>Crie uma sala, convide amigos e assista junto. O anfitrião controla play, pause e avanço — todos recebem em tempo real, sem botão de sincronizar.</p>
             <div class="row wrap" style="margin-top:18px">
               <button class="btn btn-primary" id="create-room" type="button"><i class="fa-solid fa-plus"></i>Criar sala</button>
               <span class="badge badge-soft" id="rooms-count-badge"><i class="fa-solid fa-users"></i> ${rooms.length} salas</span>
             </div>
           </div>
-          <form class="party-code-box" id="join-form">
-            <input id="join-code" placeholder="CÓDIGO DA SALA" maxlength="12" autocomplete="off" aria-label="Código da sala">
-            <button class="btn btn-light btn-sm" type="submit"><i class="fa-solid fa-right-to-bracket"></i>Entrar</button>
-          </form>
         </div>
       </section>
 
@@ -354,16 +349,6 @@ function mountLobby() {
     create.dataset.bound = "1";
     create.addEventListener("click", openCreateRoom);
   }
-  const form = qs("#join-form");
-  if (form && !form.dataset.bound) {
-    form.dataset.bound = "1";
-    form.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const code = qs("#join-code").value.trim().toUpperCase();
-      if (!code) return;
-      await handleJoin(code);
-    });
-  }
   qsa("[data-accept-invite]").forEach((button) => {
     if (button.dataset.bound) return;
     button.dataset.bound = "1";
@@ -392,7 +377,7 @@ async function handleJoin(code) {
     await joinRoom(code);
     navigate(roomPath(code));
   } catch (error) {
-    toast(error.message === "invite required" ? "Esta sala é privada e exige convite." : error.message, "error", "Não foi possível entrar");
+    toast(error.message === "invite required" ? "Esta sala é privada. Peça o link ao anfitrião." : error.message, "error", "Não foi possível entrar");
   }
 }
 
@@ -401,12 +386,12 @@ function openCreateRoom() {
   const items = CATALOG;
   const content = `
     <button class="modal-close" data-close-modal type="button" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
-    <div class="auth-head"><div class="brand-mark">w00</div><h2>Criar sala</h2><p>Você será o anfitrião e controlará a reprodução.</p></div>
+    <div class="auth-head"><div class="brand-mark">w00</div><h2>Criar sala</h2></div>
     <form class="auth-body" id="create-room-form">
       <div class="field"><label for="room-name">Nome da sala</label><input class="input" id="room-name" maxlength="40" placeholder="Ex.: Noite de filme" required></div>
       ${items.length ? `<div class="field"><label for="room-movie">Título do catálogo</label><select class="select" id="room-movie">${items.map((item) => `<option value="${escapeHTML(item.id)}">${escapeHTML(item.title)}</option>`).join("")}</select></div>` : ""}
       <div class="field"><label for="room-url">${items.length ? "Ou link direto do vídeo" : "Link direto do vídeo"}</label><input class="input" id="room-url" type="url" placeholder="https://.../filme.mp4" ${items.length ? "" : "required"}></div>
-      <label class="row-between tiny" style="gap:12px"><span>Sala privada (só entra com convite ou código)</span><input type="checkbox" id="room-private"></label>
+      <label class="row-between tiny" style="gap:12px"><span>Sala privada (só entra com convite ou link)</span><input type="checkbox" id="room-private"></label>
       <button class="btn btn-primary btn-block" type="submit"><i class="fa-solid fa-tower-broadcast"></i>Criar sala</button>
     </form>`;
 
@@ -464,9 +449,9 @@ async function openRoom(code) {
   } catch (error) {
     if (!stillActive()) return;
     const message = error.message === "invite required"
-      ? "Esta sala é privada. Peça um convite ao anfitrião."
+      ? "Esta sala é privada. Peça o link ao anfitrião."
       : error.message === "room not found"
-        ? "Sala não encontrada. Confira o código."
+        ? "Sala não encontrada. Confira o link."
         : error.message;
     qs("#page-content").innerHTML = `<div class="page-section">${emptyState("fa-tower-broadcast", "Não foi possível entrar", message)}<div class="row" style="justify-content:center;margin-top:14px"><a class="btn btn-primary" href="/party"><i class="fa-solid fa-arrow-left"></i>Voltar ao lobby</a></div></div>`;
   }
@@ -501,7 +486,6 @@ function renderRoom() {
             ? canPlay
               ? `<div class="party-video-wrap">
                   <video id="party-video" playsinline preload="metadata"></video>
-                  ${isHost ? "" : '<div class="party-guest-note"><i class="fa-solid fa-lock"></i> O anfitrião controla a reprodução</div>'}
                   <div class="player-overlay party-overlay" id="party-overlay">
                     <div class="player-top-bar">
                       <div class="player-top-left">
@@ -539,9 +523,8 @@ function renderRoom() {
                 </div>`
               : `<div class="party-embed-wrap">
                   <iframe id="party-iframe" src="${escapeHTML(movie.stream)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>
-                  <div class="party-guest-note"><i class="fa-solid fa-circle-info"></i> Este player incorporado não sincroniza. Use links diretos MP4/WebM.</div>
                 </div>`
-            : `<div class="party-stage-empty">${emptyState("fa-film", "Sala sem vídeo", "O anfitrião precisa escolher um título ou link direto.")}</div>`}
+            : `<div class="party-stage-empty">${emptyState("fa-film", "Sala sem vídeo", "Nenhum vídeo definido para esta sala.")}</div>`}
         </div>
 
         <div class="party-room-actions glass">
@@ -1002,7 +985,6 @@ function setupPlayback() {
     revealPartyControls();
     if (!isHost) {
       // Convidado não controla a sessão: o clique só libera o autoplay.
-      if (remotePaused) toast("O anfitrião está no controle da reprodução.", "info", "Sincronizado");
       primeGuestPlayback(video);
       return;
     }

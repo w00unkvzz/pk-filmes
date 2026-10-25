@@ -308,9 +308,8 @@ select option { background: #111a33; color: #fff; }
 }
 .hero-overlay {
   background:
-    linear-gradient(90deg, rgba(5,6,15,.98) 0%, rgba(5,6,15,.9) 34%, rgba(5,6,15,.36) 64%, rgba(5,6,15,.55) 100%),
-    linear-gradient(0deg, #05060f 0%, rgba(5,6,15,.22) 38%, transparent 72%),
-    linear-gradient(180deg, rgba(5,6,15,.46), transparent 28%);
+    linear-gradient(to right, #05060f 28%, rgba(5,6,15,.75) 60%, transparent 100%),
+    linear-gradient(to top, #05060f 15%, transparent 65%);
 }
 .hero-content { width: min(700px, 64%); padding: clamp(34px, 6vw, 78px); padding-bottom: 92px; }
 .hero-dots { left: 50%; transform: translateX(-50%); }
@@ -1268,12 +1267,13 @@ body.party-theater .sidebar-backdrop { display: none !important; }
    ------------------------------------------------------------------------- */
 body[data-page="detalhes"] .page-content { padding-bottom: 0; }
 .details-page { min-height: calc(100svh - var(--topbar-h)); }
-.details-bg { filter: blur(5px) brightness(.64) saturate(1.18); transform: scale(1.035); }
+.details-bg { filter: brightness(.75) saturate(1.08); transform: scale(1.02); background-position: center top; }
 .details-veil {
   background:
-    radial-gradient(ellipse at 50% 18%, rgba(30, 27, 75, .02) 0%, rgba(5, 6, 15, .42) 68%, #05060f 100%),
-    linear-gradient(180deg, rgba(5, 6, 15, .08) 0%, rgba(5, 6, 15, .22) 52%, #05060f 94%),
-    linear-gradient(90deg, rgba(5, 6, 15, .58), transparent 30%, transparent 70%, rgba(5, 6, 15, .58));
+    radial-gradient(ellipse 75% 60% at 50% 38%, rgba(5, 6, 15, .5) 0%, rgba(5, 6, 15, .22) 55%, transparent 82%),
+    linear-gradient(90deg, rgba(5, 6, 15, .8) 0%, rgba(5, 6, 15, .18) 28%, rgba(5, 6, 15, .18) 72%, rgba(5, 6, 15, .8) 100%),
+    linear-gradient(0deg, #05060f 0%, rgba(5, 6, 15, .36) 42%, transparent 74%),
+    linear-gradient(180deg, rgba(5, 6, 15, .48) 0%, transparent 30%);
 }
 .details-inner { padding-top: 28px; padding-bottom: clamp(24px, 4vw, 44px); }
 .details-hero { min-height: min(74vh, 720px); padding-top: clamp(28px, 5vh, 54px); }
@@ -1326,12 +1326,13 @@ body[data-page="detalhes"] .page-content { padding-bottom: 0; }
   border-radius: 6px !important;
 }
 
-/* 2. Fundo (Backdrop) menos desfocado e mais nítido */
-.details-backdrop, .backdrop, .movie-bg, .hero-bg {
+/* 2. Fundo (Backdrop) nítido no hero; blur só onde o texto precisa de contraste */
+.details-backdrop, .backdrop, .movie-bg {
   filter: blur(4px) brightness(0.6) !important;
   background-size: cover !important;
   background-position: center top !important;
 }
+.hero-bg img { filter: none !important; }
 
 /* 3. Arrumar o Dropdown do Catálogo (Anos e Gêneros) */
 .dropdown-menu, .filter-menu, .select-menu, .dropdown-content {

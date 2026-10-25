@@ -20,6 +20,11 @@ export function imageUrl(path, size = "w500") {
   return `${IMAGE}/${size}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
+function atSize(url, size = "original") {
+  if (!url) return "";
+  return String(url).replace(/\/t\/p\/[^/]+\//, `/t/p/${size}/`);
+}
+
 function cacheKey(kind, id, season = "") {
   // v2 invalidates old trailer keys cached by previous builds. A stale key
   // that YouTube no longer allows to be embedded looked like a broken player.
@@ -146,9 +151,9 @@ export function synopsisOf(data, fallbackItem) {
 }
 
 export function backdropOf(data, fallbackItem) {
-  if (data?.backdrop_path) return imageUrl(data.backdrop_path, "w1280");
+  if (data?.backdrop_path) return imageUrl(data.backdrop_path, "original");
   if (data?.poster_path) return imageUrl(data.poster_path, "original");
-  return fallbackItem?.backdrop || fallbackItem?.poster || "";
+  return atSize(fallbackItem?.backdrop || fallbackItem?.poster || "", "original");
 }
 
 export function posterOf(data, fallbackItem) {

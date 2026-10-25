@@ -83,7 +83,7 @@ export async function renderAmigos() {
       <div class="friends-hero">
         <div class="section-kicker"><i class="fa-solid fa-user-group"></i> Comunidade w00filmes</div>
         <h1>Assista com quem importa.</h1>
-        <p>Encontre pessoas, envie pedidos e combine uma sessão no w00 Party. Tudo sincronizado na sua conta.</p>
+        <p>Encontre pessoas e combine sessões.</p>
       </div>
 
       <div class="friends-layout">
@@ -117,7 +117,6 @@ export async function renderAmigos() {
           <div class="panel panel-pad">
             <div class="section-kicker"><i class="fa-solid fa-tower-broadcast"></i> w00 Party</div>
             <h3 style="margin-top:6px">Convide para uma sala.</h3>
-            <p class="tiny" style="margin-top:6px">Dentro de uma sala, o anfitrião pode convidar os amigos direto pela lista.</p>
             <a class="btn btn-ghost btn-block btn-sm" href="/party" style="margin-top:12px"><i class="fa-solid fa-arrow-right"></i>Ir para o w00 Party</a>
           </div>
         </aside>

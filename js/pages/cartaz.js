@@ -41,14 +41,14 @@ export function renderCartaz() {
     <div class="cartaz-hero">
       <div class="section-kicker"><i class="fa-solid fa-calendar-days"></i> Agenda de estreias</div>
       <h1>O que vem por aí.</h1>
-      <p>Cadastre seus lançamentos com data de estreia para ativar a contagem regressiva ao vivo.</p>
+      <p>As próximas estreias do catálogo.</p>
       <div class="month-strip" id="month-strip">
         <button class="chip active" data-month-filter="all" type="button"><i class="fa-solid fa-layer-group"></i>Todos</button>
         ${months.map((month) => `<button class="chip" data-month-filter="${month}" type="button"><i class="fa-regular fa-calendar"></i>${formatMonth(month + "-15")}</button>`).join("")}
       </div>
     </div>
     <div class="cartaz-grid" id="cartaz-grid">${UPCOMING.map(releaseCard).join("")}</div>
-    <div id="cartaz-empty" class="empty-state ${UPCOMING.length ? "hidden" : ""}" style="margin:20px clamp(18px,3.2vw,46px)">${"<i class=\"fa-solid fa-calendar-xmark\"></i><h3>Nenhum lançamento cadastrado</h3><p>Adicione títulos e datas para montar a agenda de estreias.</p>"}</div>`;
+    <div id="cartaz-empty" class="empty-state ${UPCOMING.length ? "hidden" : ""}" style="margin:20px clamp(18px,3.2vw,46px)">${"<i class=\"fa-solid fa-calendar-xmark\"></i><h3>Nenhum lançamento cadastrado</h3><p>Volte em breve para conferir as novidades.</p>"}</div>`;
 
   mountCartaz();
 }
