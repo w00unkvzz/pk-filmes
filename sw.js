@@ -5,22 +5,25 @@
 //   HTML pages    → network-first, fallback to cache
 //   Supabase/fonts/FA → network-only (no cache)
 
-const VERSION = "w00-v15";
+const VERSION = "w00-v16";
 // Catalog stays on v2 on purpose: bumping it forces a multi-MB re-download.
 const CATALOG_CACHE = "w00-catalog-v2";
-const STATIC_CACHE  = "w00-static-v15";
-const HTML_CACHE    = "w00-html-v15";
+const STATIC_CACHE  = "w00-static-v16";
+const HTML_CACHE    = "w00-html-v16";
+// Stylesheets are requested with ?v=16 from the HTML shells, so the precache
+// must use the same URL to be served from cache instead of the network.
+const CSS_VERSION = "?v=16";
 
 const STATIC_ASSETS = [
   "/",
   "/manifest.json",
   "/assets/icon.svg",
-  "/css/base.css",
-  "/css/layout.css",
-  "/css/components.css",
-  "/css/pages.css",
-  "/css/theme.css",
-  "/css/detalhes.css",
+  `/css/base.css${CSS_VERSION}`,
+  `/css/layout.css${CSS_VERSION}`,
+  `/css/components.css${CSS_VERSION}`,
+  `/css/pages.css${CSS_VERSION}`,
+  `/css/theme.css${CSS_VERSION}`,
+  `/css/detalhes.css${CSS_VERSION}`,
   "/js/tmdb.js",
   "/js/trailer.js",
   "/js/watchparty.js",

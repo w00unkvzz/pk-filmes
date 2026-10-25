@@ -572,11 +572,14 @@ body[data-page="player"] .app { display: block; min-height: 100vh; }
   width: 100%;
   /* 16:9, but never taller than the visible screen. On a phone held sideways
      56.25vw is taller than the viewport, which used to centre the video inside
-     an off-screen box: a large black band on top and a cropped bottom edge. */
-  height: min(56.25vw, 100vh);
+     an off-screen box: a large black band on top and a cropped bottom edge.
+     100svh = the smallest visible height (never taller than the screen);
+     100dvh keeps it exact while the browser chrome hides/shows. */
+  height: min(56.25vw, 100svh);
   height: min(56.25vw, 100dvh);
-  max-height: 100vh;
+  max-height: 100svh;
   max-height: 100dvh;
+  aspect-ratio: auto;
   background: #000;
   overflow: hidden;
 }
@@ -595,7 +598,7 @@ body[data-page="player"] .app { display: block; min-height: 100vh; }
 }
 .player-viewport:fullscreen .player-stage,
 .player-viewport:-webkit-full-screen .player-stage { position: absolute; inset: 0; }
-.player-stage { position: absolute; inset: 0; background: #000; }
+.player-stage { position: absolute; inset: 0; aspect-ratio: auto; background: #000; }
 .player-stage video,
 .player-stage iframe {
   width: 100%;

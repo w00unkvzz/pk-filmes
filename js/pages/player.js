@@ -53,13 +53,19 @@ function syncPlayerViewportHeight() {
   if (!viewport) return;
   if (fullscreenElement()) {
     viewport.style.removeProperty("height");
+    viewport.style.removeProperty("min-height");
+    viewport.style.removeProperty("max-height");
     return;
   }
   const visible = window.visualViewport?.height || window.innerHeight || 0;
   if (!visible) return;
   const width = viewport.clientWidth || window.innerWidth || 0;
   const height = Math.max(140, Math.round(Math.min(width * 0.5625, visible)));
+  // height + max-height beat any leftover 16/9 aspect-ratio from an old cached
+  // stylesheet, so the box can never grow taller than the visible screen.
   viewport.style.height = `${height}px`;
+  viewport.style.minHeight = "0";
+  viewport.style.maxHeight = `${Math.round(visible)}px`;
 }
 
 function bindPlayerViewportHeight() {
