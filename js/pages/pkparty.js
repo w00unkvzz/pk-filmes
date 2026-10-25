@@ -42,6 +42,7 @@ let movie = null;
 let isHost = false;
 let user = null;
 let applyingRemote = false;
+let remotePaused = false;
 let roomRequest = 0;
 let lobbyRequest = 0;
 let partyControlsTimer = 0;
@@ -57,6 +58,27 @@ function safePlay(video) {
     const started = video.play();
     if (started && typeof started.catch === "function") started.catch(() => {});
   } catch {}
+}
+
+// O convidado só pode dar o gesto que libera o autoplay do navegador.
+// Quem decide play/pause continua sendo o anfitrião.
+function primeGuestPlayback(video) {
+  applyingRemote = true;
+  const finish = () => setTimeout(() => { applyingRemote = false; updatePartyControls(); }, 150);
+  try {
+    const started = video.play();
+    if (started && typeof started.then === "function") {
+      started.then(() => {
+        if (remotePaused) { try { video.pause(); } catch {} }
+        finish();
+      }).catch(finish);
+    } else {
+      if (remotePaused) { try { video.pause(); } catch {} }
+      finish();
+    }
+  } catch {
+    finish();
+  }
 }
 
 function isDirectVideo(url = "") {
@@ -108,8 +130,32 @@ function posterMarkup(item, className = "room-poster") {
   return `<div class="${className}" style="--c1:${colors[0]};--c2:${colors[1]}"><span>${escapeHTML(item?.title || "w00")}</span></div>`;
 }
 
+function invitesMarkup(invites = []) {
+  if (!invites.length) return "";
+  return `<section class="page-section"><div class="section-head"><div><div class="section-kicker"><i class="fa-solid fa-envelope-open-text"></i> Convites</div><h2>Chamaram você.</h2></div></div><div class="invite-grid">${invites.map((invite) => `
+        <div class="panel panel-pad invite-card">
+          ${avatar({ name: invite.host_name, avatar_url: invite.host_avatar }, "md")}
+          <div class="grow"><strong>${escapeHTML(invite.room_name)}</strong><span class="tiny muted">${escapeHTML(invite.host_name)} convidou você · ${timeAgo(invite.created_at)}</span></div>
+          <button class="btn btn-sm btn-primary" data-accept-invite="${escapeHTML(invite.id)}" data-invite-code="${escapeHTML(invite.room_code)}" type="button">Entrar</button>
+          <button class="btn-icon" data-decline-invite="${escapeHTML(invite.id)}" type="button" aria-label="Recusar convite"><i class="fa-solid fa-xmark"></i></button>
+        </div>`).join("")}</div></section>`;
+}
+
+function roomsMarkup(rooms = []) {
+  return rooms.length ? rooms.map(roomCard).join("") : emptyState("fa-tower-broadcast", "Nenhuma sala ativa", "Crie a primeira e chame seus amigos.");
+}
+
+function paintLobby(rooms, invites) {
+  const inviteSection = qs("#invite-section");
+  if (inviteSection) inviteSection.innerHTML = invitesMarkup(invites);
+  const grid = qs("#rooms-grid");
+  if (grid) grid.innerHTML = roomsMarkup(rooms);
+  const badge = qs("#rooms-count-badge");
+  if (badge) badge.innerHTML = `<i class="fa-solid fa-users"></i> ${rooms.length} salas`;
+  mountLobby();
+}
+
 function roomCard(item) {
-  const itemMovie = movieForRoom({ movie_id: item.movie_id });
   return `<article class="room-card">
     ${posterMarkup(itemMovie)}
     <div class="room-info">
@@ -157,6 +203,7 @@ function cleanupParty() {
   movie = null;
   isHost = false;
   applyingRemote = false;
+  remotePaused = false;
 }
 
 export function hasActivePartyRoom() {
@@ -213,7 +260,7 @@ async function renderLobby() {
             <p>Crie uma sala, convide amigos e assista junto. O anfitrião controla play, pause e avanço — todos recebem em tempo real, sem botão de sincronizar.</p>
             <div class="row wrap" style="margin-top:18px">
               <button class="btn btn-primary" id="create-room" type="button"><i class="fa-solid fa-plus"></i>Criar sala</button>
-              <span class="badge badge-soft"><i class="fa-solid fa-users"></i> ${rooms.length} salas</span>
+              <span class="badge badge-soft" id="rooms-count-badge"><i class="fa-solid fa-users"></i> ${rooms.length} salas</span>
             </div>
           </div>
           <form class="party-code-box" id="join-form">
@@ -223,17 +270,11 @@ async function renderLobby() {
         </div>
       </section>
 
-      ${invites.length ? `<section class="page-section"><div class="section-head"><div><div class="section-kicker"><i class="fa-solid fa-envelope-open-text"></i> Convites</div><h2>Chamaram você.</h2></div></div><div class="invite-grid">${invites.map((invite) => `
-        <div class="panel panel-pad invite-card">
-          ${avatar({ name: invite.host_name, avatar_url: invite.host_avatar }, "md")}
-          <div class="grow"><strong>${escapeHTML(invite.room_name)}</strong><span class="tiny muted">${escapeHTML(invite.host_name)} convidou você · ${timeAgo(invite.created_at)}</span></div>
-          <button class="btn btn-sm btn-primary" data-accept-invite="${escapeHTML(invite.id)}" data-invite-code="${escapeHTML(invite.room_code)}" type="button">Entrar</button>
-          <button class="btn-icon" data-decline-invite="${escapeHTML(invite.id)}" type="button" aria-label="Recusar convite"><i class="fa-solid fa-xmark"></i></button>
-        </div>`).join("")}</div></section>` : ""}
+      <div id="invite-section">${invitesMarkup(invites)}</div>
 
       <section class="page-section">
         <div class="section-head"><div><div class="section-kicker"><i class="fa-solid fa-circle-play"></i> Ao vivo agora</div><h2>Salas</h2></div><span class="badge badge-live"><i class="fa-solid fa-circle"></i> ao vivo</span></div>
-        <div class="rooms-grid">${rooms.length ? rooms.map(roomCard).join("") : emptyState("fa-tower-broadcast", "Nenhuma sala ativa", "Crie a primeira e chame seus amigos.")}</div>
+        <div class="rooms-grid" id="rooms-grid">${roomsMarkup(rooms)}</div>
       </section>
 
 `;
@@ -251,25 +292,48 @@ function subscribeLobby() {
   const sb = getClient();
   lobbyChannel = sb.channel(`party-lobby:${user.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "rooms" }, () => {
-        if (document.body.dataset.page === "pkparty" && !activeRoomCode()) renderLobby();
+        if (document.body.dataset.page === "pkparty" && !activeRoomCode()) refreshLobby();
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "friendships" }, () => {
         if (typeof window.refreshSocialCache === "function") window.refreshSocialCache();
       })
     .on("postgres_changes", { event: "*", schema: "public", table: "room_invites", filter: `invitee=eq.${user.id}` }, () => {
-      if (document.body.dataset.page === "pkparty" && !activeRoomCode()) renderLobby();
+      if (document.body.dataset.page === "pkparty" && !activeRoomCode()) refreshLobby();
     })
     .subscribe();
 }
 
+// Atualiza convites e salas em segundo plano, sem reconstruir a página inteira
+// (evita a sensação de reload quando chega um convite ou uma sala nova).
+async function refreshLobby() {
+  if (document.body.dataset.page !== "pkparty" || activeRoomCode()) return;
+  const request = ++lobbyRequest;
+  try {
+    const [rooms, invites] = await Promise.all([listRooms(), myRoomInvites()]);
+    if (request !== lobbyRequest || document.body.dataset.page !== "pkparty" || activeRoomCode()) return;
+    if (!qs("#rooms-grid")) { await renderLobby(); return; }
+    paintLobby(rooms, invites);
+  } catch (error) {
+    console.warn("[party] lobby:", error.message);
+  }
+}
+
 function mountLobby() {
-  qs("#create-room")?.addEventListener("click", openCreateRoom);
-  qs("#join-form")?.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const code = qs("#join-code").value.trim().toUpperCase();
-    if (!code) return;
-    await handleJoin(code);
-  });
+  const create = qs("#create-room");
+  if (create && !create.dataset.bound) {
+    create.dataset.bound = "1";
+    create.addEventListener("click", openCreateRoom);
+  }
+  const form = qs("#join-form");
+  if (form && !form.dataset.bound) {
+    form.dataset.bound = "1";
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const code = qs("#join-code").value.trim().toUpperCase();
+      if (!code) return;
+      await handleJoin(code);
+    });
+  }
   qsa("[data-accept-invite]").forEach((button) => {
     button.addEventListener("click", async () => {
       try {
@@ -283,7 +347,7 @@ function mountLobby() {
       try {
         await respondRoomInvite(button.dataset.declineInvite, false);
         toast("Convite recusado.", "info");
-        renderLobby();
+        await refreshLobby();
       } catch (error) { toast(error.message, "error"); }
     });
   });
@@ -886,7 +950,7 @@ function setupPlayback() {
   if (!isHost) {
     video.style.pointerEvents = "none";
     video.addEventListener("play", () => { if (!applyingRemote) video.pause(); });
-    video.addEventListener("pause", () => { if (!applyingRemote && !video.ended) safePlay(video); });
+    video.addEventListener("pause", () => { if (!applyingRemote && !remotePaused && !video.ended) safePlay(video); });
   } else {
     const send = () => { if (!applyingRemote) broadcastPlayback(); };
     video.addEventListener("play", send);
@@ -903,11 +967,9 @@ function setupPlayback() {
   qs("[data-party-play]")?.addEventListener("click", () => {
     revealPartyControls();
     if (!isHost) {
-      // Guests cannot control the session, but they can start local playback
-      // once to satisfy the browser's autoplay policy.
-      applyingRemote = true;
-      safePlay(video);
-      setTimeout(() => { applyingRemote = false; }, 400);
+      // Convidado não controla a sessão: o clique só libera o autoplay.
+      if (remotePaused) toast("O anfitrião está no controle da reprodução.", "info", "Sincronizado");
+      primeGuestPlayback(video);
       return;
     }
     if (video.paused) safePlay(video);
@@ -990,6 +1052,7 @@ function applyPlayback(payload) {
   if (!video || !Number.isFinite(Number(payload.time))) return;
   const expected = Number(payload.time);
   applyingRemote = true;
+  remotePaused = Boolean(payload.paused);
 
   // "O anfitrião controla" only matters while the host has it paused.
   setGuestNoteVisible(Boolean(payload.paused));

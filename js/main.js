@@ -118,14 +118,6 @@ function bindRouter() {
 
 function setupServiceWorker() {
   if (!("serviceWorker" in navigator)) return;
-  const hadController = Boolean(navigator.serviceWorker.controller);
-  let refreshing = false;
-
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (!hadController || refreshing) return;
-    refreshing = true;
-    window.location.reload();
-  });
 
   navigator.serviceWorker.register("/sw.js").then((registration) => {
     const activateUpdate = (worker) => {
@@ -133,7 +125,8 @@ function setupServiceWorker() {
       worker.addEventListener("statechange", () => {
         if (worker.state !== "installed") return;
         // Em uma atualização, o controller antigo ainda está ativo.
-        // Pede ao novo worker para assumir; o controllerchange recarrega a página.
+        // Pede ao novo worker para assumir sem recarregar a página: a troca
+        // acontece em silêncio e o próximo carregamento já usa os arquivos novos.
         if (navigator.serviceWorker.controller) {
           (registration.waiting || worker).postMessage({ type: "SKIP_WAITING" });
         }

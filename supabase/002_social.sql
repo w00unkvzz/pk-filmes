@@ -74,12 +74,16 @@ as $$
     or (f.addressee = me.uid and f.requester = p.id)
   where me.uid is not null
     and p.id <> me.uid
+    and coalesce(p.email, '') not ilike '%@example.com'
     and (
       coalesce(p_query, '') = ''
       or p.name ilike '%' || p_query || '%'
       or p.email ilike '%' || p_query || '%'
     )
-  order by p.name
+  order by
+    (lower(p.name) = lower(coalesce(p_query, ''))) desc,
+    (p.name ilike coalesce(p_query, '') || '%') desc,
+    p.name
   limit 30;
 $$;
 
