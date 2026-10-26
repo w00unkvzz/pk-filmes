@@ -599,7 +599,7 @@ body[data-page="perfil"] .profile-section:last-child { margin-bottom: 0; }
   .mobile-top-logo strong { font-family: var(--font-display); font-weight: 700; }
   .hero { margin: 0; border-radius: 0 0 18px 18px; min-height: clamp(560px, 82svh, 760px); }
   .hero-content { width: 100%; padding: 82px 20px 78px; }
-  .hero-title { font-size: clamp(2.2rem, 10vw, 3.6rem); }
+  .hero-title { font-size: 20px; }
   .page-section { padding: 20px 16px 0; }
   .section-head { margin-bottom: 12px; }
   .section-head h2 { font-size: 1rem; gap: 8px; }

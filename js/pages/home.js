@@ -3,6 +3,7 @@ import { CATALOG, catalogTitles, featured, trending, top10, movies, series, newR
 import * as store from "../store.js";
 import { mediaRow, top10Row, qs, escapeHTML, formatDuration, toast, emptyState } from "../ui.js";
 import { openTrailerModal } from "../trailer.js";
+import { getLogo } from "../tmdb.js";
 
 let heroTimer = null;
 
@@ -36,7 +37,9 @@ function heroMarkup(item) {
     <div class="hero-overlay" aria-hidden="true"></div>
     <div class="hero-content">
       <div class="hero-brand"><span class="hero-brand-mark">W00</span><span>original</span></div>
-      <h1 class="hero-title">${escapeHTML(item.title)}</h1>
+      <div class="hero-title-wrap" id="hero-title-wrap">
+        <h1 class="hero-title">${escapeHTML(item.title)}</h1>
+      </div>
       <div class="meta hero-meta">${heroMeta(item)}</div>
       <p class="hero-desc">${escapeHTML(item.synopsis)}</p>
       <div class="hero-actions">
@@ -104,6 +107,20 @@ function mountHome() {
   if (!hero) return;
   let index = 0;
   let paintToken = 0;
+  const logoMap = new Map();
+  const setHeroTitle = (item, logo) => {
+    const wrap = hero.querySelector("#hero-title-wrap");
+    if (!wrap) return;
+    if (logo) {
+      wrap.innerHTML = `<img class="hero-logo" src="${escapeHTML(logo)}" alt="${escapeHTML(item.title)}" loading="eager" decoding="async" referrerpolicy="no-referrer">`;
+      const image = wrap.querySelector("img");
+      image?.addEventListener("error", () => {
+        wrap.innerHTML = `<h1 class="hero-title">${escapeHTML(item.title)}</h1>`;
+      }, { once: true });
+    } else {
+      wrap.innerHTML = `<h1 class="hero-title">${escapeHTML(item.title)}</h1>`;
+    }
+  };
   const paint = (next) => {
     const target = (next + featured.length) % featured.length;
     if (target === index) return;
@@ -146,8 +163,7 @@ function mountHome() {
       }
     }
 
-    const title = hero.querySelector(".hero-title");
-    if (title) title.textContent = item.title;
+    setHeroTitle(item, logoMap.get(item.id));
     const meta = hero.querySelector(".hero-meta");
     if (meta) meta.innerHTML = heroMeta(item);
     const desc = hero.querySelector(".hero-desc");
@@ -181,6 +197,18 @@ function mountHome() {
   hero.addEventListener("mouseleave", start);
   hero.addEventListener("focusin", () => clearInterval(heroTimer));
   hero.addEventListener("focusout", start);
+  featured.forEach((item) => {
+    getLogo(item).then((logo) => {
+      logoMap.set(item.id, logo);
+      if (featured[index]?.id === item.id) setHeroTitle(item, logo || "");
+      if (logo) {
+        try {
+          const preload = new Image();
+          preload.src = logo;
+        } catch { /* pré-carregamento opcional */ }
+      }
+    }).catch(() => {});
+  });
   start();
 }
 
