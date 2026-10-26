@@ -1,7 +1,7 @@
 // w00 Party: Supabase-backed watch party with realtime chat and host-only
 // playback control. The host broadcasts play/pause/seek plus a heartbeat;
 // guests apply it immediately and self-correct drift automatically.
-import { CATALOG, byId } from "../data.js";
+import { CATALOG, byId, normalizeStreamUrl } from "../data.js";
 import { getRoute, navigate, roomPath } from "../router.js";
 import * as store from "../store.js";
 import { getClient } from "../supabase.js";
@@ -101,11 +101,12 @@ function movieForRoom(nextRoom) {
   const catalogItem = byId(nextRoom.movie_id);
   if (catalogItem) return catalogItem;
   if (/^https?:\/\//i.test(nextRoom.movie_id)) {
+    const stream = normalizeStreamUrl(nextRoom.movie_id);
     return {
       id: nextRoom.movie_id,
       title: "Sessão privada",
-      stream: nextRoom.movie_id,
-      player: nextRoom.movie_id,
+      stream,
+      player: stream,
       poster: "",
       age: "L",
       duration: 0,

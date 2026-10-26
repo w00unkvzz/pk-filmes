@@ -34,6 +34,25 @@ function unique(values) {
 }
 
 /**
+ * Normalize playback URLs. The public feed mostly serves `http://host:80/...`
+ * MP4s; on an HTTPS page the browser blocks them as mixed content. Upgrading
+ * with `new URL` also drops the default `:80`, which would otherwise make the
+ * browser try TLS on port 80 and fail.
+ */
+export function normalizeStreamUrl(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  try {
+    const url = new URL(raw);
+    if (url.protocol === "http:") url.protocol = "https:";
+    if (url.port === "80") url.port = "";
+    return url.toString();
+  } catch {
+    return raw.replace(/^http:\/\//i, "https://").replace(/:80(?=\/|$)/, "");
+  }
+}
+
+/**
  * Normalize the public catalog schema into the richer shape used by the UI.
  * Only `nome`, `capa`, `categoria`, `idade` and `player` are required.
  * Extra fields (ano, sinopse, nota, duracao, tipo, generos, destaque, ...)
@@ -50,7 +69,7 @@ function normalizeCatalogItem(raw, index) {
   const genres = unique([category, ...extraGenres]).slice(0, 4);
   // Mixed content: the feed mostly serves http:// MP4s. Every CDN we checked
   // answers on https too, so upgrading avoids the browser blocking playback.
-  const player = String(raw.player || raw.stream || raw.video || "").trim().replace(/^http:\/\//i, "https://");
+  const player = normalizeStreamUrl(raw.player || raw.stream || raw.video);
   const type = raw.tipo === "serie" || raw.tipo === "series" || raw.type === "series" ? "series" : "movie";
   const id = String(raw.id || raw.slug || slugify(`${title}-${raw.ano || raw.year || ""}`)).trim();
   const escHTML = String(title).replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));

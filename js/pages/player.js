@@ -1,6 +1,6 @@
 // Immersive player page: custom overlay controls, resume prompt, skip intro,
 // next episode and a season carousel matching the reference player.
-import { byId, getSeriesGroup } from "../data.js";
+import { byId, getSeriesGroup, normalizeStreamUrl } from "../data.js";
 import { getRoute, detailsPath, playerPath, replaceRoute } from "../router.js";
 import * as store from "../store.js";
 import { qs, escapeHTML, formatDuration, formatClock, toast, emptyState } from "../ui.js";
@@ -123,7 +123,7 @@ function syncFullscreenUi() {
 }
 
 function streamFor(item) {
-  return String(item?.player || item?.stream || "").trim().replace(/^http:\/\//i, "https://");
+  return normalizeStreamUrl(item?.player || item?.stream || "");
 }
 
 function isDirectVideo(url) {
