@@ -7,7 +7,7 @@ import {
   emptyState, toggleWatchlist, shareItem, posterCard
 } from "../ui.js";
 import {
-  getTitleDetails, getSeasonDetails, getTrailer, tmdbIdFromItem, imageUrl,
+  getTitleDetails, getSeasonDetails, getTrailer, getLogo, tmdbIdFromItem, imageUrl,
   yearOf, runtimeOf, genresOf, ratingOf, synopsisOf, backdropOf, castOf
 } from "../tmdb.js";
 import { openWatchPartyModal } from "../watchparty.js";
@@ -161,7 +161,9 @@ export function renderDetalhes() {
 
         <header class="details-hero">
           <div class="brand-label"><span class="brand-logo-s">W00</span><span>original</span></div>
-          <h1 class="details-title" id="details-title">${escapeHTML(title)}</h1>
+          <div class="details-title-wrap" id="details-title-wrap">
+            <h1 class="details-title" id="details-title">${escapeHTML(title)}</h1>
+          </div>
           <div class="details-meta" id="details-meta">${metaMarkup({
             year: yearOf(null, show),
             runtime: runtimeOf(null, show),
@@ -372,6 +374,18 @@ async function hydrateDetails({ item, group, show, selected, request }) {
     document.title = `${title} — w00filmes`;
     const heading = qs("#details-title");
     if (heading) heading.textContent = title;
+
+    // Logo oficial do TMDB (como no site original), com fallback para o texto.
+    getLogo(metaItem).then((logo) => {
+      if (!logo || request !== detailsRequest || document.body.dataset.page !== "detalhes") return;
+      const wrap = qs("#details-title-wrap");
+      if (!wrap) return;
+      wrap.innerHTML = `<img class="details-logo" src="${escapeHTML(logo)}" alt="${escapeHTML(title)}" loading="eager" decoding="async" referrerpolicy="no-referrer">`;
+      const image = wrap.querySelector("img");
+      image?.addEventListener("error", () => {
+        wrap.innerHTML = `<h1 class="details-title" id="details-title">${escapeHTML(title)}</h1>`;
+      }, { once: true });
+    });
   }
   const bg = qs("#details-bg");
   if (bg && backdrop) bg.style.backgroundImage = `url("${backdrop}")`;

@@ -10,8 +10,11 @@
   background: #05060f;
 }
 .details-bg {
-  position: fixed;
-  inset: -6%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: min(calc(100svh - var(--topbar-h)), 920px);
   z-index: 0;
   pointer-events: none;
   background-color: #0b0c10;
@@ -19,11 +22,13 @@
   background-repeat: no-repeat;
   background-size: cover;
   filter: brightness(.75) saturate(1.08);
-  transform: scale(1.02);
 }
 .details-veil {
-  position: fixed;
-  inset: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: min(calc(100svh - var(--topbar-h)), 920px);
   z-index: 1;
   pointer-events: none;
   background:
@@ -91,14 +96,31 @@
   letter-spacing: 0;
   box-shadow: 0 6px 18px rgba(99,102,241,.35);
 }
+.details-title-wrap {
+  width: 100%;
+  min-height: 110px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+}
 .details-title {
   max-width: 1040px;
   margin: 0 auto;
-  font-size: clamp(2.7rem, 6.4vw, 5.5rem);
-  line-height: .96;
-  letter-spacing: -.055em;
+  font-size: 63px;
+  line-height: 1;
+  letter-spacing: -.045em;
   overflow-wrap: anywhere;
   text-shadow: 0 10px 50px rgba(0,0,0,.62);
+}
+.details-logo {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 320px;
+  max-height: 110px;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 40px rgba(0,0,0,.62));
 }
 .details-meta {
   display: flex;
@@ -154,7 +176,7 @@
   letter-spacing: .06em;
   text-transform: uppercase;
 }
-.details-more:hover { color: #fff; }
+.details-more:hover { opacity: .78; }
 .hidden { display: none !important; }
 
 .details-actions {
@@ -514,7 +536,9 @@
   .details-hero { min-height: calc(100svh - 112px); padding: 6vh 0 4vh; }
   .brand-label { margin-bottom: 13px; font-size: 10px; }
   .brand-logo-s { width: 19px; height: 19px; font-size: 9px; }
-  .details-title { font-size: clamp(2.15rem, 10vw, 3.55rem); line-height: 1; }
+  .details-title { font-size: 34px; line-height: 1.05; }
+  .details-title-wrap { min-height: 85px; }
+  .details-logo { max-width: min(250px, 80vw); max-height: 85px; }
   .details-meta { gap: 9px; margin-top: 14px; font-size: 11.5px; }
   .meta-tag { padding: 2px 9px; font-size: 10.5px; }
   .details-score { margin-top: 11px; }
@@ -550,7 +574,7 @@
 
 @media (max-width: 390px) {
   .details-inner { padding-inline: 15px; }
-  .details-title { font-size: clamp(2rem, 11vw, 3rem); }
+  .details-title { font-size: 32px; }
   .details-meta { font-size: 10.5px; gap: 8px; }
   .details-cta { font-size: 13px; }
 }

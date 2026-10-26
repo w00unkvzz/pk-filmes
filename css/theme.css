@@ -1265,9 +1265,9 @@ body.party-theater .sidebar-backdrop { display: none !important; }
 /* -------------------------------------------------------------------------
    Details polish: less blur, less empty space and a badge that never clips.
    ------------------------------------------------------------------------- */
-body[data-page="detalhes"] .page-content { padding-bottom: 0; }
+body[data-page="detalhes"] .page-content { max-width: none; padding-bottom: 0; }
 .details-page { min-height: calc(100svh - var(--topbar-h)); }
-.details-bg { filter: brightness(.75) saturate(1.08); transform: scale(1.02); background-position: center top; }
+.details-bg { filter: brightness(.75) saturate(1.08); background-position: center top; }
 .details-veil {
   background:
     radial-gradient(ellipse 75% 60% at 50% 38%, rgba(5, 6, 15, .5) 0%, rgba(5, 6, 15, .22) 55%, transparent 82%),

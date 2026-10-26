@@ -77,6 +77,34 @@ export async function getTitleDetails(item) {
   return null;
 }
 
+export async function getLogo(item, kind = "") {
+  const id = tmdbIdFromItem(item);
+  if (!id) return "";
+  const preferred = kind || (item?.type === "series" ? "tv" : "movie");
+  const kinds = preferred === "tv" ? ["tv", "movie"] : ["movie", "tv"];
+  const key = cacheKey(`logo.${preferred}`, id);
+  const cached = readCache(key);
+  if (cached !== null) return cached || "";
+  for (const type of kinds) {
+    try {
+      const data = await request(`/${type}/${id}/images?api_key=${API_KEY}&include_image_language=pt,en,null`);
+      const logos = Array.isArray(data?.logos) ? data.logos : [];
+      const logo = logos.find((entry) => entry.iso_639_1 === "pt")
+        || logos.find((entry) => entry.iso_639_1 === "en")
+        || logos[0];
+      if (logo?.file_path) {
+        const url = imageUrl(logo.file_path, "w780");
+        writeCache(key, url);
+        return url;
+      }
+    } catch {
+      // tenta o outro tipo
+    }
+  }
+  writeCache(key, "");
+  return "";
+}
+
 export async function getTrailer(item) {
   const id = tmdbIdFromItem(item);
   if (!id) return null;
