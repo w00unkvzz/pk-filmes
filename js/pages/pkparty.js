@@ -2,6 +2,7 @@
 // playback control. The host broadcasts play/pause/seek plus a heartbeat;
 // guests apply it immediately and self-correct drift automatically.
 import { CATALOG, byId, normalizeStreamUrl } from "../data.js";
+import { attachHls, detachHls, isHlsUrl } from "../hls.js";
 import { getRoute, navigate, roomPath } from "../router.js";
 import * as store from "../store.js";
 import { getClient } from "../supabase.js";
@@ -188,6 +189,7 @@ function roomCard(item) {
 }
 
 function destroyPartyVideo() {
+  detachHls();
   const video = qs("#party-video");
   if (!video) return;
   try { video.pause(); } catch {}
@@ -961,7 +963,8 @@ function setupPlayback() {
   heartbeat = null;
   const video = qs("#party-video");
   if (!video || !movie) return;
-  video.src = movie.stream;
+  const hlsSource = isHlsUrl(movie.stream);
+  if (!hlsSource) video.src = movie.stream;
   video.preload = "metadata";
   video.controls = false;
 
@@ -1030,6 +1033,12 @@ function setupPlayback() {
     video.addEventListener(eventName, updatePartyControls);
   });
   updatePartyControls();
+
+  if (hlsSource) {
+    attachHls(video, movie.stream, {
+      onFatal: () => toast("Não foi possível carregar o vídeo da sala.", "error")
+    });
+  }
 
   heartbeat = setInterval(() => {
     if (!isHost || !video || video.paused) return;

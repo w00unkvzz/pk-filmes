@@ -65,6 +65,10 @@
   ],
   "rewrites": [
     {
+      "source": "/stream/:show/:season/:file",
+      "destination": "/api/stream?show=:show&season=:season&file=:file"
+    },
+    {
       "source": "/filme/:slug",
       "destination": "/"
     },

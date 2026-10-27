@@ -5,11 +5,11 @@
 //   HTML pages    → network-first, fallback to cache
 //   Supabase/fonts/FA → network-only (no cache)
 
-const VERSION = "w00-v23";
-// Catalog stays on v2 on purpose: bumping it forces a multi-MB re-download.
-const CATALOG_CACHE = "w00-catalog-v2";
-const STATIC_CACHE  = "w00-static-v23";
-const HTML_CACHE    = "w00-html-v23";
+const VERSION = "w00-v24";
+// v3 forces one fresh catalog download so the new Parede de Gelo rows appear.
+const CATALOG_CACHE = "w00-catalog-v3";
+const STATIC_CACHE  = "w00-static-v24";
+const HTML_CACHE    = "w00-html-v24";
 // Stylesheets are requested with ?v=19 from the HTML shells, so the precache
 // must use the same URL to be served from cache instead of the network.
 const CSS_VERSION = "?v=19";
@@ -25,6 +25,8 @@ const STATIC_ASSETS = [
   `/css/theme.css${CSS_VERSION}`,
   `/css/detalhes.css${CSS_VERSION}`,
   "/js/tmdb.js",
+  "/js/hls.js",
+  "/js/vendor/hls.min.js",
   "/js/trailer.js",
   "/js/watchparty.js",
   "/js/router.js",
@@ -79,6 +81,10 @@ self.addEventListener("fetch", (event) => {
 
   // Skip non-GET and cross-origin except what we handle
   if (request.method !== "GET") return;
+
+  // Stream resolver and signed HLS URLs must always hit the network. A cached
+  // redirect would pin an expired Cuevana token.
+  if (url.pathname.startsWith("/stream/") || url.pathname.startsWith("/api/")) return;
 
   // Supabase, Google Fonts, FontAwesome CDN → always network
   if (

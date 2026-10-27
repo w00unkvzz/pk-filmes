@@ -16,7 +16,7 @@ export function tmdbIdFromItem(item) {
 
 export function imageUrl(path, size = "w500") {
   if (!path) return "";
-  if (/^https?:\/\//i.test(path)) return path;
+  if (/^https?:\/\//i.test(path) || String(path).startsWith("/assets/")) return path;
   return `${IMAGE}/${size}${path.startsWith("/") ? path : `/${path}`}`;
 }
 

@@ -6,6 +6,7 @@ import * as store from "../store.js";
 import { qs, escapeHTML, formatDuration, formatClock, toast, emptyState } from "../ui.js";
 import { getTitleDetails, getSeasonDetails, tmdbIdFromItem, imageUrl, yearOf, runtimeOf, ratingOf } from "../tmdb.js";
 import { openWatchPartyModal } from "../watchparty.js";
+import { attachHls, detachHls, isHlsUrl } from "../hls.js";
 
 const DIRECT_VIDEO = /\.(mp4|m4v|webm|ogv|ogg|mov|m3u8)(\?|#|$)/i;
 const EMBED_HOST = /youtube\.com|youtu\.be|vimeo\.com|dailymotion\.com|\/embed\/|player\./i;
@@ -233,9 +234,10 @@ function stageMarkup(item) {
     return { mode: "none", html: `<div class="player-fallback"><i class="fa-solid fa-triangle-exclamation"></i><h3>Player indisponível</h3><p>Este título ainda não tem um link de reprodução.</p><a class="btn btn-ghost" href="${detailsPath(item)}">Voltar aos detalhes</a></div>` };
   }
   if (isDirectVideo(stream)) {
+    const hls = isHlsUrl(stream);
     return {
       mode: "direct",
-      html: `<video id="player-video" autoplay playsinline preload="metadata" poster="${escapeHTML(item.poster || "")}" src="${escapeHTML(stream)}">
+      html: `<video id="player-video" autoplay playsinline preload="metadata" poster="${escapeHTML(item.poster || "")}"${hls ? ' data-hls="1"' : ` src="${escapeHTML(stream)}"`}>
         <p>Seu navegador não suporta vídeo HTML5. <a href="${escapeHTML(stream)}" target="_blank" rel="noopener">Abrir vídeo</a>.</p>
       </video>`
     };
@@ -309,6 +311,7 @@ function mountPlayer({ item, group, show, current }) {
   if (!stage || !overlay) return;
   const activeItem = current.item;
   const { mode, html } = stageMarkup(activeItem);
+  detachHls();
   stage.innerHTML = html;
   overlay.hidden = mode === "none";
   overlay.classList.remove("controls-hidden", "hide-controls");
@@ -640,11 +643,28 @@ function bindVideoControls({ group, show, current, activeItem }) {
 
   if (volume) volume.value = String(video.volume);
   updateVolumeIcon();
-  const started = video.play();
-  if (started?.catch) started.catch(() => {});
+
+  const stream = streamFor(activeItem);
+  if (video.dataset.hls === "1") {
+    const hls = attachHls(video, stream, {
+      onFatal: () => stageError(activeItem, group),
+      onReady: () => {
+        const started = video.play();
+        if (started?.catch) started.catch(() => {});
+      }
+    });
+    if (!hls) {
+      const started = video.play();
+      if (started?.catch) started.catch(() => {});
+    }
+  } else {
+    const started = video.play();
+    if (started?.catch) started.catch(() => {});
+  }
 }
 
 function stageError(activeItem, group) {
+  detachHls();
   const stage = qs("#player-stage");
   if (!stage) return;
   qs("#player-buffering")?.classList.remove("is-visible");
