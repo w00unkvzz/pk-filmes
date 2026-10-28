@@ -10,7 +10,7 @@ import { SUPABASE_CONFIG } from "../supabase-config.js";
 import {
   listRooms,
   createRoom,
-  joinRoom,
+  joinRoomWithRepair,
   leaveRoom,
   getRoom,
   roomMembers,
@@ -377,10 +377,10 @@ function mountLobby() {
 
 async function handleJoin(code) {
   try {
-    await joinRoom(code);
+    await joinRoomWithRepair(code);
     navigate(roomPath(code));
   } catch (error) {
-    toast(error.message === "invite required" ? "Esta sala é privada. Peça o link ao anfitrião." : error.message, "error", "Não foi possível entrar");
+    toast(error.message === "invite required" ? "Esta sala é privada. Peça um convite novo ao anfitrião." : error.message, "error", "Não foi possível entrar");
   }
 }
 
@@ -415,7 +415,8 @@ function openCreateRoom() {
         try {
           const created = await createRoom({ name, movieId, isPrivate: qs("#room-private").checked });
           closeModal();
-          navigate(roomPath(created.code));
+          const shareId = created?.id ? `?id=${encodeURIComponent(created.id)}` : "";
+          navigate(`${roomPath(created.code)}${shareId}`);
         } catch (error) {
           toast(error.message, "error");
           submit.disabled = false;
@@ -435,7 +436,8 @@ async function openRoom(code) {
       getClient().removeChannel(lobbyChannel);
       lobbyChannel = null;
     }
-    const joined = await joinRoom(wanted);
+    const sharedRoomId = new URLSearchParams(location.search).get("id") || "";
+    const joined = await joinRoomWithRepair(wanted, sharedRoomId);
     if (!stillActive()) return;
     room = await getRoom(joined.id);
     if (!stillActive()) return;
@@ -452,7 +454,7 @@ async function openRoom(code) {
   } catch (error) {
     if (!stillActive()) return;
     const message = error.message === "invite required"
-      ? "Esta sala é privada. Peça o link ao anfitrião."
+      ? "Esta sala é privada. Peça um convite novo ao anfitrião."
       : error.message === "room not found"
         ? "Sala não encontrada. Confira o link."
         : error.message;
@@ -602,7 +604,9 @@ function appendChat(message) {
 }
 
 function roomShareUrl() {
-  return new URL(roomPath(room.code), location.origin).toString();
+  const url = new URL(roomPath(room.code), location.origin);
+  if (room?.id) url.searchParams.set("id", room.id);
+  return url.toString();
 }
 
 async function copyText(text, message = "Link copiado.") {

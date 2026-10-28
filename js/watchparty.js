@@ -81,7 +81,8 @@ export function openWatchPartyModal(item, options = {}) {
         try {
           const room = await createRoom({ name, movieId, isPrivate });
           closeModal();
-          navigate(roomPath(room.code));
+          const shareId = room?.id ? `?id=${encodeURIComponent(room.id)}` : "";
+          navigate(`${roomPath(room.code)}${shareId}`);
         } catch (error) {
           toast(error.message || "Não foi possível criar a sala.", "error", "Watch Party");
           submit.disabled = false;

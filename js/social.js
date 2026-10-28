@@ -243,6 +243,123 @@ export async function joinRoom(code) {
   return data;
 }
 
+/**
+ * A private-room invite is consumed when the guest joins. If that guest later
+ * leaves (or the host reopens the room), the invite stays "accepted" while the
+ * membership is gone. The old join_room RPC only looked for "pending", so the
+ * guest saw "invite required" even though the invite existed. Reopen the exact
+ * invite for this room code before retrying.
+ */
+export async function reopenRoomInvite(code) {
+  const user = store.getUser();
+  const normalized = String(code || "").trim().toUpperCase();
+  if (!user?.id || !normalized) return null;
+
+  const { data, error } = await client()
+    .from("room_invites")
+    .select("id,status,rooms!inner(code)")
+    .eq("invitee", user.id)
+    .eq("status", "accepted")
+    .eq("rooms.code", normalized)
+    .maybeSingle();
+  throwIf(error);
+  if (!data?.id) return null;
+
+  const { error: updateError } = await client()
+    .from("room_invites")
+    .update({ status: "pending" })
+    .eq("id", data.id)
+    .eq("invitee", user.id);
+  throwIf(updateError);
+  return data.id;
+}
+
+/**
+ * Private room links carry the room id as a share token. The RLS policy on
+ * room_members already lets an authenticated user add their own seat, so a
+ * guest with the link can enter even when the host shared only the URL and no
+ * in-app invite exists. The path code is checked against the room id so a
+ * mismatched/tampered link cannot add the guest to a different room.
+ */
+export async function joinRoomByLink(code, roomId) {
+  const user = store.getUser();
+  const normalized = String(code || "").trim().toUpperCase();
+  if (!user?.id || !normalized || !roomId) throw new Error("invite required");
+
+  const { error } = await client()
+    .from("room_members")
+    .insert({ room_id: roomId, user_id: user.id });
+  const alreadyMember = error?.code === "23505";
+  if (error && !alreadyMember) throw error;
+
+  const room = await getRoom(roomId);
+  if (!room || String(room.code || "").toUpperCase() !== normalized) {
+    if (!alreadyMember) {
+      try {
+        await client()
+          .from("room_members")
+          .delete()
+          .eq("room_id", roomId)
+          .eq("user_id", user.id);
+      } catch {}
+    }
+    throw new Error("room not found");
+  }
+
+  // If the host also sent an in-app invite, consume it so the lobby stops
+  // showing a room the guest is already in.
+  try {
+    const { data } = await client()
+      .from("room_invites")
+      .select("id,rooms!inner(code)")
+      .eq("invitee", user.id)
+      .eq("status", "pending")
+      .eq("rooms.code", normalized)
+      .maybeSingle();
+    if (data?.id) {
+      await client().rpc("respond_room_invite", { p_id: data.id, p_accept: true });
+    }
+  } catch {}
+
+  return room;
+}
+
+export async function joinRoomWithRepair(code, roomId = "") {
+  try {
+    return await joinRoom(code);
+  } catch (error) {
+    if (error?.message !== "invite required") throw error;
+
+    let inviteId = null;
+    try {
+      inviteId = await reopenRoomInvite(code);
+    } catch (repairError) {
+      // The link fallback below is enough when the invite lookup fails.
+      if (!roomId) throw repairError;
+    }
+    if (inviteId) {
+      try {
+        return await joinRoom(code);
+      } catch (retryError) {
+        const user = store.getUser();
+        if (user?.id) {
+          try {
+            await client()
+              .from("room_invites")
+              .update({ status: "accepted" })
+              .eq("id", inviteId)
+              .eq("invitee", user.id);
+          } catch {}
+        }
+        if (!roomId) throw retryError;
+      }
+    }
+
+    if (roomId) return await joinRoomByLink(code, roomId);
+    throw error;
+  }
+}
+
 export async function leaveRoom(roomId) {
   const { data, error } = await client().rpc("leave_room", { p_room: roomId });
   throwIf(error);

@@ -329,9 +329,14 @@ begin
   end if;
 
   if v_room.is_private and v_room.host <> v_uid then
+    -- Accept both pending and already-accepted invites. An accepted invite can
+    -- outlive the room_members row when the guest leaves and comes back; the
+    -- old pending-only check made the invite look missing.
     select * into v_invite
     from public.room_invites
-    where room_id = v_room.id and invitee = v_uid and status = 'pending';
+    where room_id = v_room.id
+      and invitee = v_uid
+      and status in ('pending', 'accepted');
     if v_invite.id is null then raise exception 'invite required'; end if;
     update public.room_invites
     set status = 'accepted'
@@ -538,7 +543,9 @@ declare
 begin
   update public.room_invites
   set status = case when p_accept then 'accepted' else 'declined' end
-  where id = p_id and invitee = auth.uid() and status = 'pending'
+  where id = p_id
+    and invitee = auth.uid()
+    and (status = 'pending' or (p_accept and status = 'accepted'))
   returning room_id into v_room;
 
   if v_room is not null and p_accept then
