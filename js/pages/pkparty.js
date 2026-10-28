@@ -46,6 +46,7 @@ let applyingRemote = false;
 let remotePaused = false;
 let roomRequest = 0;
 let lobbyRequest = 0;
+let membersRequest = 0;
 let partyControlsTimer = 0;
 
 const DIRECT_VIDEO = /\.(mp4|webm|ogv|mov|m3u8)(\?|#|$)/i;
@@ -200,6 +201,7 @@ function destroyPartyVideo() {
 function cleanupParty() {
   roomRequest += 1;
   lobbyRequest += 1;
+  membersRequest += 1;
   document.body.classList.remove("party-theater");
   destroyPartyVideo();
   clearInterval(heartbeat);
@@ -561,6 +563,47 @@ function renderRoom() {
   renderChat();
 }
 
+function presenceMember(entry) {
+  return {
+    user_id: entry.user_id,
+    name: entry.name || "Convidado",
+    avatar_url: entry.avatar_url || "",
+    is_host: entry.user_id === room?.host
+  };
+}
+
+function mergePresenceMembers(entries = []) {
+  const known = new Set(members.map((member) => member.user_id));
+  for (const entry of entries) {
+    if (!entry?.user_id || known.has(entry.user_id)) continue;
+    known.add(entry.user_id);
+    members.push(presenceMember(entry));
+  }
+}
+
+async function refreshMembers(onlineIds = new Set(), entries = []) {
+  const roomId = room?.id;
+  if (!roomId || document.body.dataset.page !== "pkparty") return;
+  const request = ++membersRequest;
+  try {
+    const next = await roomMembers(roomId);
+    if (request !== membersRequest || room?.id !== roomId || document.body.dataset.page !== "pkparty") return;
+    // Presence is the fast path; keep online people visible even if the
+    // members query is momentarily behind.
+    const merged = [...next];
+    const known = new Set(merged.map((member) => member.user_id));
+    for (const entry of entries) {
+      if (!entry?.user_id || known.has(entry.user_id)) continue;
+      known.add(entry.user_id);
+      merged.push(presenceMember(entry));
+    }
+    members = merged;
+    renderParticipants(onlineIds);
+  } catch (error) {
+    console.warn("[party] membros:", error.message);
+  }
+}
+
 function renderParticipants(onlineIds = new Set()) {
   const list = qs("#party-participants");
   if (!list) return;
@@ -832,9 +875,11 @@ function connectRoomRealtime() {
       if (payload?.room_id === room.id && payload.user_id !== user.id && payload.sender_name !== "Você") appendChat(payload);
     })
     .on("presence", { event: "sync" }, () => {
-      const state = realtimeChannel.presenceState();
-      const ids = new Set(Object.values(state).flat().map((entry) => entry.user_id));
+      const entries = Object.values(realtimeChannel.presenceState()).flat().filter((entry) => entry?.user_id);
+      const ids = new Set(entries.map((entry) => entry.user_id));
+      mergePresenceMembers(entries);
       renderParticipants(ids);
+      refreshMembers(ids, entries);
     })
     .on("postgres_changes", { event: "INSERT", schema: "public", table: "room_messages", filter: `room_id=eq.${room.id}` }, ({ new: message }) => {
       appendChat(message);
