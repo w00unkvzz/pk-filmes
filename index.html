@@ -44,6 +44,23 @@
   <div id="modal-root"></div>
   <div id="toast-root" class="toast-root" aria-live="polite" aria-atomic="true"></div>
 
+  <script>
+    // Invalida o cache do service worker uma vez por build. Sem isso, quem já
+    // visitou o site pode receber o social.js antigo no primeiro carregamento
+    // após o deploy e ver "sala privada" mesmo com o link novo.
+    (async () => {
+      const build = "w00-v25";
+      const key = "w00filmes.build";
+      try {
+        if (localStorage.getItem(key) === build) return;
+        localStorage.setItem(key, build);
+        if (!navigator.serviceWorker?.controller || !("caches" in window)) return;
+        const keys = await caches.keys();
+        await Promise.all(keys.map((name) => caches.delete(name)));
+        location.reload();
+      } catch {}
+    })();
+  </script>
   <script src="js/vendor/supabase.js"></script>
   <script src="js/vendor/hls.min.js"></script>
   <script type="module" src="js/main.js"></script>
