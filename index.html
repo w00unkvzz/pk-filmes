@@ -53,6 +53,7 @@
       const key = "w00filmes.build";
       try {
         if (localStorage.getItem(key) === build) return;
+        if (!navigator.onLine) return;
         localStorage.setItem(key, build);
         if (!navigator.serviceWorker?.controller || !("caches" in window)) return;
         const keys = await caches.keys();
