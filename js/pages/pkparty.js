@@ -47,6 +47,7 @@ let remotePaused = false;
 let roomRequest = 0;
 let lobbyRequest = 0;
 let membersRequest = 0;
+let membersSyncTimer = null;
 let partyControlsTimer = 0;
 
 const DIRECT_VIDEO = /\.(mp4|webm|ogv|mov|m3u8)(\?|#|$)/i;
@@ -214,6 +215,8 @@ function cleanupParty() {
   destroyPartyVideo();
   clearInterval(heartbeat);
   heartbeat = null;
+  clearInterval(membersSyncTimer);
+  membersSyncTimer = null;
   clearTimeout(partyControlsTimer);
   partyControlsTimer = 0;
   try {
@@ -573,45 +576,49 @@ function renderRoom() {
   renderChat();
 }
 
-function presenceMember(entry) {
-  return {
-    user_id: entry.user_id,
-    name: entry.name || "Convidado",
-    avatar_url: entry.avatar_url || "",
-    is_host: entry.user_id === room?.host
-  };
+function currentPresenceIds() {
+  const entries = Object.values(realtimeChannel?.presenceState?.() || {})
+    .flat()
+    .filter((entry) => entry?.user_id);
+  return new Set(entries.map((entry) => entry.user_id));
 }
 
-function mergePresenceMembers(entries = []) {
-  const known = new Set(members.map((member) => member.user_id));
-  for (const entry of entries) {
-    if (!entry?.user_id || known.has(entry.user_id)) continue;
-    known.add(entry.user_id);
-    members.push(presenceMember(entry));
-  }
-}
-
-async function refreshMembers(onlineIds = new Set(), entries = []) {
+async function refreshMembers(onlineIds = new Set()) {
   const roomId = room?.id;
   if (!roomId || document.body.dataset.page !== "pkparty") return;
   const request = ++membersRequest;
   try {
     const next = await roomMembers(roomId);
     if (request !== membersRequest || room?.id !== roomId || document.body.dataset.page !== "pkparty") return;
-    // Presence is the fast path; keep online people visible even if the
-    // members query is momentarily behind.
-    const merged = [...next];
-    const known = new Set(merged.map((member) => member.user_id));
-    for (const entry of entries) {
-      if (!entry?.user_id || known.has(entry.user_id)) continue;
-      known.add(entry.user_id);
-      merged.push(presenceMember(entry));
-    }
-    members = merged;
+    // room_members is the source of truth for who is still in the room.
+    // Presence only decides the online dot; merging it back into membership
+    // resurrects people whose leave has already been committed.
+    if (!Array.isArray(next) || !next.length) return;
+    members = next;
     renderParticipants(onlineIds);
   } catch (error) {
     console.warn("[party] membros:", error.message);
   }
+}
+
+function syncPresenceMembers() {
+  const onlineIds = currentPresenceIds();
+  renderParticipants(onlineIds);
+  refreshMembers(onlineIds);
+}
+
+function handlePresenceLeave(payload = {}) {
+  const leftIds = new Set(
+    (payload.leftPresences || [])
+      .map((entry) => entry?.user_id)
+      .filter(Boolean)
+  );
+  if (leftIds.size) {
+    members = members.filter((member) => !leftIds.has(member.user_id));
+    renderParticipants(currentPresenceIds());
+  }
+  // Let the leave RPC finish deleting room_members before the DB refresh.
+  setTimeout(syncPresenceMembers, 1200);
 }
 
 function renderParticipants(onlineIds = new Set()) {
@@ -910,13 +917,9 @@ function connectRoomRealtime() {
     .on("broadcast", { event: "chat" }, ({ payload }) => {
       if (payload?.room_id === room.id && payload.user_id !== user.id && payload.sender_name !== "Você") appendChat(payload);
     })
-    .on("presence", { event: "sync" }, () => {
-      const entries = Object.values(realtimeChannel.presenceState()).flat().filter((entry) => entry?.user_id);
-      const ids = new Set(entries.map((entry) => entry.user_id));
-      mergePresenceMembers(entries);
-      renderParticipants(ids);
-      refreshMembers(ids, entries);
-    })
+    .on("presence", { event: "sync" }, syncPresenceMembers)
+    .on("presence", { event: "join" }, syncPresenceMembers)
+    .on("presence", { event: "leave" }, handlePresenceLeave)
     .on("postgres_changes", { event: "INSERT", schema: "public", table: "room_messages", filter: `room_id=eq.${room.id}` }, ({ new: message }) => {
       appendChat(message);
     })
@@ -943,10 +946,17 @@ function connectRoomRealtime() {
       }
     });
 
+  // Safety net for a missed presence leave: room_members is not in the
+  // Realtime publication, so poll the authoritative membership occasionally.
+  clearInterval(membersSyncTimer);
+  membersSyncTimer = setInterval(syncPresenceMembers, 10000);
+
   if (!window.__w00PartyUnloadBound) {
     window.__w00PartyUnloadBound = true;
     window.addEventListener("beforeunload", () => {
       clearInterval(heartbeat);
+      clearInterval(membersSyncTimer);
+      membersSyncTimer = null;
       destroyPartyVideo();
       if (realtimeChannel) sb.removeChannel(realtimeChannel);
       realtimeChannel = null;
