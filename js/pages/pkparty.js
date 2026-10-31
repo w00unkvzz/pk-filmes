@@ -613,6 +613,7 @@ function handlePresenceLeave(payload = {}) {
       .map((entry) => entry?.user_id)
       .filter(Boolean)
   );
+  if (user?.id) leftIds.delete(user.id);
   if (leftIds.size) {
     members = members.filter((member) => !leftIds.has(member.user_id));
     renderParticipants(currentPresenceIds());
