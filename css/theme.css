@@ -699,6 +699,17 @@ body[data-page="perfil"] .profile-section:last-child { margin-bottom: 0; }
   }
 }
 
+/* Friends/profile panels are tall and scroll with the page. A 22px blur on
+   each one forces the browser to recompose the viewport every frame. Drop it
+   on every tablet/phone width, where the friends layout is a single column. */
+@media (max-width: 1024px) {
+  .panel,
+  .glass {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
 
 /* --------------------------------------------------------------------------
    Indigo refresh + shared catalog / watch-party controls
@@ -1085,6 +1096,18 @@ body[data-page="pkparty"] .page-shell { min-height: calc(100dvh - var(--topbar-h
 .party-action i { color: #a5b4fc; font-size: 10px; }
 .party-action.danger { color: #fecdd3; }
 .party-action.danger i { color: #fb7185; }
+.party-action.next {
+  color: #fff;
+  background: linear-gradient(135deg, rgba(99, 102, 241, .92), rgba(139, 92, 246, .88));
+  border-color: rgba(165, 180, 252, .42);
+  box-shadow: 0 8px 22px rgba(99, 102, 241, .22);
+}
+.party-action.next i { color: #fff; }
+.party-action.next:hover {
+  background: linear-gradient(135deg, rgba(129, 140, 248, .98), rgba(167, 139, 250, .94));
+  border-color: rgba(196, 181, 253, .6);
+}
+.party-action.next:disabled { opacity: .62; cursor: wait; transform: none; }
 
 .party-chat {
   display: flex;
@@ -1155,6 +1178,32 @@ body.party-theater .sidebar-backdrop { display: none !important; }
   .party-action span { display: inline; }
   .party-guest-note { max-width: calc(100% - 24px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 }
+
+/* The room is a tall scroll surface on phones/tablets. Blurring the header,
+   actions, chat and buttons while the video frame repaints is what made it
+   stutter. Keep the glass tint, drop the expensive blur. */
+@media (max-width: 1024px) {
+  .party-room-head,
+  .party-room-actions,
+  .party-chat,
+  .party-stage,
+  .party-action,
+  .party-guest-note {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+  .party-room-head,
+  .party-room-actions,
+  .party-chat {
+    background: rgba(13, 16, 30, .94);
+  }
+  .party-action { background: rgba(255, 255, 255, .08); }
+  .party-action.next {
+    background: linear-gradient(135deg, rgba(99, 102, 241, .96), rgba(139, 92, 246, .92));
+  }
+  .party-guest-note { background: rgba(10, 15, 35, .9); }
+}
+
 @media (max-width: 560px) {
   .party-room-meta { gap: 6px; }
   .party-live-pill { padding: 0 8px; font-size: 8px; }

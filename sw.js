@@ -5,7 +5,7 @@
 //   HTML pages    → network-first, fallback to cache
 //   Supabase/fonts/FA → network-only (no cache)
 
-const VERSION = "w00-v26";
+const VERSION = "w00-v27";
 // v3 forces one fresh catalog download so the new Parede de Gelo rows appear.
 const CATALOG_CACHE = "w00-catalog-v3";
 const STATIC_CACHE  = "w00-static-v26";

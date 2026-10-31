@@ -388,10 +388,12 @@ export async function roomMembers(roomId) {
   return data || [];
 }
 
-export async function updateRoomMovie(roomId, movieId) {
+export async function updateRoomMovie(roomId, movieId, playbackState = null) {
+  const patch = { movie_id: movieId };
+  if (playbackState) patch.playback_state = playbackState;
   const { data, error } = await client()
     .from("rooms")
-    .update({ movie_id: movieId })
+    .update(patch)
     .eq("id", roomId)
     .select()
     .maybeSingle();

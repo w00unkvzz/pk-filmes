@@ -1,7 +1,7 @@
 // w00 Party: Supabase-backed watch party with realtime chat and host-only
 // playback control. The host broadcasts play/pause/seek plus a heartbeat;
 // guests apply it immediately and self-correct drift automatically.
-import { CATALOG, byId, normalizeStreamUrl } from "../data.js";
+import { CATALOG, byId, getSeriesGroup, normalizeStreamUrl } from "../data.js";
 import { attachHls, detachHls, isHlsUrl } from "../hls.js";
 import { getRoute, navigate, roomPath } from "../router.js";
 import * as store from "../store.js";
@@ -117,6 +117,14 @@ function movieForRoom(nextRoom) {
     };
   }
   return null;
+}
+
+function nextRoomEpisode() {
+  if (!movie) return null;
+  const group = getSeriesGroup(movie);
+  if (!group) return null;
+  const index = group.items.findIndex((entry) => entry.item.id === movie.id);
+  return index >= 0 ? group.items[index + 1] || null : null;
 }
 
 function timeAgo(timestamp) {
@@ -473,6 +481,7 @@ function renderRoom() {
   const hostMember = participants.find((person) => person.isHost);
   const canPlay = Boolean(movie && isDirectVideo(movie.stream));
   const online = participants.filter((person) => person.online).length;
+  const nextEntry = isHost ? nextRoomEpisode() : null;
 
   qs("#page-content").innerHTML = `
     <section class="party-room party-room-v2">
@@ -540,6 +549,7 @@ function renderRoom() {
             <div><strong>${escapeHTML(hostMember?.name || "Anfitrião")}</strong><span>${isHost ? "você é o anfitrião" : "anfitrião da sala"}</span></div>
           </div>
           <div class="party-actions">
+            ${nextEntry ? `<button class="party-action next" data-party-next type="button" title="${escapeHTML(nextEntry.name || nextEntry.item.title)}"><i class="fa-solid fa-forward-step"></i><span>Próximo Episódio</span></button>` : ""}
             ${isHost ? `<button class="party-action" data-copy-room-link type="button"><i class="fa-solid fa-link"></i><span>Copiar Link</span></button>` : ""}
             <button class="party-action danger" data-leave-room type="button"><i class="fa-solid fa-right-from-bracket"></i><span>Sair da Sala</span></button>
           </div>
@@ -731,10 +741,36 @@ function bindPartyFullscreenListener() {
   });
 }
 
+async function goToNextEpisode() {
+  if (!isHost || !room?.id) return;
+  const next = nextRoomEpisode();
+  if (!next) return;
+  const button = qs("[data-party-next]");
+  if (button) {
+    button.disabled = true;
+    button.classList.add("is-loading");
+  }
+  clearInterval(heartbeat);
+  heartbeat = null;
+  try { qs("#party-video")?.pause(); } catch {}
+  try {
+    await updateRoomMovie(room.id, next.item.id, { paused: true, time: 0, at: Date.now() });
+    await refreshRoomState();
+    toast(`Próximo episódio: ${next.name || next.item.title}`, "info", "Maratona");
+  } catch (error) {
+    toast("Não foi possível trocar o episódio.", "error");
+    if (button) {
+      button.disabled = false;
+      button.classList.remove("is-loading");
+    }
+  }
+}
+
 function mountRoom() {
   renderParticipants();
   renderChat();
 
+  qs("[data-party-next]")?.addEventListener("click", goToNextEpisode);
   qs("[data-copy-room-link]")?.addEventListener("click", () => copyText(roomShareUrl(), "Link da sala copiado."));
   qsa("[data-party-fullscreen]").forEach((button) => button.addEventListener("click", () => togglePartyTheater()));
   bindPartyFullscreenListener();
