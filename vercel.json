@@ -65,6 +65,10 @@
   ],
   "rewrites": [
     {
+      "source": "/rave/:id",
+      "destination": "/api/rave?id=:id"
+    },
+    {
       "source": "/stream/:show/:season/:file",
       "destination": "/api/stream?show=:show&season=:season&file=:file"
     },

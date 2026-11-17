@@ -4,7 +4,6 @@
 import { CATALOG, byId, getSeriesGroup, normalizeStreamUrl } from "../data.js";
 import { attachHls, detachHls, isHlsUrl } from "../hls.js";
 import { getRoute, navigate, roomPath } from "../router.js";
-import { raveHref } from "../rave.js";
 import * as store from "../store.js";
 import { getClient } from "../supabase.js";
 import { SUPABASE_CONFIG } from "../supabase-config.js";
@@ -554,7 +553,6 @@ function renderRoom() {
             <div><strong>${escapeHTML(hostMember?.name || "Anfitrião")}</strong><span>${isHost ? "você é o anfitrião" : "anfitrião da sala"}</span></div>
           </div>
           <div class="party-actions">
-            ${movie?.stream ? `<a class="party-action" href="${raveHref(movie, movie.title)}" target="_blank" rel="noopener"><i class="fa-solid fa-tower-broadcast"></i><span>Player Rave</span></a>` : ""}
             ${nextEntry ? `<button class="party-action next" data-party-next type="button" title="${escapeHTML(nextEntry.name || nextEntry.item.title)}"><i class="fa-solid fa-forward-step"></i><span>Próximo Episódio</span></button>` : ""}
             ${isHost ? `<button class="party-action" data-copy-room-link type="button"><i class="fa-solid fa-link"></i><span>Copiar Link</span></button>` : ""}
             <button class="party-action danger" data-leave-room type="button"><i class="fa-solid fa-right-from-bracket"></i><span>Sair da Sala</span></button>

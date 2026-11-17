@@ -1,12 +1,7 @@
-// Player Rave: the reference site publishes a plain "Abrir Player" link that
-// Rave's in-app browser can pick up. We keep the same flow but point at a
-// minimal page so HLS (.m3u8) also plays instead of downloading a manifest.
-export function raveHref(item, title = "") {
-  const source = item?.player || item?.stream || "";
-  const params = new URLSearchParams();
-  if (item?.id) params.set("id", item.id);
-  if (source) params.set("src", source);
-  const label = title || item?.title || "";
-  if (label) params.set("title", label);
-  return `/rave.html?${params.toString()}`;
+// Player Rave: the reference site exposes a server-rendered page with a
+// schema.org VideoObject (contentUrl/embedUrl). Rave reads that metadata and
+// opens its own player, so we only need to link at the item id.
+export function raveHref(item) {
+  const id = item?.id || "";
+  return id ? `/rave/${encodeURIComponent(id)}` : "/catalogo";
 }

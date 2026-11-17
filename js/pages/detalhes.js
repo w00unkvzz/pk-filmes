@@ -186,7 +186,7 @@ export function renderDetalhes() {
               <span class="details-cta-icon"><i class="fa-solid fa-users"></i></span>
               <span>Criar Watch Party</span>
             </button>
-            <a class="details-cta details-cta-rave" href="${raveHref(byId(playId) || show, title)}" target="_blank" rel="noopener">
+            <a class="details-cta details-cta-rave" href="${raveHref(byId(playId) || show)}" target="_blank" rel="noopener">
               <span class="details-cta-icon"><i class="fa-solid fa-tower-broadcast"></i></span>
               <span>Player Rave</span>
             </a>

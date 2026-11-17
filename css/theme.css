@@ -722,15 +722,6 @@ body[data-page="perfil"] .profile-section:last-child { margin-bottom: 0; }
 }
 .btn-party:hover { box-shadow: 0 16px 42px rgba(124, 58, 237, .34), inset 0 1px 0 rgba(255,255,255,.35); }
 .btn-party i { color: #ddd6fe; }
-.btn-rave {
-  background: linear-gradient(135deg, #e879f9, #8b5cf6 72%);
-  color: #fff;
-  border: 1px solid rgba(240, 171, 252, .42);
-  box-shadow: 0 12px 34px rgba(139, 92, 246, .24), inset 0 1px 0 rgba(255,255,255,.24);
-}
-.btn-rave:hover { box-shadow: 0 16px 42px rgba(232, 121, 249, .28), inset 0 1px 0 rgba(255,255,255,.34); }
-.btn-rave i { color: #fce7f3; }
-
 .badge-live { color: #bbf7d0 !important; border-color: rgba(52, 211, 153, .3) !important; background: rgba(52, 211, 153, .12) !important; }
 .badge-live i { font-size: 6px; color: #34d399; }
 
