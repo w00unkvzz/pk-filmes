@@ -48,6 +48,11 @@
   ],
   "redirects": [
     {
+      "source": "/rave",
+      "destination": "/catalogo",
+      "permanent": false
+    },
+    {
       "source": "/buscar",
       "destination": "/catalogo",
       "permanent": false
