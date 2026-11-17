@@ -11,6 +11,7 @@ import {
   yearOf, runtimeOf, genresOf, ratingOf, synopsisOf, backdropOf, castOf
 } from "../tmdb.js";
 import { openWatchPartyModal } from "../watchparty.js";
+import { raveHref } from "../rave.js";
 
 let seasonRequest = 0;
 let trailerRequest = 0;
@@ -185,6 +186,10 @@ export function renderDetalhes() {
               <span class="details-cta-icon"><i class="fa-solid fa-users"></i></span>
               <span>Criar Watch Party</span>
             </button>
+            <a class="details-cta details-cta-rave" href="${raveHref(byId(playId) || show, title)}" target="_blank" rel="noopener">
+              <span class="details-cta-icon"><i class="fa-solid fa-tower-broadcast"></i></span>
+              <span>Player Rave</span>
+            </a>
           </div>
 
           <div class="details-links">

@@ -4,7 +4,8 @@
 let active = null;
 
 export function isHlsUrl(url = "") {
-  return /\.m3u8(\?|#|$)/i.test(String(url));
+  const value = String(url);
+  return /\.m3u8(\?|#|$)/i.test(value) || /\/api\/stream(\?|$)/i.test(value);
 }
 
 export function canPlayNativeHls(video) {

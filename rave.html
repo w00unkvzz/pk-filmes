@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
+  <meta name="description" content="Player Rave — assista no aplicativo Rave.">
+  <title>Player Rave — w00filmes</title>
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: #000; color: #f8fafc; }
+    body {
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(70% 55% at 50% 0%, rgba(139, 92, 246, .18), transparent 65%),
+        #000;
+    }
+    .rave-shell { width: min(1080px, 100%); margin: 0 auto; padding: 18px 16px 28px; }
+    .rave-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 14px; }
+    .rave-kicker {
+      display: inline-flex; align-items: center; gap: 7px;
+      margin: 0 0 7px; color: #f0abfc; font-size: 10px; font-weight: 800;
+      letter-spacing: .16em; text-transform: uppercase;
+    }
+    .rave-kicker::before {
+      content: ""; width: 7px; height: 7px; border-radius: 50%;
+      background: #e879f9; box-shadow: 0 0 14px #e879f9;
+    }
+    h1 { margin: 0; font-family: Sora, Inter, system-ui, sans-serif; font-size: clamp(1.3rem, 4vw, 2rem); line-height: 1.15; letter-spacing: -.03em; }
+    .rave-wait { margin: 7px 0 0; color: #c4b5fd; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    .rave-back {
+      flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px;
+      min-height: 36px; padding: 0 13px; border-radius: 10px;
+      border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.06);
+      color: #e2e8f0; font-size: 11px; font-weight: 700; text-decoration: none;
+    }
+    .rave-stage {
+      position: relative; overflow: hidden; width: 100%; aspect-ratio: 16 / 9;
+      display: grid; place-items: center; background: #050505;
+      border: 1px solid rgba(255,255,255,.12); border-radius: 18px;
+      box-shadow: 0 24px 70px rgba(0,0,0,.55), 0 0 0 1px rgba(232,121,249,.05) inset;
+    }
+    .rave-stage video { width: 100%; height: 100%; background: #000; object-fit: contain; }
+    .rave-empty {
+      position: absolute; inset: 0; display: grid; place-items: center; padding: 24px;
+      text-align: center; color: #cbd5e1; font-size: 13px; line-height: 1.6;
+    }
+    .rave-empty[hidden] { display: none; }
+    .rave-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; margin-top: 14px; }
+    .rave-btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      min-height: 42px; padding: 0 16px; border-radius: 12px; border: 1px solid transparent;
+      font: inherit; font-size: 12px; font-weight: 800; text-decoration: none; cursor: pointer;
+    }
+    .rave-btn-primary {
+      background: linear-gradient(135deg, #e879f9, #8b5cf6 70%); color: #fff;
+      border-color: rgba(240,171,252,.4); box-shadow: 0 12px 32px rgba(139,92,246,.25);
+    }
+    .rave-btn-ghost { background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.14); color: #e2e8f0; }
+    .rave-hint { margin: 14px 0 0; color: #94a3b8; font-size: 11px; line-height: 1.7; }
+    .rave-hint strong { color: #e9d5ff; }
+    .rave-hint code { padding: 1px 5px; border-radius: 5px; background: rgba(255,255,255,.08); color: #f5d0fe; font-size: 10px; }
+    .rave-link { margin-top: 8px; color: #a5b4fc; font-size: 10px; word-break: break-all; }
+    @media (max-width: 560px) {
+      .rave-shell { padding: 14px 12px 22px; }
+      .rave-head { flex-direction: column; }
+      .rave-back { align-self: flex-start; }
+      .rave-stage { border-radius: 14px; }
+      .rave-btn { flex: 1 1 auto; }
+    }
+  </style>
+</head>
+<body>
+  <main class="rave-shell">
+    <header class="rave-head">
+      <div>
+        <p class="rave-kicker">Player Rave</p>
+        <h1 id="rave-title">Carregando…</h1>
+        <p class="rave-wait">Aguarde nessa página, para assistir no aplicativo Rave</p>
+      </div>
+      <a class="rave-back" href="/"><i>←</i> Voltar ao w00filmes</a>
+    </header>
+
+    <div class="rave-stage">
+      <video id="rave-video" controls autoplay playsinline preload="metadata"></video>
+      <div class="rave-empty" id="rave-empty" hidden></div>
+    </div>
+
+    <div class="rave-actions">
+      <button class="rave-btn rave-btn-primary" id="rave-copy" type="button">Copiar link direto</button>
+      <a class="rave-btn rave-btn-ghost" id="rave-open" href="#" target="_blank" rel="noopener">Abrir link</a>
+    </div>
+
+    <p class="rave-hint">
+      No Rave, escolha a fonte <strong>Web</strong> e cole o link copiado. Mantenha esta página aberta
+      enquanto a sala carrega. Se o vídeo não iniciar sozinho, toque no play.
+    </p>
+    <p class="rave-link" id="rave-link"></p>
+  </main>
+
+  <script src="js/vendor/hls.min.js"></script>
+  <script>
+    (async function () {
+      const params = new URLSearchParams(location.search);
+      const title = params.get("title") || "";
+      const id = params.get("id") || "";
+      let source = params.get("src") || "";
+      const titleNode = document.getElementById("rave-title");
+      const video = document.getElementById("rave-video");
+      const empty = document.getElementById("rave-empty");
+      const copyButton = document.getElementById("rave-copy");
+      const openLink = document.getElementById("rave-open");
+      const linkNode = document.getElementById("rave-link");
+
+      if (title) {
+        titleNode.textContent = title;
+        document.title = `${title} — Player Rave`;
+      }
+
+      if (!source && id) {
+        try {
+          const response = await fetch("catalog.json", { cache: "no-store" });
+          const data = await response.json();
+          const item = (data.items || []).find((entry) => entry.id === id);
+          if (item) {
+            source = item.player || item.stream || "";
+            if (!title) {
+              titleNode.textContent = item.nome || item.title || "Player Rave";
+              document.title = `${titleNode.textContent} — Player Rave`;
+            }
+          }
+        } catch {}
+      }
+
+      if (!source) {
+        empty.hidden = false;
+        empty.textContent = "Este título não tem um link de reprodução.";
+        copyButton.disabled = true;
+        openLink.style.display = "none";
+        return;
+      }
+
+      let absolute;
+      try {
+        const parsed = new URL(source, location.href);
+        if (!/^https?:$/.test(parsed.protocol)) throw new Error("protocolo inválido");
+        absolute = parsed.href;
+      } catch {
+        empty.hidden = false;
+        empty.textContent = "Link de reprodução inválido.";
+        copyButton.disabled = true;
+        openLink.style.display = "none";
+        return;
+      }
+      openLink.href = absolute;
+      linkNode.textContent = absolute;
+
+      const isHls = /\.m3u8(\?|#|$)/i.test(source) || /\/api\/stream(\?|$)/i.test(source);
+      const fail = () => {
+        empty.hidden = false;
+        empty.textContent = "Não foi possível carregar o vídeo. Copie o link direto e abra no Rave.";
+      };
+
+      if (isHls && !video.canPlayType("application/vnd.apple.mpegurl") && window.Hls && window.Hls.isSupported()) {
+        const hls = new window.Hls({ enableWorker: true, lowLatencyMode: false, backBufferLength: 60 });
+        hls.on(window.Hls.Events.ERROR, function (_event, data) {
+          if (data && data.fatal) fail();
+        });
+        hls.loadSource(absolute);
+        hls.attachMedia(video);
+      } else {
+        video.src = absolute;
+        video.addEventListener("error", fail, { once: true });
+      }
+
+      video.addEventListener("canplay", function () { empty.hidden = true; }, { once: true });
+      video.play().catch(function () {});
+
+      copyButton.addEventListener("click", async function () {
+        try {
+          await navigator.clipboard.writeText(absolute);
+          copyButton.textContent = "Link copiado";
+          setTimeout(function () { copyButton.textContent = "Copiar link direto"; }, 1800);
+        } catch {
+          const range = document.createRange();
+          range.selectNodeContents(linkNode);
+          const selection = window.getSelection();
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -7,6 +7,7 @@ import { qs, escapeHTML, formatDuration, formatClock, toast, emptyState } from "
 import { getTitleDetails, getSeasonDetails, tmdbIdFromItem, imageUrl, yearOf, runtimeOf, ratingOf } from "../tmdb.js";
 import { openWatchPartyModal } from "../watchparty.js";
 import { attachHls, detachHls, isHlsUrl } from "../hls.js";
+import { raveHref } from "../rave.js";
 
 const DIRECT_VIDEO = /\.(mp4|m4v|webm|ogv|ogg|mov|m3u8)(\?|#|$)/i;
 const EMBED_HOST = /youtube\.com|youtu\.be|vimeo\.com|dailymotion\.com|\/embed\/|player\./i;
@@ -182,6 +183,7 @@ export function renderPlayer() {
                 ${group.seasons.map((season) => `<button class="season-option ${season.number === (current.season || group.seasons[0]?.number) ? "active" : ""}" type="button" role="option" aria-selected="${season.number === (current.season || group.seasons[0]?.number) ? "true" : "false"}" data-season="${season.number}">Temporada ${season.number}</button>`).join("")}
               </div>
             </div>
+            <a class="btn btn-rave btn-sm player-rave-btn" href="${raveHref(current.item, show.title)}" target="_blank" rel="noopener"><i class="fa-solid fa-tower-broadcast"></i>Player Rave</a>
             <button class="btn btn-party btn-sm player-party-btn" id="player-party" type="button"><i class="fa-solid fa-users"></i>Watch Party</button>
           </div>
 
@@ -205,6 +207,7 @@ export function renderPlayer() {
           </div>
           <div class="player-movie-actions">
             <a class="btn btn-ghost" href="${detailsPath(current.item)}"><i class="fa-solid fa-circle-info"></i>Detalhes</a>
+            <a class="btn btn-rave" href="${raveHref(current.item, title)}" target="_blank" rel="noopener"><i class="fa-solid fa-tower-broadcast"></i>Player Rave</a>
             <button class="btn btn-party" id="player-party" type="button"><i class="fa-solid fa-users"></i>Criar Watch Party</button>
           </div>
         </section>`}

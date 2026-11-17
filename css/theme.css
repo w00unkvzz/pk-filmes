@@ -722,6 +722,14 @@ body[data-page="perfil"] .profile-section:last-child { margin-bottom: 0; }
 }
 .btn-party:hover { box-shadow: 0 16px 42px rgba(124, 58, 237, .34), inset 0 1px 0 rgba(255,255,255,.35); }
 .btn-party i { color: #ddd6fe; }
+.btn-rave {
+  background: linear-gradient(135deg, #e879f9, #8b5cf6 72%);
+  color: #fff;
+  border: 1px solid rgba(240, 171, 252, .42);
+  box-shadow: 0 12px 34px rgba(139, 92, 246, .24), inset 0 1px 0 rgba(255,255,255,.24);
+}
+.btn-rave:hover { box-shadow: 0 16px 42px rgba(232, 121, 249, .28), inset 0 1px 0 rgba(255,255,255,.34); }
+.btn-rave i { color: #fce7f3; }
 
 .badge-live { color: #bbf7d0 !important; border-color: rgba(52, 211, 153, .3) !important; background: rgba(52, 211, 153, .12) !important; }
 .badge-live i { font-size: 6px; color: #34d399; }
@@ -949,6 +957,16 @@ body[data-page="pkparty"] .page-shell { min-height: calc(100dvh - var(--topbar-h
   backdrop-filter: blur(20px) saturate(145%);
 }
 
+/* The action bar and the video stage sit in the same fullscreen compositing
+   tree. Blurring them makes the room menu stutter while the movie is playing,
+   so both use a plain translucent fill instead. */
+.party-room-actions,
+.party-stage.glass {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.party-room-actions { background: rgba(15, 18, 34, 0.9); }
+
 .party-room-head {
   display: flex;
   align-items: center;
@@ -1032,10 +1050,8 @@ body[data-page="pkparty"] .page-shell { min-height: calc(100dvh - var(--topbar-h
   color: #dbe3ff;
   font-size: 9px;
   font-weight: 600;
-  background: rgba(15, 18, 34, 0.62);
+  background: rgba(15, 18, 34, 0.78);
   border: 1px solid rgba(255, 255, 255, 0.13);
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
 }
 .party-guest-note i { color: #a5b4fc; }
 
@@ -1086,10 +1102,8 @@ body[data-page="pkparty"] .page-shell { min-height: calc(100dvh - var(--topbar-h
   color: #e2e8f0;
   font-size: 10px;
   font-weight: 700;
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(10, 15, 35, 0.72);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
   transition: background 0.2s var(--ease), transform 0.2s var(--ease), border-color 0.2s var(--ease);
 }
 .party-action:hover { background: rgba(255, 255, 255, 0.13); border-color: rgba(165, 180, 252, 0.35); transform: translateY(-1px); }
@@ -1256,6 +1270,9 @@ body.party-theater .sidebar-backdrop { display: none !important; }
   background: #000;
 }
 
+/* No backdrop-filter here: these controls sit directly over a playing video
+   and the blur forces a full recomposite on every overlay show/hide. A solid
+   translucent fill looks the same and keeps fullscreen controls smooth. */
 .player-overlay .control-icon,
 .player-overlay .capsule-btn,
 .player-overlay .skip-intro-btn,
@@ -1264,11 +1281,9 @@ body.party-theater .sidebar-backdrop { display: none !important; }
 .player-overlay .prompt-btn-no,
 .player-overlay .back-btn {
   color: #fff;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(10, 12, 20, 0.58);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
 }
 .player-overlay .control-icon:hover,
 .player-overlay .capsule-btn:hover,
@@ -1294,10 +1309,8 @@ body.party-theater .sidebar-backdrop { display: none !important; }
 .player-overlay .prompt-btn-yes { background: rgba(99, 102, 241, 0.45); border-color: rgba(165, 180, 252, 0.45); }
 .player-overlay .prompt-btn-no { background: rgba(255, 255, 255, 0.1); }
 .player-overlay .continue-prompt {
-  background: rgba(15, 18, 34, 0.62);
+  background: rgba(15, 18, 34, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.14);
-  -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(16px);
 }
 .player-overlay .volume-slider { accent-color: #a5b4fc; }
 
