@@ -16,11 +16,9 @@ export function attachHls(video, url, { onFatal, onReady } = {}) {
   detachHls();
   if (!video || !url) return null;
 
-  if (canPlayNativeHls(video)) {
-    video.src = url;
-    return null;
-  }
-
+  // Prefer hls.js when MSE is available. Some Android Chrome builds report a
+  // "maybe" for native HLS but still fail on the manifest, so the native check
+  // is only the fallback when hls.js itself is unavailable (Safari/iOS).
   const Hls = window.Hls;
   if (!Hls || !Hls.isSupported()) {
     video.src = url;
