@@ -278,6 +278,14 @@ function mountDetails({ group, show, selected, playId }) {
 
   const tabs = qsa("[data-details-tab]");
   const panels = qsa(".tab-content");
+  const tabsBar = qs(".section-tabs");
+  const syncTabPill = () => {
+    if (!tabsBar || !document.body.contains(tabsBar)) return;
+    const active = tabs.find((tab) => tab.classList.contains("active")) || tabs[0];
+    if (!active) return;
+    tabsBar.style.setProperty("--tab-x", `${active.offsetLeft}px`);
+    tabsBar.style.setProperty("--tab-w", `${active.offsetWidth}px`);
+  };
   const activateTab = (name, { updateHash = true } = {}) => {
     if (!TAB_NAMES.has(name)) return;
     tabs.forEach((tab) => {
@@ -287,6 +295,7 @@ function mountDetails({ group, show, selected, playId }) {
       tab.tabIndex = active ? 0 : -1;
     });
     panels.forEach((panel) => panel.classList.toggle("active", panel.id === `tab-${name}`));
+    syncTabPill();
     if (name === "trailer") loadTrailer(show);
     if (updateHash) history.replaceState(history.state, "", `#${name}`);
   };
@@ -308,6 +317,16 @@ function mountDetails({ group, show, selected, playId }) {
 
   const initialTab = location.hash.replace("#", "");
   if (TAB_NAMES.has(initialTab)) activateTab(initialTab, { updateHash: false });
+  requestAnimationFrame(syncTabPill);
+  document.fonts?.ready.then(syncTabPill).catch(() => {});
+  const onResize = () => {
+    if (!document.body.contains(tabsBar)) {
+      window.removeEventListener("resize", onResize);
+      return;
+    }
+    syncTabPill();
+  };
+  window.addEventListener("resize", onResize);
   if (selected) qs("#details-episodes-section")?.classList.remove("hidden");
 }
 

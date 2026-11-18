@@ -55,6 +55,11 @@ function heroMarkup(item) {
           <i class="fa-solid fa-clapperboard"></i><span>Trailer</span>
         </button>
       </div>
+    </div>
+    <div class="hero-stamp" aria-hidden="true">
+      <strong id="hero-stamp-index">01</strong>
+      <span class="hero-stamp-line"></span>
+      <span>${String(featured.length).padStart(2, "0")}</span>
     </div>`;
 }
 
@@ -208,6 +213,11 @@ function mountHome() {
     if (meta) meta.innerHTML = heroMeta(item);
     const desc = hero.querySelector(".hero-desc");
     if (desc) desc.textContent = item.synopsis;
+    const stamp = hero.querySelector("#hero-stamp-index");
+    if (stamp) stamp.textContent = String(index + 1).padStart(2, "0");
+    hero.classList.remove("is-painting");
+    void hero.offsetWidth;
+    hero.classList.add("is-painting");
     const play = hero.querySelector("[data-play]");
     if (play) play.dataset.play = item.id;
     const info = hero.querySelector("[data-open-details]");

@@ -227,10 +227,8 @@ export function toast(message, type = "info", title = "") {
   el.innerHTML = `<i class="fa-solid ${icons[type] || icons.info}"></i><div>${title ? `<strong>${escapeHTML(title)}</strong>` : ""}<span>${escapeHTML(message)}</span></div>`;
   root.appendChild(el);
   setTimeout(() => {
-    el.style.opacity = "0";
-    el.style.transform = "translateY(6px)";
-    el.style.transition = "all .22s ease";
-    setTimeout(() => el.remove(), 230);
+    el.classList.add("is-leaving");
+    setTimeout(() => el.remove(), 250);
   }, 3400);
 }
 
@@ -249,8 +247,14 @@ export function openModal(content, options = {}) {
     if (!activeModal) return;
     if (options.onClose) options.onClose();
     activeModal = null;
-    root.innerHTML = "";
     document.body.classList.remove("modal-open");
+    // Fecha com o mesmo vocabulário de movimento da abertura. O conteúdo só
+    // é removido depois da animação; se outro modal abrir nesse meio-tempo,
+    // o nó antigo já não pertence ao root e nada é apagado.
+    backdrop.classList.add("is-closing");
+    setTimeout(() => {
+      if (root.contains(backdrop)) root.innerHTML = "";
+    }, 200);
   };
   activeModal = { close };
   backdrop.addEventListener("click", (event) => {
@@ -887,9 +891,48 @@ export function sidebarClose() {
 }
 
 /* Global event wiring */
+function bindCardMotion() {
+  if (!window.matchMedia) return;
+  if (window.matchMedia("(hover: none), (pointer: coarse)").matches) return;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  let frame = 0;
+  let pending = null;
+
+  document.addEventListener("pointermove", (event) => {
+    const card = event.target.closest?.(".title-card");
+    if (!card) return;
+    pending = { card, x: event.clientX, y: event.clientY };
+    if (frame) return;
+    frame = requestAnimationFrame(() => {
+      frame = 0;
+      if (!pending) return;
+      const wrap = pending.card.querySelector(".poster-wrap");
+      if (!wrap) return;
+      const rect = wrap.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      const px = (pending.x - rect.left) / rect.width;
+      const py = (pending.y - rect.top) / rect.height;
+      wrap.style.setProperty("--mx", `${(px * 100).toFixed(1)}%`);
+      wrap.style.setProperty("--my", `${(py * 100).toFixed(1)}%`);
+      wrap.style.setProperty("--ry", `${((px - 0.5) * 5).toFixed(2)}deg`);
+      wrap.style.setProperty("--rx", `${((0.5 - py) * 5).toFixed(2)}deg`);
+    });
+  }, { passive: true });
+
+  document.addEventListener("pointerout", (event) => {
+    const card = event.target.closest?.(".title-card");
+    if (!card || card.contains(event.relatedTarget)) return;
+    const wrap = card.querySelector(".poster-wrap");
+    if (!wrap) return;
+    wrap.style.setProperty("--rx", "0deg");
+    wrap.style.setProperty("--ry", "0deg");
+  }, { passive: true });
+}
+
 export function bindGlobalEvents() {
   if (window.__pkGlobalBound) return;
   window.__pkGlobalBound = true;
+  bindCardMotion();
 
   document.addEventListener("click", (event) => {
     const target = event.target;

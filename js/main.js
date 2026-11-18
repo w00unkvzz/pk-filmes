@@ -147,6 +147,20 @@ function bindRouter() {
   });
 }
 
+function setupChrome() {
+  let ticking = false;
+  const sync = () => {
+    ticking = false;
+    document.getElementById("topbar")?.classList.toggle("is-scrolled", window.scrollY > 6);
+  };
+  window.addEventListener("scroll", () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(sync);
+  }, { passive: true });
+  sync();
+}
+
 function setupServiceWorker() {
   if (!("serviceWorker" in navigator)) return;
 
@@ -177,6 +191,7 @@ async function boot() {
   bindGlobalEvents();
   bindRouter();
   renderShell();
+  setupChrome();
   await renderCurrent();
   authRenderKey = currentAuthKey();
 
