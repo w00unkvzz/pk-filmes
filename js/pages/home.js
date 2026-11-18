@@ -2,8 +2,6 @@
 import { CATALOG, catalogTitles, featured, trending, top10, movies, series, newReleases, allGenres } from "../data.js";
 import * as store from "../store.js";
 import { mediaRow, top10Row, genreStrip, qs, escapeHTML, formatDuration, toast, emptyState } from "../ui.js";
-import { detailsPath } from "../router.js";
-import { openTrailerModal } from "../trailer.js";
 import { getLogo } from "../tmdb.js";
 
 let heroTimer = null;
@@ -14,18 +12,21 @@ function heroImage(item) {
   return image.replace(/\/t\/p\/w\d+\//, "/t/p/original/");
 }
 
+function matchScore(item) {
+  const rating = Number(item.rating) || 0;
+  return Math.min(98, Math.max(70, Math.round(70 + rating * 3)));
+}
+
 function heroMeta(item) {
   const bits = [];
-  if (Number(item.rating) > 0) {
-    bits.push(`<span class="rating"><i class="fa-solid fa-star"></i>${Number(item.rating).toFixed(1)}</span>`);
-  }
+  bits.push(`<span class="match">${matchScore(item)}% relevante</span>`);
   if (item.year) bits.push(`<span>${escapeHTML(String(item.year))}</span>`);
   const seasons = item.seasons?.length || 1;
   const length = item.type === "series"
     ? `${seasons} temporada${seasons > 1 ? "s" : ""}`
     : (item.duration ? formatDuration(item.duration) : "");
   if (length) bits.push(`<span>${escapeHTML(length)}</span>`);
-  if (item.genres?.length) bits.push(`<span class="hero-genre">${escapeHTML(item.genres.slice(0, 2).join(" · "))}</span>`);
+  bits.push('<span class="hd-badge">HD</span>');
   return bits.join('<span class="dot"></span>');
 }
 
@@ -37,53 +38,22 @@ function heroMarkup(item) {
     </div>
     <div class="hero-overlay" aria-hidden="true"></div>
     <div class="hero-content">
-      <div class="hero-kicker"><span class="hero-pulse"></span>Em destaque na w00</div>
-      <div class="hero-brand"><span class="hero-brand-mark">W00</span><span>cinema sem limites</span></div>
+      <div class="hero-kicker"><span class="hero-n">W</span>${item.type === "series" ? "SÉRIE" : "FILME"}</div>
       <div class="hero-title-wrap" id="hero-title-wrap">
         <h1 class="hero-title">${escapeHTML(item.title)}</h1>
       </div>
       <div class="meta hero-meta">${heroMeta(item)}</div>
       <p class="hero-desc">${escapeHTML(item.synopsis)}</p>
       <div class="hero-actions">
-        <button class="hero-btn hero-btn-play" data-play="${escapeHTML(item.id)}" type="button">
-          <i class="fa-solid fa-play"></i><span>Assistir agora</span>
+        <button class="nf-btn nf-btn-play" data-play="${escapeHTML(item.id)}" type="button">
+          <i class="fa-solid fa-play"></i><span>Assistir</span>
         </button>
-        <button class="hero-btn hero-btn-info" data-open-details="${escapeHTML(item.id)}" type="button">
-          <i class="fa-solid fa-circle-info"></i><span>Detalhes</span>
-        </button>
-        <button class="hero-btn hero-btn-trailer" data-trailer="${escapeHTML(item.id)}" type="button">
-          <i class="fa-solid fa-clapperboard"></i><span>Trailer</span>
+        <button class="nf-btn nf-btn-info" data-open-details="${escapeHTML(item.id)}" type="button">
+          <i class="fa-solid fa-circle-info"></i><span>Mais informações</span>
         </button>
       </div>
     </div>
-    <div class="hero-stamp" aria-hidden="true">
-      <strong id="hero-stamp-index">01</strong>
-      <span class="hero-stamp-line"></span>
-      <span>${String(featured.length).padStart(2, "0")}</span>
-    </div>`;
-}
-
-function editorialMarkup(item) {
-  if (!item) return "";
-  // Banner uses a large-but-not-original backdrop to keep the home light.
-  const image = (item.backdrop || item.poster || "").replace(/\/t\/p\/w\d+\//, "/t/p/w1280/");
-  return `<section class="page-section editorial-section">
-    <div class="editorial-banner">
-      ${image ? `<div class="editorial-bg" aria-hidden="true"><img src="${escapeHTML(image)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"></div>` : ""}
-      <div class="editorial-content">
-        <div class="section-kicker"><i class="fa-solid fa-star"></i>Coleção w00</div>
-        <h2>Sessão da noite</h2>
-        <p>${escapeHTML(item.synopsis || "Uma história para fechar o dia com a luz apagada e o som alto.")}</p>
-        <div class="editorial-meta">
-          <span>${escapeHTML(item.title)}</span>
-          ${item.year ? `<span class="dot"></span><span>${escapeHTML(String(item.year))}</span>` : ""}
-          ${Number(item.rating) > 0 ? `<span class="dot"></span><span class="rating"><i class="fa-solid fa-star"></i> ${Number(item.rating).toFixed(1)}</span>` : ""}
-        </div>
-        <a class="editorial-cta" href="${detailsPath(item)}">Explorar título <i class="fa-solid fa-arrow-right"></i></a>
-      </div>
-      ${item.poster ? `<div class="editorial-poster" aria-hidden="true"><img src="${escapeHTML(item.poster)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"></div>` : ""}
-    </div>
-  </section>`;
+    <div class="hero-age" aria-hidden="true">${escapeHTML(item.age || "L")}</div>`;
 }
 
 function heroDots(active) {
@@ -98,7 +68,6 @@ export function renderHome() {
   const progressMap = Object.fromEntries(history.map((entry) => [entry.id, store.progressPercent(entry)]));
   const family = catalogTitles.filter((item) => item.genres.some((genre) => ["Família", "Animação", "Aventura"].includes(genre))).slice(0, 12);
   const hero = featured[0];
-  const spotlight = featured[1] || trending.find((item) => item.id !== hero?.id) || movies[0];
   const genreSelection = allGenres.slice(0, 12);
 
   if (!hero) {
@@ -119,29 +88,27 @@ export function renderHome() {
       ${heroDots(0)}
     </section>
 
-    <section class="page-section genre-section">
-      <div class="section-head">
-        <div><div class="section-kicker"><i class="fa-solid fa-compass"></i>Descubra</div><h2>Navegue por gênero</h2></div>
-        <a class="section-link" href="/catalogo">Ver catálogo <i class="fa-solid fa-arrow-right"></i></a>
-      </div>
-      ${genreStrip(genreSelection)}
-    </section>
-
     ${historyItems.length ? mediaRow("Continuar assistindo", historyItems.map(({ item }) => item), {
       id: "continue-row",
       href: "/perfil#historico",
       progressMap,
-      remove: true,
-      kicker: "Retome de onde parou"
+      remove: true
     }) : ""}
 
-    ${mediaRow("Em alta agora", trending, { id: "trending-row", kicker: "O que todo mundo está vendo" })}
     ${top10Row(top10)}
-    ${editorialMarkup(spotlight)}
-    ${mediaRow("Filmes para a sua noite", movies, { id: "movies-row", href: "/catalogo?tipo=movie", kicker: "Curadoria w00" })}
-    ${mediaRow("Séries em destaque", series, { id: "series-row", href: "/catalogo?tipo=series", kicker: "Para maratonar" })}
-    ${mediaRow("Novidades no catálogo", newReleases, { id: "new-row", kicker: "Recém-chegados" })}
-    ${mediaRow("Família & animação", family, { id: "family-row", kicker: "Para assistir junto" })}`;
+    ${mediaRow("Em alta agora", trending, { id: "trending-row" })}
+    ${mediaRow("Filmes", movies, { id: "movies-row", href: "/catalogo?tipo=movie" })}
+    ${mediaRow("Séries", series, { id: "series-row", href: "/catalogo?tipo=series" })}
+    ${mediaRow("Novidades", newReleases, { id: "new-row" })}
+    ${mediaRow("Família & animação", family, { id: "family-row" })}
+
+    <section class="page-section nf-genre-section">
+      <div class="section-head">
+        <h2>Navegue por gêneros</h2>
+        <a class="section-link" href="/catalogo">Explorar tudo <i class="fa-solid fa-chevron-right"></i></a>
+      </div>
+      ${genreStrip(genreSelection)}
+    </section>`;
 
   qs("#page-content").innerHTML = content;
   mountHome();
@@ -213,8 +180,6 @@ function mountHome() {
     if (meta) meta.innerHTML = heroMeta(item);
     const desc = hero.querySelector(".hero-desc");
     if (desc) desc.textContent = item.synopsis;
-    const stamp = hero.querySelector("#hero-stamp-index");
-    if (stamp) stamp.textContent = String(index + 1).padStart(2, "0");
     hero.classList.remove("is-painting");
     void hero.offsetWidth;
     hero.classList.add("is-painting");
@@ -222,8 +187,6 @@ function mountHome() {
     if (play) play.dataset.play = item.id;
     const info = hero.querySelector("[data-open-details]");
     if (info) info.dataset.openDetails = item.id;
-    const trailer = hero.querySelector("[data-trailer]");
-    if (trailer) trailer.dataset.trailer = item.id;
     hero.querySelectorAll("[data-hero-index]").forEach((dot, i) => {
       dot.classList.toggle("active", i === index);
       dot.setAttribute("aria-selected", i === index ? "true" : "false");
@@ -234,12 +197,6 @@ function mountHome() {
     heroTimer = setInterval(() => paint(index + 1), 8000);
   };
   hero.addEventListener("click", (event) => {
-    const trailer = event.target.closest("[data-trailer]");
-    if (trailer) {
-      event.preventDefault();
-      openTrailerModal(featured[index]);
-      return;
-    }
     const dot = event.target.closest("[data-hero-index]");
     if (!dot) return;
     paint(Number(dot.dataset.heroIndex));

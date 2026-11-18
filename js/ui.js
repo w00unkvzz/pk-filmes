@@ -122,64 +122,68 @@ export function renderShell() {
     requestCount,
     inviteCount
   ].join("|");
-  if (signature === lastShellSignature && sidebar.childElementCount && topbar.childElementCount) {
+  if (signature === lastShellSignature && topbar.childElementCount) {
     syncSidebarBackdrop();
     return;
   }
   lastShellSignature = signature;
 
-  const sections = [...new Set(CONFIG.nav.map((item) => item.section))];
-  sidebar.innerHTML = `
-    <a class="sidebar-brand" href="/" aria-label="${escapeHTML(CONFIG.brand)} — início">
-      <span class="brand-mark">${escapeHTML(CONFIG.brandShort)}</span>
-      <span class="brand-text"><strong>${escapeHTML(CONFIG.brand)}</strong><span>${escapeHTML(CONFIG.tagline)}</span></span>
-    </a>
-    <nav class="sidebar-nav">
-      ${sections.map((section) => `
-        <div class="nav-section-label">${escapeHTML(section)}</div>
-        ${CONFIG.nav.filter((item) => item.section === section).map((item) => {
-          const active = page === item.page;
-          const badgeCount = item.badge === "requests" ? requestCount : item.badge === "invites" ? inviteCount : 0;
-          const badge = badgeCount ? `<span class="sidebar-badge">${badgeCount}</span>` : "";
-          return `<a class="sidebar-link ${active ? "active" : ""}" href="${item.href}" ${active ? 'aria-current="page"' : ""}>
-            <i class="fa-solid ${item.icon}"></i><span class="sidebar-label">${escapeHTML(item.label)}</span>${badge}
-          </a>`;
-        }).join("")}
-      `).join("")}
-    </nav>
-    <div class="sidebar-foot">
-      ${user.authed
-        ? `<a class="sidebar-user" href="/perfil">${avatar(user, "sm")}<div><strong>${escapeHTML(user.name)}</strong><span>online</span></div></a>`
-        : `<button class="sidebar-user" data-auth-open type="button">${avatar(user, "sm")}<div><strong>Entrar</strong><span>Sua conta</span></div></button>`}
-    </div>`;
+  // A sidebar saiu do desenho. O elemento continua no HTML por
+  // compatibilidade com o CSS antigo, mas fica vazio e oculto.
+  sidebar.innerHTML = "";
+
+  const currentType = new URLSearchParams(location.search).get("tipo") || "";
+  const navItems = [
+    { page: "home", href: "/", label: "Início" },
+    { page: "catalogo", href: "/catalogo?tipo=series", label: "Séries", type: "series" },
+    { page: "catalogo", href: "/catalogo?tipo=movie", label: "Filmes", type: "movie" },
+    { page: "cartaz", href: "/em-breve", label: "Novidades" },
+    { page: "perfil", href: "/perfil#minha-lista", label: "Minha lista" }
+  ];
+  const navActive = (item) => {
+    if (item.page === "home") return page === "home";
+    if (item.page === "catalogo") return page === "catalogo" && currentType === item.type;
+    if (item.page === "perfil") return page === "perfil" && location.hash === "#minha-lista";
+    return page === item.page;
+  };
 
   topbar.innerHTML = `
-    <button class="mobile-menu-btn" data-sidebar-toggle type="button" aria-label="Abrir menu"><i class="fa-solid fa-bars"></i></button>
-    <a class="mobile-top-logo" href="/"><span class="brand-mark">${escapeHTML(CONFIG.brandShort)}</span><strong>${escapeHTML(CONFIG.brand)}</strong></a>
-    <form class="topbar-search" action="/catalogo" method="get" role="search">
-      <i class="fa-solid fa-magnifying-glass"></i>
-      <input type="search" name="q" placeholder="Buscar filmes, séries ou gêneros..." autocomplete="off" aria-label="Buscar no catálogo">
-      <span class="search-hint" aria-hidden="true">/</span>
-    </form>
-    <div class="topbar-spacer"></div>
-    <div class="topbar-actions">
-      <button class="topbar-icon mobile-search-toggle" data-mobile-search type="button" aria-label="Abrir busca" aria-expanded="false"><i class="fa-solid fa-magnifying-glass"></i></button>
-      <a class="topbar-icon" href="/amigos" aria-label="Amigos e pedidos" title="Amigos">
+    <a class="nf-logo" href="/" aria-label="${escapeHTML(CONFIG.brand)} — início">W00<span>FILMES</span></a>
+    <nav class="nf-links" aria-label="Navegação principal">
+      ${navItems.map((item) => `<a class="${navActive(item) ? "active" : ""}" href="${item.href}" ${navActive(item) ? 'aria-current="page"' : ""}>${item.label}</a>`).join("")}
+    </nav>
+    <button class="nf-browse" data-nf-nav-toggle type="button" aria-expanded="false" aria-controls="nf-mobile-panel">
+      Navegar <i class="fa-solid fa-caret-down"></i>
+    </button>
+    <div class="nf-nav-right">
+      <form class="topbar-search nf-search" action="/catalogo" method="get" role="search">
+        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+        <input type="search" name="q" placeholder="Títulos, pessoas, gêneros" autocomplete="off" aria-label="Buscar no catálogo">
+        <span class="search-hint" aria-hidden="true">/</span>
+      </form>
+      <button class="nf-icon mobile-search-toggle" data-mobile-search type="button" aria-label="Abrir busca" aria-expanded="false"><i class="fa-solid fa-magnifying-glass"></i></button>
+      <a class="nf-icon nf-bell" href="/amigos" aria-label="Amigos e pedidos" title="Amigos">
         <i class="fa-regular fa-bell"></i>${requestCount ? '<span class="dot-badge"></span>' : ""}
       </a>
-      <div class="topbar-menu">
-        <button class="avatar-btn" data-profile-toggle type="button" aria-label="Abrir menu do perfil" aria-expanded="false">${avatar(user, "sm")}</button>
+      <div class="topbar-menu nf-profile">
+        <button class="avatar-btn" data-profile-toggle type="button" aria-label="Abrir menu do perfil" aria-expanded="false">
+          ${avatar(user, "sm")}<i class="fa-solid fa-caret-down" aria-hidden="true"></i>
+        </button>
         <div class="profile-menu" id="profile-menu">
           <div class="profile-menu-head"><strong>${escapeHTML(user.name)}</strong><span>${escapeHTML(user.authed ? user.email : "Não conectado")}</span></div>
           ${user.authed
             ? `<a href="/perfil"><i class="fa-solid fa-user"></i>Meu perfil</a>
                <a href="/perfil#minha-lista"><i class="fa-solid fa-bookmark"></i>Minha lista</a>
                <a href="/amigos"><i class="fa-solid fa-user-group"></i>Amigos</a>
+               <a href="/party"><i class="fa-solid fa-tower-broadcast"></i>w00 Party</a>
                <div class="sep"></div>
                <button data-logout type="button"><i class="fa-solid fa-right-from-bracket"></i>Sair</button>`
             : `<button data-auth-open type="button"><i class="fa-solid fa-right-to-bracket"></i>Entrar</button>`}
         </div>
       </div>
+    </div>
+    <div class="nf-mobile-panel" id="nf-mobile-panel">
+      ${CONFIG.nav.map((item) => `<a class="${page === item.page ? "active" : ""}" href="${item.href}">${escapeHTML(item.label)}</a>`).join("")}
     </div>`;
 
   const search = qs(".topbar-search input", topbar);
@@ -187,25 +191,6 @@ export function renderShell() {
     search.value = new URLSearchParams(location.search).get("q") || "";
   }
   document.body.classList.remove("mobile-search-open");
-
-  // Mobile bottom navigation: app-like access to the four primary routes.
-  // Created once so route changes only update the active state.
-  let mobileNav = qs("#mobile-nav");
-  if (!mobileNav) {
-    mobileNav = document.createElement("nav");
-    mobileNav.id = "mobile-nav";
-    mobileNav.className = "mobile-nav";
-    mobileNav.setAttribute("aria-label", "Navegação móvel");
-    document.body.appendChild(mobileNav);
-  }
-  const mobileActivePage = page === "detalhes" ? "catalogo" : page;
-  mobileNav.innerHTML = CONFIG.mobileNav.map((item) => {
-    const active = mobileActivePage === item.page;
-    const dot = item.page === "pkparty" && inviteCount ? '<span class="mobile-nav-dot"></span>' : "";
-    return `<a class="mobile-nav-link ${active ? "active" : ""}" href="${item.href}" ${active ? 'aria-current="page"' : ""}>
-      <i class="fa-solid ${item.icon}"></i><span>${escapeHTML(item.label)}</span>${dot}
-    </a>`;
-  }).join("");
 
   syncSidebarBackdrop();
 }
@@ -273,14 +258,14 @@ export function closeModal() {
 }
 
 /* Cards and rows */
-export function posterImage(item) {
-  if (!item?.poster) return "";
-  // Cards are ~172px wide (2x DPR ≈ 344px), so w342 is enough. Using the
-  // w500 original wasted bandwidth/memory and made fast scrolling heavier.
-  const src = String(item.poster)
-    .replace("/t/p/w500/", "/t/p/w342/")
-    .replace("/t/p/w780/", "/t/p/w342/")
-    .replace("/t/p/original/", "/t/p/w342/");
+export function posterImage(item, variant = "poster") {
+  const source = variant === "backdrop" ? (item?.backdrop || item?.poster) : item?.poster;
+  if (!source) return "";
+  // Cards de linha usam o backdrop em 16:9, como o catálogo do Netflix.
+  // Grids, Top 10 e listas continuam com o pôster 2:3.
+  const width = variant === "backdrop" ? "w780" : "w342";
+  const src = String(source)
+    .replace(/\/t\/p\/(w\d+|original)\//, `/t/p/${width}/`);
   return `<img class="poster-img" src="${escapeHTML(src)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">`;
 }
 
@@ -296,17 +281,20 @@ function cardMeta(item) {
 export function posterCard(item, options = {}) {
   if (!item) return "";
   const progress = options.progress ?? 0;
+  const variant = options.variant || "poster";
+  const art = variant === "backdrop" ? (item.backdrop || item.poster) : item.poster;
   const titleEsc = item.titleEsc ?? escapeHTML(item.title);
-  return `<article class="title-card" data-open-details="${escapeHTML(item.id)}" tabindex="0" aria-label="${titleEsc}">
+  return `<article class="title-card ${variant === "backdrop" ? "is-landscape" : ""}" data-open-details="${escapeHTML(item.id)}" tabindex="0" aria-label="${titleEsc}">
     <div class="poster-wrap">
-      <div class="poster ${item.poster ? "has-image" : ""}" style="--c1:${item.colors?.[0] || "#1c0f0a"};--c2:${item.colors?.[1] || "#b34724"}">
-        ${posterImage(item)}
+      <div class="poster ${art ? "has-image" : ""}" style="--c1:${item.colors?.[0] || "#1c0f0a"};--c2:${item.colors?.[1] || "#b34724"}">
+        ${posterImage(item, variant)}
         <div class="poster-ring"></div>
         <span class="poster-title ${item.title.length > 18 ? "small" : ""}">${titleEsc}</span>
       </div>
       <div class="poster-overlay">
         <button class="card-play" data-play="${escapeHTML(item.id)}" type="button" aria-label="Assistir ${titleEsc}"><i class="fa-solid fa-play"></i></button>
         <div class="card-quick">
+          <button data-watchlist="${escapeHTML(item.id)}" type="button" title="Minha lista" aria-label="Adicionar ${titleEsc} à minha lista"><i class="fa-solid fa-plus"></i></button>
           <button data-open-details="${escapeHTML(item.id)}" type="button" title="Mais informações" aria-label="Mais informações"><i class="fa-solid fa-circle-info"></i></button>
         </div>
       </div>
@@ -349,7 +337,7 @@ function injectCards(row, items, options) {
     slice.forEach((item) => {
       const wrap = document.createElement("div");
       const opts = options.progressMap
-        ? { progress: options.progressMap[item.id] || 0, remove: options.remove }
+        ? { ...options, progress: options.progressMap[item.id] || 0 }
         : options;
       wrap.innerHTML = posterCard(item, opts);
       while (wrap.firstChild) frag.appendChild(wrap.firstChild);
@@ -370,6 +358,7 @@ export function mediaRow(title, items, options = {}) {
   if (!items.length) return "";
   const rowId = options.id || `row-${Math.random().toString(36).slice(2)}`;
   const progressMap = options.progressMap || {};
+  const variant = options.variant || "backdrop";
   // Never dump a huge array into the DOM. The original site requests ~20
   // titles per row; "Ver tudo" leads to the full catalog.  This is what
   // prevents the "Séries em destaque" row (1.5k items) from freezing mobile.
@@ -378,15 +367,15 @@ export function mediaRow(title, items, options = {}) {
   const EAGER = Math.min(12, pool.length); // cards rendered immediately
   const eager = pool.slice(0, EAGER);
   const lazy = pool.slice(EAGER);
-  const html = `<section class="page-section ${options.tight ? "tight" : ""}">
+  const html = `<section class="page-section nf-row ${options.tight ? "tight" : ""}">
     <div class="section-head">
-      <div>${options.kicker ? `<div class="section-kicker">${options.kicker}</div>` : ""}<h2>${title}</h2></div>
-      <a class="section-link" href="${options.href || "/catalogo"}">Ver tudo <i class="fa-solid fa-arrow-right"></i></a>
+      <h2>${title}</h2>
+      <a class="section-link" href="${options.href || "/catalogo"}">Explorar tudo <i class="fa-solid fa-chevron-right"></i></a>
     </div>
     <div class="media-row-wrap">
       <button class="row-arrow left" data-row-scroll="left" data-target="${rowId}" type="button" aria-label="Rolar para a esquerda"><i class="fa-solid fa-chevron-left"></i></button>
       <div class="media-row" id="${rowId}">
-        ${eager.map((item) => posterCard(item, { progress: progressMap[item.id] || 0, remove: options.remove })).join("")}
+        ${eager.map((item) => posterCard(item, { variant, progress: progressMap[item.id] || 0, remove: options.remove })).join("")}
       </div>
       <button class="row-arrow right" data-row-scroll="right" data-target="${rowId}" type="button" aria-label="Rolar para a direita"><i class="fa-solid fa-chevron-right"></i></button>
     </div>
@@ -398,7 +387,7 @@ export function mediaRow(title, items, options = {}) {
       const rowEl = document.getElementById(rowId);
       if (!rowEl) return;
       rowEl.__lazyItems = lazy;
-      rowEl.__rowOptions = { progressMap, remove: options.remove };
+      rowEl.__rowOptions = { variant, progressMap, remove: options.remove };
       _rowObserver.observe(rowEl);
     });
   }
@@ -406,17 +395,17 @@ export function mediaRow(title, items, options = {}) {
 }
 
 export function top10Row(items) {
-  return `<section class="page-section">
+  return `<section class="page-section nf-row nf-top10-row">
     <div class="section-head">
-      <div><div class="section-kicker"><i class="fa-solid fa-ranking-star"></i>Mais assistidos</div><h2>Top 10 da semana</h2></div>
-      <a class="section-link" href="/catalogo?ordenar=popular">Ver catálogo <i class="fa-solid fa-arrow-right"></i></a>
+      <h2><span class="top10-badge" aria-hidden="true">TOP<br>10</span> Hoje no w00</h2>
+      <a class="section-link" href="/catalogo?ordenar=popular">Explorar tudo <i class="fa-solid fa-chevron-right"></i></a>
     </div>
     <div class="media-row-wrap">
       <button class="row-arrow left" data-row-scroll="left" data-target="top10-row" type="button" aria-label="Rolar para a esquerda"><i class="fa-solid fa-chevron-left"></i></button>
       <div class="top10-row" id="top10-row">
         ${items.map((item, index) => `<div class="top10-card">
           <span class="top10-num" aria-hidden="true">${index + 1}</span>
-          ${posterCard(item)}
+          ${posterCard(item, { variant: "poster" })}
         </div>`).join("")}
       </div>
       <button class="row-arrow right" data-row-scroll="right" data-target="top10-row" type="button" aria-label="Rolar para a direita"><i class="fa-solid fa-chevron-right"></i></button>
@@ -427,7 +416,7 @@ export function top10Row(items) {
 export function genreStrip(genres) {
   return `<div class="genre-strip">${genres.map((genre) => {
     const meta = getGenreMeta(genre);
-    return `<a class="genre-pill" href="/catalogo?genero=${encodeURIComponent(genre)}"><i class="fa-solid ${meta.icon}"></i>${escapeHTML(genre)}</a>`;
+    return `<a class="genre-pill" style="--g1:${meta.colors[0]};--g2:${meta.colors[1]}" href="/catalogo?genero=${encodeURIComponent(genre)}"><span>${escapeHTML(genre)}</span><i class="fa-solid ${meta.icon}" aria-hidden="true"></i></a>`;
   }).join("")}</div>`;
 }
 
@@ -932,7 +921,6 @@ function bindCardMotion() {
 export function bindGlobalEvents() {
   if (window.__pkGlobalBound) return;
   window.__pkGlobalBound = true;
-  bindCardMotion();
 
   document.addEventListener("click", (event) => {
     const target = event.target;
@@ -958,8 +946,30 @@ export function bindGlobalEvents() {
     if (mobileSearch) {
       const open = document.body.classList.toggle("mobile-search-open");
       mobileSearch.setAttribute("aria-expanded", String(open));
+      qs("#nf-mobile-panel")?.classList.remove("open");
+      qs("[data-nf-nav-toggle]")?.setAttribute("aria-expanded", "false");
       if (open) setTimeout(() => qs(".topbar-search input")?.focus({ preventScroll: true }), 40);
       return;
+    }
+
+    const navToggle = target.closest("[data-nf-nav-toggle]");
+    if (navToggle) {
+      const panel = qs("#nf-mobile-panel");
+      const open = panel?.classList.toggle("open");
+      navToggle.setAttribute("aria-expanded", String(Boolean(open)));
+      const icon = navToggle.querySelector("i");
+      icon?.classList.toggle("fa-caret-up", Boolean(open));
+      icon?.classList.toggle("fa-caret-down", !open);
+      return;
+    }
+    if (!target.closest(".nf-mobile-panel") && !target.closest("[data-nf-nav-toggle]")) {
+      qs("#nf-mobile-panel")?.classList.remove("open");
+      qs("[data-nf-nav-toggle]")?.setAttribute("aria-expanded", "false");
+    }
+
+    const searchForm = target.closest(".nf-search");
+    if (searchForm && !target.closest("input")) {
+      searchForm.querySelector("input")?.focus({ preventScroll: true });
     }
 
     const profileToggle = target.closest("[data-profile-toggle]");
@@ -1072,6 +1082,8 @@ export function bindGlobalEvents() {
       qs("#profile-menu")?.classList.remove("open");
       document.body.classList.remove("mobile-search-open");
       qs("[data-mobile-search]")?.setAttribute("aria-expanded", "false");
+      qs("#nf-mobile-panel")?.classList.remove("open");
+      qs("[data-nf-nav-toggle]")?.setAttribute("aria-expanded", "false");
       sidebarClose();
     }
     const typing = event.target.matches?.("input, textarea, select") || event.target.isContentEditable;

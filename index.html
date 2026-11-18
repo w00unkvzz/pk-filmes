@@ -10,16 +10,16 @@
   <title>w00filmes — cinema sem limites</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <link rel="preload" href="catalog.json" as="fetch" crossorigin="anonymous">
-  <link rel="stylesheet" href="css/base.css?v=25">
-  <link rel="stylesheet" href="css/layout.css?v=25">
-  <link rel="stylesheet" href="css/components.css?v=25">
-  <link rel="stylesheet" href="css/pages.css?v=25">
-  <link rel="stylesheet" href="css/theme.css?v=25">
-  <link rel="stylesheet" href="css/detalhes.css?v=25">
-  <link rel="stylesheet" href="css/premium.css?v=25">
+  <link rel="stylesheet" href="css/base.css?v=26">
+  <link rel="stylesheet" href="css/layout.css?v=26">
+  <link rel="stylesheet" href="css/components.css?v=26">
+  <link rel="stylesheet" href="css/pages.css?v=26">
+  <link rel="stylesheet" href="css/theme.css?v=26">
+  <link rel="stylesheet" href="css/detalhes.css?v=26">
+  <link rel="stylesheet" href="css/premium.css?v=26">
 </head>
 <body data-page="home">
   <div class="app" id="app">
@@ -29,12 +29,12 @@
       <main class="page-content" id="page-content" tabindex="-1">
         <section class="page-section" aria-busy="true" style="margin:22px clamp(18px,3.2vw,46px) 0">
           <div class="section-head"><div><h2>&nbsp;</h2></div></div>
-          <div class="media-row" style="display:flex;gap:18px;overflow:hidden">
-            <div class="skeleton" style="flex:0 0 172px;aspect-ratio:2/3;border-radius:12px;background:currentColor;opacity:.12"></div>
-            <div class="skeleton" style="flex:0 0 172px;aspect-ratio:2/3;border-radius:12px;background:currentColor;opacity:.12"></div>
-            <div class="skeleton" style="flex:0 0 172px;aspect-ratio:2/3;border-radius:12px;background:currentColor;opacity:.12"></div>
-            <div class="skeleton" style="flex:0 0 172px;aspect-ratio:2/3;border-radius:12px;background:currentColor;opacity:.12"></div>
-            <div class="skeleton" style="flex:0 0 172px;aspect-ratio:2/3;border-radius:12px;background:currentColor;opacity:.12"></div>
+          <div class="media-row" style="display:flex;gap:6px;overflow:hidden">
+            <div class="skeleton" style="flex:0 0 240px;aspect-ratio:16/9;border-radius:4px;background:currentColor;opacity:.12"></div>
+            <div class="skeleton" style="flex:0 0 240px;aspect-ratio:16/9;border-radius:4px;background:currentColor;opacity:.12"></div>
+            <div class="skeleton" style="flex:0 0 240px;aspect-ratio:16/9;border-radius:4px;background:currentColor;opacity:.12"></div>
+            <div class="skeleton" style="flex:0 0 240px;aspect-ratio:16/9;border-radius:4px;background:currentColor;opacity:.12"></div>
+            <div class="skeleton" style="flex:0 0 240px;aspect-ratio:16/9;border-radius:4px;background:currentColor;opacity:.12"></div>
           </div>
         </section>
       </main>
@@ -50,7 +50,7 @@
     // visitou o site pode receber o social.js antigo no primeiro carregamento
     // após o deploy e ver "sala privada" mesmo com o link novo.
     (async () => {
-      const build = "w00-v36";
+      const build = "w00-v37";
       const key = "w00filmes.build";
       try {
         if (localStorage.getItem(key) === build) return;
