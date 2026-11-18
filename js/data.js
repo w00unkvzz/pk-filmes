@@ -103,7 +103,7 @@ function normalizeCatalogItem(raw, index) {
   };
 }
 
-const CACHE_KEY = "w00filmes.catalog_cache_v4";
+const CACHE_KEY = "w00filmes.catalog_cache_v5";
 const CACHE_TTL = 60 * 60 * 1000; // 1 hour
 
 function readCache() {
