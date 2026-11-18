@@ -159,9 +159,11 @@ export function renderShell() {
     <form class="topbar-search" action="/catalogo" method="get" role="search">
       <i class="fa-solid fa-magnifying-glass"></i>
       <input type="search" name="q" placeholder="Buscar filmes, séries ou gêneros..." autocomplete="off" aria-label="Buscar no catálogo">
+      <span class="search-hint" aria-hidden="true">/</span>
     </form>
     <div class="topbar-spacer"></div>
     <div class="topbar-actions">
+      <button class="topbar-icon mobile-search-toggle" data-mobile-search type="button" aria-label="Abrir busca" aria-expanded="false"><i class="fa-solid fa-magnifying-glass"></i></button>
       <a class="topbar-icon" href="/amigos" aria-label="Amigos e pedidos" title="Amigos">
         <i class="fa-regular fa-bell"></i>${requestCount ? '<span class="dot-badge"></span>' : ""}
       </a>
@@ -184,6 +186,27 @@ export function renderShell() {
   if (search && page === "catalogo") {
     search.value = new URLSearchParams(location.search).get("q") || "";
   }
+  document.body.classList.remove("mobile-search-open");
+
+  // Mobile bottom navigation: app-like access to the four primary routes.
+  // Created once so route changes only update the active state.
+  let mobileNav = qs("#mobile-nav");
+  if (!mobileNav) {
+    mobileNav = document.createElement("nav");
+    mobileNav.id = "mobile-nav";
+    mobileNav.className = "mobile-nav";
+    mobileNav.setAttribute("aria-label", "Navegação móvel");
+    document.body.appendChild(mobileNav);
+  }
+  const mobileActivePage = page === "detalhes" ? "catalogo" : page;
+  mobileNav.innerHTML = CONFIG.mobileNav.map((item) => {
+    const active = mobileActivePage === item.page;
+    const dot = item.page === "pkparty" && inviteCount ? '<span class="mobile-nav-dot"></span>' : "";
+    return `<a class="mobile-nav-link ${active ? "active" : ""}" href="${item.href}" ${active ? 'aria-current="page"' : ""}>
+      <i class="fa-solid ${item.icon}"></i><span>${escapeHTML(item.label)}</span>${dot}
+    </a>`;
+  }).join("");
+
   syncSidebarBackdrop();
 }
 
@@ -272,7 +295,7 @@ export function posterCard(item, options = {}) {
   const titleEsc = item.titleEsc ?? escapeHTML(item.title);
   return `<article class="title-card" data-open-details="${escapeHTML(item.id)}" tabindex="0" aria-label="${titleEsc}">
     <div class="poster-wrap">
-      <div class="poster ${item.poster ? "has-image" : ""}" style="--c1:${item.colors?.[0] || "#1e1b4b"};--c2:${item.colors?.[1] || "#6a5acd"}">
+      <div class="poster ${item.poster ? "has-image" : ""}" style="--c1:${item.colors?.[0] || "#1c0f0a"};--c2:${item.colors?.[1] || "#b34724"}">
         ${posterImage(item)}
         <div class="poster-ring"></div>
         <span class="poster-title ${item.title.length > 18 ? "small" : ""}">${titleEsc}</span>
@@ -381,7 +404,7 @@ export function mediaRow(title, items, options = {}) {
 export function top10Row(items) {
   return `<section class="page-section">
     <div class="section-head">
-      <h2>Top 10 da semana</h2>
+      <div><div class="section-kicker"><i class="fa-solid fa-ranking-star"></i>Mais assistidos</div><h2>Top 10 da semana</h2></div>
       <a class="section-link" href="/catalogo?ordenar=popular">Ver catálogo <i class="fa-solid fa-arrow-right"></i></a>
     </div>
     <div class="media-row-wrap">
@@ -870,6 +893,11 @@ export function bindGlobalEvents() {
 
   document.addEventListener("click", (event) => {
     const target = event.target;
+    if (document.body.classList.contains("mobile-search-open") &&
+        !target.closest(".topbar-search") && !target.closest("[data-mobile-search]")) {
+      document.body.classList.remove("mobile-search-open");
+      qs("[data-mobile-search]")?.setAttribute("aria-expanded", "false");
+    }
     const close = target.closest("[data-close-modal]");
     if (close) { event.preventDefault(); closeModal(); return; }
 
@@ -880,6 +908,14 @@ export function bindGlobalEvents() {
     }
     if (target.closest("[data-sidebar-close]") || target.id === "sidebar-backdrop") {
       sidebarClose();
+      return;
+    }
+
+    const mobileSearch = target.closest("[data-mobile-search]");
+    if (mobileSearch) {
+      const open = document.body.classList.toggle("mobile-search-open");
+      mobileSearch.setAttribute("aria-expanded", String(open));
+      if (open) setTimeout(() => qs(".topbar-search input")?.focus({ preventScroll: true }), 40);
       return;
     }
 
@@ -991,7 +1027,17 @@ export function bindGlobalEvents() {
     if (event.key === "Escape") {
       closeModal();
       qs("#profile-menu")?.classList.remove("open");
+      document.body.classList.remove("mobile-search-open");
+      qs("[data-mobile-search]")?.setAttribute("aria-expanded", "false");
       sidebarClose();
+    }
+    const typing = event.target.matches?.("input, textarea, select") || event.target.isContentEditable;
+    if (event.key === "/" && !typing && !event.metaKey && !event.ctrlKey && !event.altKey) {
+      const input = qs(".topbar-search input");
+      if (!input) return;
+      event.preventDefault();
+      if (window.innerWidth <= 760) document.body.classList.add("mobile-search-open");
+      input.focus({ preventScroll: true });
     }
     if (event.key === "Enter" && event.target.matches("[data-open-details]")) {
       event.preventDefault();

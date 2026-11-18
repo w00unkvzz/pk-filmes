@@ -153,7 +153,7 @@ export function renderDetalhes() {
   document.title = `${title} — w00filmes`;
 
   content.innerHTML = `
-    <section class="details-page" id="details-page" style="--c1:${show.colors?.[0] || "#172554"};--c2:${show.colors?.[1] || "#6366f1"}">
+    <section class="details-page" id="details-page" style="--c1:${show.colors?.[0] || "#101012"};--c2:${show.colors?.[1] || "#ff5a36"}">
       <div class="details-bg" id="details-bg" aria-hidden="true"${initialBackdrop ? ` style="background-image:url(${escapeHTML(initialBackdrop)})"` : ""}></div>
       <div class="details-veil" aria-hidden="true"></div>
 
@@ -161,7 +161,7 @@ export function renderDetalhes() {
         <a class="details-back" href="/"><i class="fa-solid fa-arrow-left"></i><span>Voltar</span></a>
 
         <header class="details-hero">
-          <div class="brand-label"><span class="brand-logo-s">W00</span><span>original</span></div>
+          <div class="brand-label"><span class="brand-logo-s">W00</span><span>apresenta</span></div>
           <div class="details-title-wrap" id="details-title-wrap">
             <h1 class="details-title" id="details-title">${escapeHTML(title)}</h1>
           </div>

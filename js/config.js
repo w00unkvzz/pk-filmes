@@ -22,17 +22,17 @@ export const CONFIG = {
   genres: [
     { name: "Ação", icon: "fa-fire", colors: ["#450a0a", "#dc2626"] },
     { name: "Aventura", icon: "fa-compass", colors: ["#052e16", "#16a34a"] },
-    { name: "Animação", icon: "fa-wand-magic-sparkles", colors: ["#3b0764", "#a855f7"] },
+    { name: "Animação", icon: "fa-wand-magic-sparkles", colors: ["#3b1d0b", "#e8a13a"] },
     { name: "Comédia", icon: "fa-face-laugh", colors: ["#422006", "#f59e0b"] },
-    { name: "Crime", icon: "fa-handcuffs", colors: ["#111827", "#475569"] },
-    { name: "Drama", icon: "fa-masks-theater", colors: ["#1e1b4b", "#6366f1"] },
-    { name: "Família", icon: "fa-people-roof", colors: ["#0c4a6e", "#0ea5e9"] },
-    { name: "Fantasia", icon: "fa-dragon", colors: ["#2e1065", "#8b5cf6"] },
-    { name: "Ficção", icon: "fa-rocket", colors: ["#020617", "#14b8a6"] },
-    { name: "Mistério", icon: "fa-magnifying-glass", colors: ["#0f172a", "#64748b"] },
-    { name: "Romance", icon: "fa-heart", colors: ["#4c1d95", "#a78bfa"] },
-    { name: "Suspense", icon: "fa-eye", colors: ["#111827", "#7c3aed"] },
+    { name: "Crime", icon: "fa-handcuffs", colors: ["#101012", "#6f6c66"] },
+    { name: "Drama", icon: "fa-masks-theater", colors: ["#1c0f0a", "#ff5a36"] },
+    { name: "Família", icon: "fa-people-roof", colors: ["#123a3a", "#7fd6c2"] },
+    { name: "Fantasia", icon: "fa-dragon", colors: ["#2a0f1c", "#d95c8a"] },
+    { name: "Ficção", icon: "fa-rocket", colors: ["#0a0a0b", "#5fc4b8"] },
+    { name: "Mistério", icon: "fa-magnifying-glass", colors: ["#101012", "#8a857c"] },
+    { name: "Romance", icon: "fa-heart", colors: ["#3a0f1a", "#ff8a8a"] },
+    { name: "Suspense", icon: "fa-eye", colors: ["#101012", "#c73516"] },
     { name: "Terror", icon: "fa-ghost", colors: ["#0a0a0a", "#991b1b"] },
-    { name: "Tecnologia", icon: "fa-microchip", colors: ["#022c22", "#10b981"] }
+    { name: "Tecnologia", icon: "fa-microchip", colors: ["#0b2a24", "#6fd6a8"] }
   ]
 };

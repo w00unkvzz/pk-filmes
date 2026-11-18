@@ -6,7 +6,7 @@
   inset: 0 auto 0 0;
   z-index: 1100;
   width: var(--sidebar-w);
-  background: rgba(8, 8, 12, 0.94);
+  background: rgba(5, 5, 5, 0.94);
   border-right: 1px solid var(--line);
   backdrop-filter: blur(20px);
   display: flex;
@@ -37,16 +37,16 @@
   display: grid;
   place-items: center;
   flex: 0 0 38px;
-  background: linear-gradient(140deg, #fff, #d8d4ff);
+  background: linear-gradient(140deg, #fff, #ffe3d8);
   color: #0b0b10;
-  font-family: "Space Grotesk", sans-serif;
+  font-family: var(--font-display);
   font-weight: 900;
   font-size: 15px;
   letter-spacing: -0.06em;
   box-shadow: 0 8px 22px rgba(0,0,0,.35);
 }
 .brand-text { display: flex; flex-direction: column; opacity: 0; transform: translateX(-6px); transition: all 0.22s var(--ease); }
-.brand-text strong { font-family: "Space Grotesk", sans-serif; font-size: 16px; letter-spacing: 0.06em; }
+.brand-text strong { font-family: var(--font-display); font-size: 16px; letter-spacing: 0.06em; }
 .brand-text span { color: var(--muted-2); font-size: 9px; text-transform: uppercase; letter-spacing: 0.2em; }
 
 .sidebar-nav { display: flex; flex-direction: column; gap: 3px; padding: 0 10px; overflow-y: auto; overflow-x: hidden; min-height: 0; }
@@ -60,7 +60,7 @@
   height: 45px;
   padding: 0 14px;
   border-radius: 10px;
-  color: #a9a9ba;
+  color: #b0aca4;
   white-space: nowrap;
   transition: background .18s var(--ease), color .18s var(--ease);
 }
@@ -68,7 +68,7 @@
 .sidebar-link:hover { background: rgba(255,255,255,.055); color: #fff; }
 .sidebar-link.active {
   color: #fff;
-  background: linear-gradient(90deg, rgba(99, 102, 241,.24), rgba(99, 102, 241,.06));
+  background: linear-gradient(90deg, rgba(255, 90, 54,.24), rgba(255, 90, 54,.06));
 }
 .sidebar-link.active::before {
   content: "";
@@ -79,7 +79,7 @@
   width: 3px;
   border-radius: 0 3px 3px 0;
   background: var(--accent-bright);
-  box-shadow: 0 0 14px rgba(139,124,246,.8);
+  box-shadow: 0 0 14px rgba(255,138,92,.8);
 }
 .sidebar-label { opacity: 0; transform: translateX(-5px); transition: all .2s var(--ease); font-size: 13px; font-weight: 600; }
 .sidebar-badge { margin-left: auto; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 20px; display: grid; place-items: center; background: var(--pink); color: #fff; font-size: 9px; font-weight: 800; opacity: 0; transition: opacity .2s; }
@@ -107,7 +107,7 @@
   align-items: center;
   gap: 16px;
   padding: 0 clamp(18px, 3.2vw, 46px);
-  background: linear-gradient(to bottom, rgba(5, 6, 15,.94), rgba(5, 6, 15,.72), transparent);
+  background: linear-gradient(to bottom, rgba(0, 0, 0,.94), rgba(0, 0, 0,.72), transparent);
   backdrop-filter: blur(16px);
 }
 .topbar-search { position: relative; flex: 1 1 440px; max-width: 520px; }
@@ -125,10 +125,10 @@
   transition: border-color .18s, background .18s, box-shadow .18s;
 }
 .topbar-search input::placeholder { color: var(--muted-2); }
-.topbar-search input:focus { border-color: rgba(139,124,246,.5); background: rgba(255,255,255,.08); box-shadow: 0 0 0 3px rgba(99, 102, 241,.12); }
+.topbar-search input:focus { border-color: rgba(255,138,92,.5); background: rgba(255,255,255,.08); box-shadow: 0 0 0 3px rgba(255, 90, 54,.12); }
 .topbar-spacer { flex: 1; }
 .topbar-actions { display: flex; align-items: center; gap: 9px; flex-shrink: 0; }
-.topbar-icon { position: relative; width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; color: #c3c3d2; background: rgba(255,255,255,.045); border: 1px solid transparent; transition: all .18s; }
+.topbar-icon { position: relative; width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; color: #b8b4ac; background: rgba(255,255,255,.045); border: 1px solid transparent; transition: all .18s; }
 .topbar-icon:hover { color: #fff; background: rgba(255,255,255,.09); border-color: var(--line); }
 .topbar-icon .dot-badge { position: absolute; top: 6px; right: 6px; width: 7px; height: 7px; border-radius: 50%; background: var(--pink); box-shadow: 0 0 0 2px #08080c; }
 .avatar { border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 12px; background: linear-gradient(135deg, var(--accent), var(--pink)); overflow: hidden; flex-shrink: 0; }
@@ -156,7 +156,7 @@
 .profile-menu-head { padding: 9px 10px 11px; border-bottom: 1px solid var(--line); margin-bottom: 5px; }
 .profile-menu-head strong { display: block; font-size: 12px; }
 .profile-menu-head span { color: var(--muted-2); font-size: 10px; }
-.profile-menu a, .profile-menu button { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 36px; padding: 0 10px; border-radius: 8px; color: #c6c6d4; font-size: 12px; text-align: left; }
+.profile-menu a, .profile-menu button { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 36px; padding: 0 10px; border-radius: 8px; color: #c9c5bd; font-size: 12px; text-align: left; }
 .profile-menu a:hover, .profile-menu button:hover { color: #fff; background: rgba(255,255,255,.065); }
 .profile-menu i { width: 15px; text-align: center; color: var(--muted-2); font-size: 12px; }
 .profile-menu .sep { height: 1px; background: var(--line); margin: 5px 0; }
@@ -189,14 +189,14 @@
   .sidebar .sidebar-label, .sidebar .brand-text, .sidebar .sidebar-user div, .sidebar .sidebar-badge { opacity: 1; transform: none; }
   .sidebar .nav-section-label { opacity: 1; }
   .page-shell { margin-left: 0; }
-  .topbar { padding: 0 14px; gap: 10px; background: rgba(5, 6, 15,.92); border-bottom: 1px solid rgba(255,255,255,.05); }
+  .topbar { padding: 0 14px; gap: 10px; background: rgba(0, 0, 0,.92); border-bottom: 1px solid rgba(255,255,255,.05); }
   .topbar-search { display: none; }
   .topbar-spacer { display: none; }
   .topbar-actions { margin-left: auto; }
   .mobile-menu-btn { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 10px; color: #fff; background: rgba(255,255,255,.05); }
   .mobile-top-logo { display: flex; align-items: center; gap: 9px; }
   .mobile-top-logo .brand-mark { width: 30px; height: 30px; border-radius: 8px; font-size: 11px; flex-basis: 30px; }
-  .mobile-top-logo strong { font-family: "Space Grotesk", sans-serif; font-size: 13px; letter-spacing: .08em; }
+  .mobile-top-logo strong { font-family: var(--font-display); font-size: 13px; letter-spacing: .08em; }
   .page-content { padding-bottom: 24px; }
 }
 

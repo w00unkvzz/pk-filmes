@@ -52,14 +52,44 @@ function scheduleAuthRender() {
   }, 80);
 }
 
+let revealObserver = null;
+
+function setupReveals() {
+  revealObserver?.disconnect();
+  revealObserver = null;
+  if (!("IntersectionObserver" in window)) return;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const targets = [...document.querySelectorAll(
+    "#page-content .page-section, #page-content .catalog-head, #page-content .catalog-controls, " +
+    "#page-content .profile-cover, #page-content .friends-hero, #page-content .party-hero, " +
+    "#page-content .cartaz-hero, #page-content .details-hero, #page-content .editorial-banner"
+  )].filter((el) => !el.closest(".hero") && !el.classList.contains("revealed"));
+  if (!targets.length) return;
+  revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add("revealed");
+      revealObserver?.unobserve(entry.target);
+    });
+  }, { rootMargin: "0px 0px -7% 0px", threshold: 0.04 });
+  targets.forEach((el, index) => {
+    el.classList.add("will-reveal");
+    el.style.setProperty("--reveal-delay", `${Math.min(index, 7) * 45}ms`);
+    revealObserver.observe(el);
+  });
+}
+
 async function renderCurrent() {
   const token = ++renderToken;
   destroyHome();
   resetRowObservers();
+  revealObserver?.disconnect();
+  revealObserver = null;
   const render = routes[currentPage] || routes.home;
   await render();
   if (token !== renderToken) return;
   setupRowArrows();
+  setupReveals();
 }
 
 async function applyRoute(route) {
@@ -103,6 +133,7 @@ function bindRouter() {
     const form = event.target.closest?.(".topbar-search");
     if (!form) return;
     event.preventDefault();
+    document.body.classList.remove("mobile-search-open");
     const value = String(new FormData(form).get("q") || "").trim();
     navigate(searchPath(value));
   });

@@ -6,18 +6,18 @@ import { CONFIG } from "./config.js";
 const GENRE_COLORS = {
   Ação: ["#450a0a", "#dc2626"],
   Aventura: ["#052e16", "#16a34a"],
-  Animação: ["#3b0764", "#a855f7"],
+  Animação: ["#3b1d0b", "#e8a13a"],
   Comédia: ["#422006", "#f59e0b"],
-  Crime: ["#111827", "#475569"],
-  Drama: ["#1e1b4b", "#6366f1"],
-  Família: ["#0c4a6e", "#0ea5e9"],
-  Fantasia: ["#2e1065", "#8b5cf6"],
-  Ficção: ["#020617", "#14b8a6"],
-  Mistério: ["#0f172a", "#64748b"],
-  Romance: ["#4c1d95", "#a78bfa"],
-  Suspense: ["#111827", "#7c3aed"],
+  Crime: ["#101012", "#6f6c66"],
+  Drama: ["#1c0f0a", "#ff5a36"],
+  Família: ["#123a3a", "#7fd6c2"],
+  Fantasia: ["#2a0f1c", "#d95c8a"],
+  Ficção: ["#0a0a0b", "#5fc4b8"],
+  Mistério: ["#101012", "#8a857c"],
+  Romance: ["#3a0f1a", "#ff8a8a"],
+  Suspense: ["#101012", "#c73516"],
   Terror: ["#0a0a0a", "#991b1b"],
-  Tecnologia: ["#022c22", "#10b981"]
+  Tecnologia: ["#0b2a24", "#6fd6a8"]
 };
 
 function slugify(value = "") {
@@ -91,7 +91,7 @@ function normalizeCatalogItem(raw, index) {
     player,
     stream: player,
     trailer: String(raw.trailer || "").trim(),
-    colors: Array.isArray(raw.colors) && raw.colors.length >= 2 ? raw.colors : (GENRE_COLORS[genres[0]] || ["#1e1b4b", "#6a5acd"]),
+    colors: Array.isArray(raw.colors) && raw.colors.length >= 2 ? raw.colors : (GENRE_COLORS[genres[0]] || ["#1c0f0a", "#b34724"]),
     featured: Boolean(raw.destaque ?? raw.featured),
     trending: Boolean(raw.tendencia ?? raw.trending),
     top10: Boolean(raw.top10),
@@ -280,7 +280,7 @@ export const top10 = flaggedTop10.length >= 10 ? flaggedTop10.slice(0, 10) : [..
 export const newReleases = [...catalogTitles].sort((a, b) => (b.year || 0) - (a.year || 0) || byScore(a, b)).slice(0, 10);
 
 export function getGenreMeta(name) {
-  return CONFIG.genres.find((genre) => genre.name === name) || { name, icon: "fa-film", colors: ["#1e1b4b", "#6a5acd"] };
+  return CONFIG.genres.find((genre) => genre.name === name) || { name, icon: "fa-film", colors: ["#1c0f0a", "#b34724"] };
 }
 
 export function episodesFor(item) {

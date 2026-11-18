@@ -139,7 +139,7 @@ function timeAgo(timestamp) {
 
 function posterMarkup(item, className = "room-poster") {
   if (item?.poster) return `<div class="${className}"><img src="${escapeHTML(item.poster)}" alt="${escapeHTML(item.title)}" loading="lazy"></div>`;
-  const colors = item?.colors || ["#1e1b4b", "#6366f1"];
+  const colors = item?.colors || ["#1c0f0a", "#ff5a36"];
   return `<div class="${className}" style="--c1:${colors[0]};--c2:${colors[1]}"><span>${escapeHTML(item?.title || "w00")}</span></div>`;
 }
 
