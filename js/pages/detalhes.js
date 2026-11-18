@@ -1,70 +1,131 @@
-// Dedicated details page: full-bleed backdrop, centered hero, tabs, cast and episodes.
+// Página de detalhes no formato do preview modal da Netflix:
+// backdrop full-screen, logo, play/lista/curtir, metadados, elenco/gêneros,
+// episódios e títulos semelhantes. O play só existe aqui dentro.
 import { byId, getSeriesGroup, catalogTitles } from "../data.js";
-import { getRoute, detailsPath, playerPath } from "../router.js";
+import { getRoute, playerPath, navigate } from "../router.js";
 import * as store from "../store.js";
 import {
-  qs, qsa, escapeHTML, initials, formatDuration,
-  emptyState, toggleWatchlist, shareItem, posterCard
+  qs, escapeHTML, formatDuration, emptyState,
+  toggleWatchlist, shareItem, toast
 } from "../ui.js";
 import {
-  getTitleDetails, getSeasonDetails, getTrailer, getLogo, tmdbIdFromItem, imageUrl,
-  yearOf, runtimeOf, genresOf, ratingOf, synopsisOf, backdropOf, castOf
+  getTitleDetails, getSeasonDetails, getLogo, tmdbIdFromItem, imageUrl,
+  yearOf, runtimeOf, genresOf, synopsisOf, backdropOf, castOf
 } from "../tmdb.js";
 import { openWatchPartyModal } from "../watchparty.js";
 import { raveHref } from "../rave.js";
+import { openTrailerModal } from "../trailer.js";
 
 let seasonRequest = 0;
-let trailerRequest = 0;
 let detailsRequest = 0;
 
-const TAB_NAMES = new Set(["detalhes", "similares", "trailer"]);
+const LIKE_KEY = "w00filmes.likes";
 const CATEGORY_LABELS = new Set(["filmes", "séries", "series", "movie", "movies"]);
+const VIBE_MAP = {
+  Terror: "Sombrio",
+  Suspense: "Suspense no ar",
+  Drama: "Emocional",
+  Ação: "Adrenalina",
+  Aventura: "Aventura",
+  Comédia: "Leve",
+  Crime: "Tenso",
+  Mistério: "Mistério",
+  Romance: "Romântico",
+  Ficção: "Futurista",
+  Fantasia: "Imaginativo",
+  Animação: "Para a família",
+  Família: "Para a família",
+  Tecnologia: "Tecnologia"
+};
 
-function starsMarkup(rating) {
-  const value = Number(rating) || 0;
-  if (!value) {
-    return `<span class="stars empty" aria-label="Sem avaliação"><i class="fa-regular fa-star"></i><i class="fa-regular fa-star"></i><i class="fa-regular fa-star"></i><i class="fa-regular fa-star"></i><i class="fa-regular fa-star"></i><span>Sem avaliação</span></span>`;
+function readLikes() {
+  try {
+    const value = JSON.parse(localStorage.getItem(LIKE_KEY) || "[]");
+    return new Set(Array.isArray(value) ? value : []);
+  } catch {
+    return new Set();
   }
-  const outOfFive = value / 2;
-  const icons = [1, 2, 3, 4, 5].map((index) => {
-    if (outOfFive >= index) return '<i class="fa-solid fa-star"></i>';
-    if (outOfFive >= index - 0.5) return '<i class="fa-solid fa-star-half-stroke"></i>';
-    return '<i class="fa-regular fa-star"></i>';
-  }).join("");
-  return `<span class="stars" aria-label="${value.toFixed(1)} de 10">${icons}</span><strong class="stars-value">${value.toFixed(1)}</strong>`;
 }
 
-function mainGenre(genres) {
-  return (genres || []).find((genre) => !CATEGORY_LABELS.has(String(genre).toLowerCase())) || genres?.[0] || "";
+function writeLikes(set) {
+  try {
+    localStorage.setItem(LIKE_KEY, JSON.stringify([...set]));
+  } catch {
+    /* modo privado */
+  }
 }
 
-function metaMarkup({ year, runtime, genres, seasons, episodes }) {
+function isLiked(id) {
+  return readLikes().has(id);
+}
+
+function mainGenres(genres) {
+  return (genres || []).filter((genre) => !CATEGORY_LABELS.has(String(genre).toLowerCase()));
+}
+
+function ageBadge(item) {
+  const age = String(item?.age || "L").trim() || "L";
+  return `<span class="nf-age" aria-label="Classificação ${escapeHTML(age)}">${escapeHTML(age)}</span>`;
+}
+
+function ageWarning(item) {
+  const age = String(item?.age || "L").trim();
+  if (!age || age === "L" || age === "0") return "Livre para todos os públicos";
+  return `Conteúdo não recomendado para menores de ${escapeHTML(age)} anos`;
+}
+
+function metaMarkup({ year, runtime, seasons, type }) {
   const bits = [];
   if (year) bits.push(`<span>${escapeHTML(String(year))}</span>`);
-  if (runtime) bits.push(`<span>${escapeHTML(formatDuration(runtime))}</span>`);
-  if (seasons) bits.push(`<span>${seasons} temporada${seasons > 1 ? "s" : ""}</span>`);
-  if (episodes) bits.push(`<span>${episodes} episódio${episodes > 1 ? "s" : ""}</span>`);
-  const genre = mainGenre(genres);
-  if (genre) bits.push(`<span class="meta-tag">${escapeHTML(genre)}</span>`);
-  return bits.join('<span class="meta-sep" aria-hidden="true">·</span>');
+  if (type === "series" && seasons) {
+    bits.push(`<span>${seasons} temporada${seasons > 1 ? "s" : ""}</span>`);
+  } else if (runtime) {
+    bits.push(`<span>${escapeHTML(formatDuration(runtime))}</span>`);
+  }
+  bits.push('<span class="nf-hd">HD</span>');
+  bits.push('<i class="fa-solid fa-audio-description" title="Audiodescrição" aria-label="Audiodescrição"></i>');
+  bits.push('<i class="fa-solid fa-closed-captioning" title="Legendas" aria-label="Legendas"></i>');
+  return bits.join('<span class="nf-dot"></span>');
 }
 
-function castMarkup(cast) {
-  if (!cast.length) {
-    return `<p class="details-empty">Elenco não informado para este título.</p>`;
+function castNamesMarkup(cast) {
+  if (!cast.length) return `<span class="details-empty-inline">Elenco não informado.</span>`;
+  const visible = cast.slice(0, 4).map((person) => escapeHTML(person.name));
+  const extra = cast.slice(4).map((person) => escapeHTML(person.name));
+  return `<span>${visible.join(", ")}</span>${extra.length
+    ? `<span class="cast-extra" hidden>, ${extra.join(", ")}</span> <button class="cast-more" data-cast-more type="button">mais</button>`
+    : ""}`;
+}
+
+function genreMarkup(genres) {
+  const list = mainGenres(genres);
+  if (!list.length) return `<span class="details-empty-inline">Gêneros não informados.</span>`;
+  return list.map((genre) => `<a class="details-tag" href="/catalogo?genero=${encodeURIComponent(genre)}">${escapeHTML(genre)}</a>`).join(", ");
+}
+
+function vibeMarkup(genres) {
+  const list = mainGenres(genres);
+  const vibes = list.map((genre) => VIBE_MAP[genre]).filter(Boolean);
+  const final = (vibes.length ? vibes : list).slice(0, 3);
+  if (!final.length) return "";
+  return final.map((vibe) => `<span class="details-tag">${escapeHTML(vibe)}</span>`).join(", ");
+}
+
+function cardArt(url) {
+  return String(url || "").replace(/\/t\/p\/(w\d+|original)\//, "/t/p/w780/");
+}
+
+function durationLabel(item) {
+  if (Number(item?.duration) > 0) return formatDuration(Number(item.duration));
+  if (item?.type === "series") {
+    const count = getSeriesGroup(item)?.seasons.length || item.seasons?.length || 1;
+    return `${count} temporada${count > 1 ? "s" : ""}`;
   }
-  return cast.map((person) => `
-    <article class="actor-card">
-      ${person.photo
-        ? `<img class="actor-img" src="${escapeHTML(person.photo)}" alt="${escapeHTML(person.name)}" loading="lazy" decoding="async" referrerpolicy="no-referrer">`
-        : `<span class="actor-img actor-fallback" aria-hidden="true">${escapeHTML(initials(person.name))}</span>`}
-      <div class="actor-name">${escapeHTML(person.name)}</div>
-      <div class="actor-char">${escapeHTML(person.character || "Elenco")}</div>
-    </article>`).join("");
+  return "";
 }
 
 function similarItems(show) {
-  const genres = new Set((show.genres || []).filter((genre) => !CATEGORY_LABELS.has(String(genre).toLowerCase())));
+  const genres = new Set(mainGenres(show.genres));
   const scored = catalogTitles
     .filter((item) => item.id !== show.id && item.title !== show.title)
     .map((item) => {
@@ -80,49 +141,57 @@ function similarItems(show) {
   return (matching.length ? matching : scored).slice(0, 12).map((entry) => entry.item);
 }
 
+function similarCard(item) {
+  const art = cardArt(item.backdrop || item.poster);
+  const inList = store.isInWatchlist(item.id);
+  const length = durationLabel(item);
+  return `<article class="nf-similar-card" data-open-details="${escapeHTML(item.id)}" tabindex="0" aria-label="${escapeHTML(item.title)}">
+    <div class="nf-similar-art">
+      ${art ? `<img src="${escapeHTML(art)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">` : ""}
+      ${length ? `<span class="nf-similar-duration">${escapeHTML(length)}</span>` : ""}
+      <span class="nf-similar-title">${escapeHTML(item.title)}</span>
+    </div>
+    <div class="nf-similar-body">
+      <div class="nf-similar-meta">
+        ${ageBadge(item)}
+        <span class="nf-hd">HD</span>
+        ${item.year ? `<span>${escapeHTML(String(item.year))}</span>` : ""}
+        <button class="nf-similar-add" data-watchlist="${escapeHTML(item.id)}" type="button" aria-label="${inList ? "Remover da minha lista" : "Adicionar à minha lista"}" title="${inList ? "Remover da minha lista" : "Adicionar à minha lista"}"><i class="fa-solid ${inList ? "fa-check" : "fa-plus"}"></i></button>
+      </div>
+      <p>${escapeHTML(item.synopsis || "Sinopse em preparação.")}</p>
+    </div>
+  </article>`;
+}
+
 function similarMarkup(show) {
   const items = similarItems(show);
   if (!items.length) return `<p class="details-empty">Nenhum título similar encontrado.</p>`;
-  return `<div class="similar-grid">${items.map((item) => posterCard(item)).join("")}</div>`;
+  return `<div class="nf-similar-grid">${items.map(similarCard).join("")}</div>`;
 }
 
-function trailerPlaceholder(backdrop, title) {
-  return `<div class="trailer-placeholder">
-    ${backdrop ? `<img class="trailer-placeholder-bg" src="${escapeHTML(backdrop)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">` : ""}
-    <div class="trailer-placeholder-body">
-      <span class="trailer-placeholder-icon"><i class="fa-solid fa-film"></i></span>
-      <strong>Trailer de ${escapeHTML(title)}</strong>
-      <p>Assista ao trailer oficial deste título.</p>
-      <button class="btn btn-primary" id="details-trailer-load" type="button"><i class="fa-solid fa-play"></i>Carregar trailer</button>
-    </div>
-  </div>`;
-}
-
-function trailerFallback(title) {
-  const query = encodeURIComponent(`${title} trailer oficial`);
-  return `<div class="trailer-unavailable">
-    <span class="trailer-unavailable-icon"><i class="fa-solid fa-film"></i></span>
-    <strong>Trailer indisponível</strong>
-    <p>Não encontramos um trailer oficial para este título agora.</p>
-    <a class="btn btn-ghost" href="https://www.youtube.com/results?search_query=${query}" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-youtube"></i>Procurar no YouTube</a>
-  </div>`;
-}
-
-function episodeCard(entry, show, tmdbEpisode) {
-  const still = tmdbEpisode?.still_path ? imageUrl(tmdbEpisode.still_path, "w300") : show.poster;
+function episodeRow(entry, show, tmdbEpisode, current) {
+  const still = tmdbEpisode?.still_path
+    ? imageUrl(tmdbEpisode.still_path, "w300")
+    : cardArt(show.backdrop || show.poster);
   const name = tmdbEpisode?.name || entry.name || `Episódio ${entry.episode}`;
-  const rating = Number(tmdbEpisode?.vote_average) || 0;
-  return `<a class="ep-card" href="${playerPath(entry.item)}" aria-label="Assistir ${escapeHTML(name)}">
-    <div class="ep-thumb">
+  const runtime = Number(tmdbEpisode?.runtime) || Number(entry.item.duration) || 0;
+  const synopsis = tmdbEpisode?.overview || entry.item.synopsis || show.synopsis || "";
+  return `<a class="nf-episode ${current ? "current" : ""}" href="${playerPath(entry.item)}" aria-label="Assistir ${escapeHTML(name)}">
+    <span class="nf-episode-num">${entry.episode}</span>
+    <span class="nf-episode-thumb">
       ${still ? `<img src="${escapeHTML(still)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">` : ""}
-      <span class="ep-number">T${entry.season} E${entry.episode}</span>
-      <span class="ep-play"><i class="fa-solid fa-play"></i></span>
-    </div>
-    <div class="ep-body">
-      <div class="ep-title-row"><strong>${escapeHTML(name)}</strong>${rating ? `<span class="ep-rating"><i class="fa-solid fa-star"></i>${rating.toFixed(1)}</span>` : ""}</div>
-      <span class="ep-sub">${escapeHTML(entry.item.age || "L")}${(tmdbEpisode?.runtime || entry.item.duration) ? ` · ${formatDuration(tmdbEpisode?.runtime || entry.item.duration)}` : ""}</span>
-    </div>
+      <span class="nf-episode-play"><i class="fa-solid fa-play"></i></span>
+    </span>
+    <span class="nf-episode-body">
+      <span class="nf-episode-head"><strong>${escapeHTML(name)}</strong>${runtime ? `<span>${escapeHTML(formatDuration(runtime))}</span>` : ""}</span>
+      <span class="nf-episode-synopsis">${escapeHTML(synopsis)}</span>
+    </span>
   </a>`;
+}
+
+function closeDetails() {
+  if (window.history.length > 1) window.history.back();
+  else navigate("/");
 }
 
 export function renderDetalhes() {
@@ -146,242 +215,171 @@ export function renderDetalhes() {
   const selected = group?.items.find((entry) => entry.item.id === item.id) || group?.first || null;
   const playId = selected?.item?.id || item.id;
   const inList = store.isInWatchlist(show.id);
+  const liked = isLiked(show.id);
   const title = show.title;
   const initialGenres = genresOf(null, show);
   const initialSynopsis = synopsisOf(null, show) || "Sinopse em preparação.";
   const initialBackdrop = backdropOf(null, show);
+  const initialCast = castOf(null);
+  const initialVibe = vibeMarkup(initialGenres);
+  const seasonNumber = selected?.season || group?.seasons?.[0]?.number || 1;
+
   document.title = `${title} — w00filmes`;
 
   content.innerHTML = `
-    <section class="details-page" id="details-page" style="--c1:${show.colors?.[0] || "#101012"};--c2:${show.colors?.[1] || "#ff5a36"}">
-      <div class="details-bg" id="details-bg" aria-hidden="true"${initialBackdrop ? ` style="background-image:url(${escapeHTML(initialBackdrop)})"` : ""}></div>
-      <div class="details-veil" aria-hidden="true"></div>
+    <section class="details-page" id="details-page" style="--c1:${show.colors?.[0] || "#101012"};--c2:${show.colors?.[1] || "#e50914"}">
+      <button class="details-close" data-details-close type="button" aria-label="Fechar detalhes"><i class="fa-solid fa-xmark"></i></button>
 
-      <div class="details-inner">
-        <a class="details-back" href="/"><i class="fa-solid fa-arrow-left"></i><span>Voltar</span></a>
-
-        <header class="details-hero">
-          <div class="brand-label"><span class="brand-logo-s">W00</span><span>apresenta</span></div>
+      <div class="details-hero">
+        <div class="details-bg" id="details-bg" aria-hidden="true"${initialBackdrop ? ` style="background-image:url(${escapeHTML(initialBackdrop)})"` : ""}></div>
+        <div class="details-veil" aria-hidden="true"></div>
+        <div class="details-hero-content">
+          <div class="details-brand">W00FILMES</div>
           <div class="details-title-wrap" id="details-title-wrap">
             <h1 class="details-title" id="details-title">${escapeHTML(title)}</h1>
           </div>
-          <div class="details-meta" id="details-meta">${metaMarkup({
-            year: yearOf(null, show),
-            runtime: runtimeOf(null, show),
-            genres: initialGenres,
-            seasons: group?.seasons.length || 0,
-            episodes: group?.items.length || 0
-          })}</div>
-          <div class="details-score" id="details-score">${starsMarkup(ratingOf(null, show))}</div>
-
-          <p class="details-synopsis clamp" id="details-synopsis">${escapeHTML(initialSynopsis)}</p>
-          <button class="details-more hidden" id="details-more" type="button">Ler mais <i class="fa-solid fa-chevron-down"></i></button>
-
           <div class="details-actions">
-            <a class="details-cta details-cta-play" id="details-play" href="${playerPath(byId(playId) || show)}">
-              <span class="details-cta-icon"><i class="fa-solid fa-play"></i></span>
-              <span>Assistir${group && selected ? ` T${selected.season} E${selected.episode}` : ""}</span>
+            <a class="details-play" id="details-play" href="${playerPath(byId(playId) || show)}">
+              <i class="fa-solid fa-play"></i><span>Assistir</span>
             </a>
-            <button class="details-cta details-cta-party" id="details-party" type="button">
-              <span class="details-cta-icon"><i class="fa-solid fa-users"></i></span>
-              <span>Criar Watch Party</span>
+            <button class="details-round ${inList ? "active" : ""}" id="details-watchlist" type="button" aria-label="${inList ? "Remover da minha lista" : "Adicionar à minha lista"}" title="${inList ? "Remover da minha lista" : "Adicionar à minha lista"}">
+              <i class="fa-solid ${inList ? "fa-check" : "fa-plus"}"></i>
             </button>
-            <a class="details-cta details-cta-rave" href="${raveHref(byId(playId) || show)}" target="_blank" rel="noopener">
-              <span class="details-cta-icon"><i class="fa-solid fa-tower-broadcast"></i></span>
-              <span>Player Rave</span>
-            </a>
-          </div>
-
-          <div class="details-links">
-            <button class="details-link" id="details-watchlist" type="button" title="${inList ? "Remover da minha lista" : "Adicionar à minha lista"}">
-              <i class="fa-solid ${inList ? "fa-check" : "fa-plus"}"></i><span>${inList ? "Na minha lista" : "Minha lista"}</span>
+            <button class="details-round ${liked ? "active" : ""}" id="details-like" type="button" aria-label="${liked ? "Remover curtida" : "Curtir"}" title="${liked ? "Remover curtida" : "Curtir"}">
+              <i class="fa-${liked ? "solid" : "regular"} fa-thumbs-up"></i>
             </button>
-            <button class="details-link" id="details-share" type="button" title="Compartilhar"><i class="fa-solid fa-share-nodes"></i><span>Compartilhar</span></button>
           </div>
-        </header>
-
-        <section class="tabs-section" aria-label="Informações do título">
-          <div class="section-tabs" role="tablist" aria-label="Seções">
-            <button class="tab-item active" data-details-tab="detalhes" role="tab" aria-selected="true" aria-controls="tab-detalhes" type="button">Detalhes</button>
-            <button class="tab-item" data-details-tab="similares" role="tab" aria-selected="false" aria-controls="tab-similares" type="button">Similares</button>
-            <button class="tab-item" data-details-tab="trailer" role="tab" aria-selected="false" aria-controls="tab-trailer" type="button">Trailer</button>
+          <div class="details-under-actions">
+            <button class="details-text-link" id="details-trailer" type="button"><i class="fa-solid fa-film"></i>Trailer</button>
+            <button class="details-text-link" id="details-party" type="button"><i class="fa-solid fa-users"></i>Assistir junto</button>
+            <a class="details-text-link" href="${raveHref(byId(playId) || show)}" target="_blank" rel="noopener"><i class="fa-solid fa-tower-broadcast"></i>Rave</a>
+            <button class="details-text-link" id="details-share" type="button"><i class="fa-solid fa-share-nodes"></i>Compartilhar</button>
           </div>
+        </div>
+      </div>
 
-          <div class="tab-content active" id="tab-detalhes" role="tabpanel">
-            <div class="details-subtitle">
-              <h2>Elenco Principal</h2>
-              <span class="tiny muted" id="details-cast-count"></span>
+      <div class="details-body">
+        <div class="details-info">
+          <div class="details-info-left">
+            <div class="details-meta" id="details-meta">${metaMarkup({
+              year: yearOf(null, show),
+              runtime: runtimeOf(null, show),
+              seasons: group?.seasons.length || 0,
+              type: show.type
+            })}</div>
+            <div class="details-rating-line" id="details-rating-line">
+              ${ageBadge(show)}
+              <span>${ageWarning(show)}</span>
             </div>
-            <div class="cast-container" id="details-cast-container">
-              <button class="cast-nav-btn prev" data-cast-scroll="-1" type="button" aria-label="Elenco anterior"><i class="fa-solid fa-chevron-left"></i></button>
-              <div class="cast-wrapper" id="details-cast">${castMarkup(castOf(null))}</div>
-              <button class="cast-nav-btn next" data-cast-scroll="1" type="button" aria-label="Próximo elenco"><i class="fa-solid fa-chevron-right"></i></button>
+            <p class="details-synopsis" id="details-synopsis">${escapeHTML(initialSynopsis)}</p>
+          </div>
+          <div class="details-info-right">
+            <div class="details-info-row">
+              <span class="details-info-label">Elenco:</span>
+              <div class="details-info-value" id="details-cast-names">${castNamesMarkup(initialCast)}</div>
             </div>
-
-            <section class="details-section hidden" id="details-episodes-section">
-              <div class="details-subtitle">
-                <h2>Episódios</h2>
-                <div class="details-season-wrap">
-                  <label class="sr-only" for="details-season">Temporada</label>
-                  <select class="season-select" id="details-season"></select>
-                </div>
-              </div>
-              <div class="episode-strip" id="details-episodes"></div>
-            </section>
+            <div class="details-info-row">
+              <span class="details-info-label">Gêneros:</span>
+              <div class="details-info-value" id="details-genres">${genreMarkup(initialGenres)}</div>
+            </div>
+            <div class="details-info-row" id="details-vibe-row" ${initialVibe ? "" : "hidden"}>
+              <span class="details-info-label">${show.type === "series" ? "Esta série é:" : "Este filme é:"}</span>
+              <div class="details-info-value" id="details-vibe">${initialVibe}</div>
+            </div>
           </div>
+        </div>
 
-          <div class="tab-content" id="tab-similares" role="tabpanel">
-            ${similarMarkup(show)}
+        ${group ? `<section class="details-episodes" id="details-episodes-section">
+          <div class="details-section-head">
+            <h2>Episódios</h2>
+            <label class="nf-season-select">
+              <span class="sr-only">Temporada</span>
+              <select id="details-season">${group.seasons.map((season) => `<option value="${season.number}" ${season.number === seasonNumber ? "selected" : ""}>Temporada ${season.number}</option>`).join("")}</select>
+              <i class="fa-solid fa-caret-down" aria-hidden="true"></i>
+            </label>
           </div>
+          <div class="details-season-line">
+            <span id="details-season-label">Temporada ${seasonNumber}:</span>
+            ${ageBadge(show)}
+            <span>${ageWarning(show)}</span>
+          </div>
+          <div class="nf-episode-list" id="details-episodes"></div>
+        </section>` : ""}
 
-          <div class="tab-content" id="tab-trailer" role="tabpanel">
-            <div class="details-trailer" id="details-trailer">${trailerPlaceholder(initialBackdrop, title)}</div>
-          </div>
+        <section class="details-similar">
+          <h2>Títulos semelhantes</h2>
+          <div id="details-similar">${similarMarkup(show)}</div>
         </section>
       </div>
     </section>`;
 
-  mountDetails({ item, group, show, selected, playId });
-  hydrateDetails({ item, group, show, selected, request });
+  mountDetails({ item, group, show, selected, playId, seasonNumber });
+  hydrateDetails({ item, group, show, selected, request, playId, seasonNumber });
 }
 
-function mountDetails({ group, show, selected, playId }) {
-  const synopsis = qs("#details-synopsis");
-  const more = qs("#details-more");
-  if (synopsis && more) {
-    requestAnimationFrame(() => {
-      if (synopsis.scrollHeight > synopsis.clientHeight + 8) more.classList.remove("hidden");
-    });
-    more.addEventListener("click", () => {
-      const expanded = synopsis.classList.toggle("clamp");
-      more.innerHTML = expanded ? 'Ler mais <i class="fa-solid fa-chevron-down"></i>' : 'Ler menos <i class="fa-solid fa-chevron-up"></i>';
-    });
-  }
+function mountDetails({ group, show, selected, playId, seasonNumber }) {
+  qs("[data-details-close]")?.addEventListener("click", closeDetails);
 
   qs("#details-watchlist")?.addEventListener("click", () => {
     toggleWatchlist(show.id);
     const button = qs("#details-watchlist");
     const inList = store.isInWatchlist(show.id);
-    button.innerHTML = `<i class="fa-solid ${inList ? "fa-check" : "fa-plus"}"></i><span>${inList ? "Na minha lista" : "Minha lista"}</span>`;
+    button.classList.toggle("active", inList);
+    button.innerHTML = `<i class="fa-solid ${inList ? "fa-check" : "fa-plus"}"></i>`;
     button.title = inList ? "Remover da minha lista" : "Adicionar à minha lista";
     button.setAttribute("aria-label", button.title);
   });
 
+  qs("#details-like")?.addEventListener("click", () => {
+    const likes = readLikes();
+    const button = qs("#details-like");
+    const nowLiked = !likes.has(show.id);
+    if (nowLiked) likes.add(show.id);
+    else likes.delete(show.id);
+    writeLikes(likes);
+    button.classList.toggle("active", nowLiked);
+    button.innerHTML = `<i class="fa-${nowLiked ? "solid" : "regular"} fa-thumbs-up"></i>`;
+    button.setAttribute("aria-label", nowLiked ? "Remover curtida" : "Curtir");
+    button.title = nowLiked ? "Remover curtida" : "Curtir";
+    toast(nowLiked ? "Você curtiu este título." : "Curtida removida.", "success");
+  });
+
+  qs("#details-trailer")?.addEventListener("click", () => openTrailerModal(show));
   qs("#details-share")?.addEventListener("click", () => shareItem(show));
   qs("#details-party")?.addEventListener("click", () => {
     openWatchPartyModal(show, { episodeId: playId, title: show.title, poster: show.poster });
   });
 
+  qs("#details-cast-names")?.addEventListener("click", (event) => {
+    const more = event.target.closest("[data-cast-more]");
+    if (!more) return;
+    const extra = qs("#details-cast-names .cast-extra");
+    if (!extra) return;
+    extra.hidden = false;
+    more.remove();
+  });
+
   qs("#details-season")?.addEventListener("change", (event) => {
-    renderSeason(group, show, Number(event.target.value));
+    renderSeason(group, show, Number(event.target.value), null, playId);
   });
 
-  const tabs = qsa("[data-details-tab]");
-  const panels = qsa(".tab-content");
-  const tabsBar = qs(".section-tabs");
-  const syncTabPill = () => {
-    if (!tabsBar || !document.body.contains(tabsBar)) return;
-    const active = tabs.find((tab) => tab.classList.contains("active")) || tabs[0];
-    if (!active) return;
-    tabsBar.style.setProperty("--tab-x", `${active.offsetLeft}px`);
-    tabsBar.style.setProperty("--tab-w", `${active.offsetWidth}px`);
-  };
-  const activateTab = (name, { updateHash = true } = {}) => {
-    if (!TAB_NAMES.has(name)) return;
-    tabs.forEach((tab) => {
-      const active = tab.dataset.detailsTab === name;
-      tab.classList.toggle("active", active);
-      tab.setAttribute("aria-selected", String(active));
-      tab.tabIndex = active ? 0 : -1;
-    });
-    panels.forEach((panel) => panel.classList.toggle("active", panel.id === `tab-${name}`));
-    syncTabPill();
-    if (name === "trailer") loadTrailer(show);
-    if (updateHash) history.replaceState(history.state, "", `#${name}`);
-  };
-
-  tabs.forEach((tab) => {
-    tab.addEventListener("click", () => activateTab(tab.dataset.detailsTab));
-    tab.addEventListener("keydown", (event) => {
-      if (!["ArrowLeft", "ArrowRight"].includes(event.key)) return;
-      event.preventDefault();
-      const current = tabs.indexOf(tab);
-      const next = (current + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
-      tabs[next].focus();
-      activateTab(tabs[next].dataset.detailsTab);
-    });
-  });
-
-  qs("#details-trailer-load")?.addEventListener("click", () => loadTrailer(show));
-  bindCastNav();
-
-  const initialTab = location.hash.replace("#", "");
-  if (TAB_NAMES.has(initialTab)) activateTab(initialTab, { updateHash: false });
-  requestAnimationFrame(syncTabPill);
-  document.fonts?.ready.then(syncTabPill).catch(() => {});
-  const onResize = () => {
-    if (!document.body.contains(tabsBar)) {
-      window.removeEventListener("resize", onResize);
+  document.addEventListener("keydown", function onEscape(event) {
+    if (document.body.dataset.page !== "detalhes") {
+      document.removeEventListener("keydown", onEscape);
       return;
     }
-    syncTabPill();
-  };
-  window.addEventListener("resize", onResize);
-  if (selected) qs("#details-episodes-section")?.classList.remove("hidden");
-}
-
-function bindCastNav() {
-  const container = qs("#details-cast-container");
-  const row = qs("#details-cast");
-  if (!container || !row || container.dataset.castBound) return;
-  container.dataset.castBound = "1";
-  const buttons = [...container.querySelectorAll("[data-cast-scroll]")];
-  const update = () => {
-    const max = row.scrollWidth - row.clientWidth - 2;
-    buttons.forEach((button) => {
-      const direction = Number(button.dataset.castScroll) || 1;
-      button.disabled = direction < 0 ? row.scrollLeft <= 2 : row.scrollLeft >= max;
-    });
-  };
-  buttons.forEach((button) => {
-    button.addEventListener("click", () => {
-      const direction = Number(button.dataset.castScroll) || 1;
-      row.scrollBy({ left: direction * Math.max(220, row.clientWidth * 0.8), behavior: "smooth" });
-    });
+    if (event.key === "Escape" && !document.querySelector("#modal-root .modal-backdrop")) closeDetails();
   });
-  row.addEventListener("scroll", update, { passive: true });
-  update();
+
+  if (group) setupSeasons(group, show, null, seasonNumber, playId);
 }
 
-async function loadTrailer(show) {
-  const root = qs("#details-trailer");
-  if (!root || root.dataset.state === "loading" || root.dataset.state === "ready") return;
-  const request = ++trailerRequest;
-  root.dataset.state = "loading";
-  root.innerHTML = `<div class="trailer-loading"><i class="fa-solid fa-spinner fa-spin"></i><span>Carregando trailer…</span></div>`;
-  const trailer = await getTrailer(show);
-  if (!root.isConnected || request !== trailerRequest) return;
-  if (trailer?.key) {
-    root.dataset.state = "ready";
-    const key = encodeURIComponent(trailer.key);
-    root.innerHTML = `<div class="trailer-frame"><iframe
-      src="https://www.youtube.com/embed/${key}?autoplay=1&rel=0&modestbranding=1&playsinline=1"
-      title="${escapeHTML(trailer.name || `Trailer de ${show.title}`)}"
-      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-      allowfullscreen></iframe></div>
-      <a class="trailer-open-link" href="https://www.youtube.com/watch?v=${key}" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-youtube"></i>Abrir no YouTube</a>`;
-    return;
-  }
-  root.dataset.state = "empty";
-  root.innerHTML = trailerFallback(show.title);
-}
-
-async function hydrateDetails({ item, group, show, selected, request }) {
+async function hydrateDetails({ item, group, show, selected, request, playId, seasonNumber }) {
   const metaItem = group?.first?.item || item;
   const data = await getTitleDetails(metaItem);
   if (request !== detailsRequest || document.body.dataset.page !== "detalhes") return;
   if (!data) {
-    if (group) setupSeasons(group, show, null, selected?.season);
+    if (group) setupSeasons(group, show, null, seasonNumber, playId);
     return;
   }
 
@@ -389,67 +387,58 @@ async function hydrateDetails({ item, group, show, selected, request }) {
   const year = yearOf(data, show);
   const runtime = runtimeOf(data, show);
   const genres = genresOf(data, show);
-  const rating = ratingOf(data, show);
   const synopsis = synopsisOf(data, show) || "Sinopse em preparação.";
   const backdrop = backdropOf(data, show);
   const cast = castOf(data);
 
-  if (title) {
-    document.title = `${title} — w00filmes`;
-    const heading = qs("#details-title");
-    if (heading) heading.textContent = title;
+  document.title = `${title} — w00filmes`;
+  const heading = qs("#details-title");
+  if (heading) heading.textContent = title;
 
-    // Logo oficial do TMDB (como no site original), com fallback para o texto.
-    getLogo(metaItem).then((logo) => {
-      if (!logo || request !== detailsRequest || document.body.dataset.page !== "detalhes") return;
-      const wrap = qs("#details-title-wrap");
-      if (!wrap) return;
-      wrap.innerHTML = `<img class="details-logo" src="${escapeHTML(logo)}" alt="${escapeHTML(title)}" loading="eager" decoding="async" referrerpolicy="no-referrer">`;
-      const image = wrap.querySelector("img");
-      image?.addEventListener("error", () => {
-        wrap.innerHTML = `<h1 class="details-title" id="details-title">${escapeHTML(title)}</h1>`;
-      }, { once: true });
-    });
-  }
+  getLogo(metaItem).then((logo) => {
+    if (!logo || request !== detailsRequest || document.body.dataset.page !== "detalhes") return;
+    const wrap = qs("#details-title-wrap");
+    if (!wrap) return;
+    wrap.innerHTML = `<img class="details-logo" src="${escapeHTML(logo)}" alt="${escapeHTML(title)}" loading="eager" decoding="async" referrerpolicy="no-referrer">`;
+    const image = wrap.querySelector("img");
+    image?.addEventListener("error", () => {
+      wrap.innerHTML = `<h1 class="details-title" id="details-title">${escapeHTML(title)}</h1>`;
+    }, { once: true });
+  });
+
   const bg = qs("#details-bg");
   if (bg && backdrop) bg.style.backgroundImage = `url("${backdrop}")`;
 
   const meta = qs("#details-meta");
   if (meta) meta.innerHTML = metaMarkup({
-    year, runtime, genres,
+    year,
+    runtime,
     seasons: group?.seasons.length || 0,
-    episodes: group?.items.length || 0
+    type: show.type
   });
-  const score = qs("#details-score");
-  if (score) score.innerHTML = starsMarkup(rating);
 
   const synopsisEl = qs("#details-synopsis");
-  if (synopsisEl) {
-    synopsisEl.textContent = synopsis;
-    synopsisEl.classList.add("clamp");
-    const more = qs("#details-more");
-    if (more) {
-      more.classList.add("hidden");
-      more.innerHTML = 'Ler mais <i class="fa-solid fa-chevron-down"></i>';
-      requestAnimationFrame(() => {
-        if (synopsisEl.scrollHeight > synopsisEl.clientHeight + 8) more.classList.remove("hidden");
-      });
-    }
-  }
+  if (synopsisEl) synopsisEl.textContent = synopsis;
 
-  const castRoot = qs("#details-cast");
-  if (castRoot) castRoot.innerHTML = castMarkup(cast);
-  const castCount = qs("#details-cast-count");
-  if (castCount) castCount.textContent = cast.length ? `${cast.length} nomes` : "";
-  bindCastNav();
+  const castRoot = qs("#details-cast-names");
+  if (castRoot) castRoot.innerHTML = castNamesMarkup(cast);
 
-  const similar = qs("#tab-similares");
+  const genresRoot = qs("#details-genres");
+  if (genresRoot) genresRoot.innerHTML = genreMarkup(genres);
+
+  const vibe = vibeMarkup(genres);
+  const vibeRoot = qs("#details-vibe");
+  if (vibeRoot) vibeRoot.innerHTML = vibe;
+  const vibeRow = qs("#details-vibe-row");
+  if (vibeRow) vibeRow.hidden = !vibe;
+
+  const similar = qs("#details-similar");
   if (similar && genres.length) similar.innerHTML = similarMarkup({ ...show, genres });
 
-  if (group) setupSeasons(group, show, data.id, selected?.season);
+  if (group) setupSeasons(group, show, data.id, seasonNumber, playId);
 }
 
-function setupSeasons(group, show, tvId = null, selectedSeason = null) {
+function setupSeasons(group, show, tvId = null, selectedSeason = null, currentId = "") {
   const section = qs("#details-episodes-section");
   const select = qs("#details-season");
   if (!section || !select) return;
@@ -457,18 +446,20 @@ function setupSeasons(group, show, tvId = null, selectedSeason = null) {
   select.innerHTML = group.seasons.map((season) => `<option value="${season.number}">Temporada ${season.number}</option>`).join("");
   const firstSeason = selectedSeason ?? group.seasons[0]?.number ?? 1;
   select.value = String(firstSeason);
-  renderSeason(group, show, firstSeason, tvId);
+  renderSeason(group, show, firstSeason, tvId, currentId);
 }
 
-async function renderSeason(group, show, seasonNumber, tvId = null) {
+async function renderSeason(group, show, seasonNumber, tvId = null, currentId = "") {
   const root = qs("#details-episodes");
   const season = group?.seasons.find((entry) => entry.number === seasonNumber);
   if (!root || !season) return;
   const request = ++seasonRequest;
-  root.innerHTML = season.episodes.map((entry) => episodeCard(entry, show, null)).join("");
+  const label = qs("#details-season-label");
+  if (label) label.textContent = `Temporada ${seasonNumber}:`;
+  root.innerHTML = season.episodes.map((entry) => episodeRow(entry, show, null, entry.item.id === currentId)).join("");
   const id = tvId || tmdbIdFromItem(group.first.item);
   const tmdbSeason = await getSeasonDetails(id, seasonNumber);
   if (!tmdbSeason || !root.isConnected || request !== seasonRequest) return;
   const byNumber = new Map((tmdbSeason.episodes || []).map((episode) => [episode.episode_number, episode]));
-  root.innerHTML = season.episodes.map((entry) => episodeCard(entry, show, byNumber.get(entry.episode))).join("");
+  root.innerHTML = season.episodes.map((entry) => episodeRow(entry, show, byNumber.get(entry.episode), entry.item.id === currentId)).join("");
 }

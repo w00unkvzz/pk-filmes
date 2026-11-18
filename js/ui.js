@@ -292,7 +292,7 @@ export function posterCard(item, options = {}) {
         <span class="poster-title ${item.title.length > 18 ? "small" : ""}">${titleEsc}</span>
       </div>
       <div class="poster-overlay">
-        <button class="card-play" data-play="${escapeHTML(item.id)}" type="button" aria-label="Assistir ${titleEsc}"><i class="fa-solid fa-play"></i></button>
+        <button class="card-play" data-open-details="${escapeHTML(item.id)}" type="button" aria-label="Ver detalhes de ${titleEsc}"><i class="fa-solid fa-circle-info"></i></button>
         <div class="card-quick">
           <button data-watchlist="${escapeHTML(item.id)}" type="button" title="Minha lista" aria-label="Adicionar ${titleEsc} à minha lista"><i class="fa-solid fa-plus"></i></button>
           <button data-open-details="${escapeHTML(item.id)}" type="button" title="Mais informações" aria-label="Mais informações"><i class="fa-solid fa-circle-info"></i></button>
