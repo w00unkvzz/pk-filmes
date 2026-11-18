@@ -58,7 +58,7 @@ function setupReveals() {
   revealObserver?.disconnect();
   revealObserver = null;
   if (!("IntersectionObserver" in window)) return;
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   const targets = [...document.querySelectorAll(
     "#page-content .page-section, #page-content .catalog-head, #page-content .catalog-controls, " +
     "#page-content .profile-cover, #page-content .friends-hero, #page-content .party-hero, " +
