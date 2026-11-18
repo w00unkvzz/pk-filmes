@@ -1,5 +1,5 @@
 // Home page: hero carousel, continue watching and curated rows.
-import { CATALOG, catalogTitles, featured, trending, top10, movies, series, newReleases, allGenres } from "../data.js";
+import { CATALOG, catalogTitles, featured, top10, movies, series, newReleases, allGenres } from "../data.js";
 import * as store from "../store.js";
 import { mediaRow, top10Row, genreStrip, qs, escapeHTML, formatDuration, toast, emptyState } from "../ui.js";
 import { getLogo } from "../tmdb.js";
@@ -96,7 +96,6 @@ export function renderHome() {
     }) : ""}
 
     ${top10Row(top10)}
-    ${mediaRow("Em alta agora", trending, { id: "trending-row" })}
     ${mediaRow("Filmes", movies, { id: "movies-row", href: "/catalogo?tipo=movie" })}
     ${mediaRow("Séries", series, { id: "series-row", href: "/catalogo?tipo=series" })}
     ${mediaRow("Novidades", newReleases, { id: "new-row" })}

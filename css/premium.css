@@ -938,17 +938,17 @@ body[data-page="player"] .topbar { display: none !important; }
 
 .top10-num {
   position: absolute;
-  left: -14px;
-  bottom: -8px;
+  left: -12px;
+  bottom: -6px;
   z-index: 4;
   color: #000;
   font-family: var(--font-display);
-  font-size: clamp(100px, 11vw, 170px);
+  font-size: clamp(84px, 9.5vw, 145px);
   font-weight: 900;
   line-height: .7;
   letter-spacing: -.08em;
   pointer-events: none;
-  -webkit-text-stroke: 3px #fff;
+  -webkit-text-stroke: 2.5px #fff;
   text-shadow: none;
 }
 
@@ -1065,24 +1065,45 @@ body[data-page="player"] .topbar { display: none !important; }
 }
 
 .type-pills {
+  position: relative;
   display: flex;
   padding: 0;
   border: 1px solid #333;
   border-radius: var(--radius);
   background: none;
+  overflow: hidden;
+}
+
+.type-pill-indicator {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 0;
+  width: 0;
+  border-radius: 3px;
+  background: #fff;
+  opacity: 0;
+  transform: translateX(0);
+  transition: transform .3s cubic-bezier(.22, 1, .36, 1), width .3s cubic-bezier(.22, 1, .36, 1), opacity .15s ease;
 }
 
 .type-pill {
+  position: relative;
+  z-index: 1;
   height: 34px;
   padding: 0 14px;
   border-radius: 0;
+  background: none;
   color: var(--muted);
   font-size: 13px;
   font-weight: 500;
+  transition: color .2s var(--ease);
 }
 
 .type-pill:hover { color: #fff; }
 .type-pill.active { background: #fff; color: #000; }
+.type-pills[data-sliding-tabs] .type-pill.active { background: none; }
 
 .catalog-filter-row {
   display: flex;
@@ -1307,9 +1328,11 @@ body[data-page="detalhes"] .topbar { display: none !important; }
   border-radius: 4px;
   background: #fff;
   color: #000;
+  font-family: inherit;
   font-size: 15px;
   font-weight: 700;
   text-decoration: none;
+  cursor: pointer;
   transition: background .2s var(--ease), transform .2s var(--ease);
 }
 
@@ -1451,21 +1474,60 @@ a.details-tag:hover { color: #fff; text-decoration: underline; }
 .details-similar h2 { margin: 0; font-size: clamp(1.25rem, 2.2vw, 1.6rem); font-weight: 700; letter-spacing: -.02em; }
 
 .nf-season-select { position: relative; display: inline-flex; align-items: center; }
-.nf-season-select select {
-  appearance: none;
+.nf-season-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   min-height: 34px;
-  padding: 0 34px 0 12px;
+  padding: 0 12px;
   border: 1px solid #444;
   border-radius: 3px;
   background: #141414;
   color: #fff;
+  font-family: inherit;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
+  transition: border-color .2s var(--ease), background .2s var(--ease);
 }
-.nf-season-select select:hover { border-color: #777; }
-.nf-season-select select:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
-.nf-season-select i { position: absolute; right: 12px; pointer-events: none; font-size: 11px; color: #bbb; }
+.nf-season-button:hover { border-color: #777; background: #1a1a1a; }
+.nf-season-button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.nf-season-button i { font-size: 11px; color: #bbb; transition: transform .2s var(--ease); }
+.nf-season-select.open .nf-season-button i { transform: rotate(180deg); }
+.nf-season-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 30;
+  display: none;
+  width: 178px;
+  padding: 6px;
+  border: 1px solid #333;
+  border-radius: 4px;
+  background: #0a0a0a;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, .7);
+}
+.nf-season-select.open .nf-season-menu { display: block; }
+.nf-season-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 3px;
+  background: none;
+  color: #b3b3b3;
+  font-family: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.nf-season-option:hover,
+.nf-season-option.active { background: #1f1f1f; color: #fff; }
+.nf-season-option i { font-size: 10px; color: var(--accent); opacity: 0; }
+.nf-season-option.active i { opacity: 1; }
 
 .details-season-line { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 12px; color: #999; font-size: 12px; }
 .details-season-line #details-season-label { color: #fff; font-weight: 700; }
@@ -1559,6 +1621,7 @@ a.details-tag:hover { color: #fff; text-decoration: underline; }
 
 .stat strong { color: #fff; }
 .tabs {
+  position: relative;
   display: flex;
   gap: 24px;
   padding: 0;
@@ -1580,6 +1643,20 @@ a.details-tag:hover { color: #fff; text-decoration: underline; }
 .tab:hover { color: #fff; }
 .tab.active { background: none; color: #fff; }
 .tab.active::after { background: var(--accent); }
+.tab-indicator {
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: 0;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: var(--accent);
+  opacity: 0;
+  transform: translateX(0);
+  pointer-events: none;
+  transition: transform .32s cubic-bezier(.22, 1, .36, 1), width .32s cubic-bezier(.22, 1, .36, 1), opacity .15s ease;
+}
+.tabs[data-sliding-tabs] .tab.active::after { display: none; }
 
 .continue-item {
   border: 1px solid #262626;
@@ -1730,6 +1807,78 @@ body[data-page="player"] { background: #000; }
   border: 1px solid #333;
   border-radius: 50%;
   background: var(--surface-2);
+}
+
+.modal.modal-watch-options {
+  width: min(430px, calc(100% - 32px));
+  max-height: none;
+  overflow: visible;
+  padding: 26px 22px 20px;
+  border-radius: 10px;
+  background: #0a0a0a;
+}
+
+.watch-options { display: flex; flex-direction: column; }
+.watch-options-kicker {
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .16em;
+}
+.watch-options h2 {
+  margin: 8px 0 0;
+  font-size: 1.45rem;
+  font-weight: 750;
+  letter-spacing: -.03em;
+}
+.watch-options-title {
+  margin: 6px 0 0;
+  color: #9a9a9a;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.watch-options-list { display: grid; gap: 8px; margin-top: 20px; }
+.watch-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 0 16px;
+  border: 1px solid #333;
+  border-radius: 5px;
+  background: #161616;
+  color: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background .2s var(--ease), border-color .2s var(--ease);
+}
+.watch-option i { width: 18px; color: #cfcfcf; text-align: center; }
+.watch-option:hover { background: #1f1f1f; border-color: #555; }
+.watch-option.primary { background: #fff; border-color: #fff; color: #000; }
+.watch-option.primary i { color: #000; }
+.watch-option.primary:hover { background: #e6e6e6; }
+.watch-option[data-watch-mode="party"] { border-color: rgba(229, 9, 20, .55); }
+.watch-option[data-watch-mode="party"] i { color: var(--accent); }
+.watch-options-cancel {
+  min-height: 44px;
+  margin-top: 14px;
+  border: 0;
+  background: none;
+  color: #9a9a9a;
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.watch-options-cancel:hover { color: #fff; }
+
+@media (max-width: 760px) {
+  .modal-backdrop.watch-options-backdrop { align-items: center; padding: 16px; }
+  .modal.modal-watch-options { width: 100%; max-width: 430px; padding: 24px 18px 18px; }
 }
 
 .modal-head { background: #000; }
@@ -1971,7 +2120,7 @@ body[data-page="player"] { background: #000; }
   .row-arrow { display: none; }
 
   .top10-card { flex-basis: 60vw; }
-  .top10-num { left: -6px; font-size: 96px; -webkit-text-stroke-width: 2px; }
+  .top10-num { left: -6px; font-size: 82px; -webkit-text-stroke-width: 2px; }
   .top10-badge { width: 24px; height: 24px; font-size: 8px; }
 
   .genre-strip { grid-template-columns: repeat(2, 1fr); gap: 6px; }
@@ -2029,7 +2178,7 @@ body[data-page="player"] { background: #000; }
   .hero-desc { -webkit-line-clamp: 2; }
   .nf-btn { min-height: 40px; font-size: 13px; }
   .top10-card { flex-basis: 66vw; }
-  .top10-num { font-size: 82px; }
+  .top10-num { font-size: 72px; }
   .details-hero { min-height: 54vh; }
   .details-play { padding: 0 16px; }
   .nf-episode { grid-template-columns: 16px 96px minmax(0, 1fr); }

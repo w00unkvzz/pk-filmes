@@ -1,12 +1,12 @@
 // Página de detalhes no formato do preview modal da Netflix:
-// backdrop full-screen, logo, play/lista/curtir, metadados, elenco/gêneros,
+// backdrop full-screen, logo, play/lista, metadados, elenco/gêneros,
 // episódios e títulos semelhantes. O play só existe aqui dentro.
 import { byId, getSeriesGroup, catalogTitles } from "../data.js";
 import { getRoute, playerPath, navigate } from "../router.js";
 import * as store from "../store.js";
 import {
   qs, escapeHTML, formatDuration, emptyState,
-  toggleWatchlist, shareItem, toast
+  toggleWatchlist, shareItem, openModal, closeModal
 } from "../ui.js";
 import {
   getTitleDetails, getSeasonDetails, getLogo, tmdbIdFromItem, imageUrl,
@@ -19,7 +19,6 @@ import { openTrailerModal } from "../trailer.js";
 let seasonRequest = 0;
 let detailsRequest = 0;
 
-const LIKE_KEY = "w00filmes.likes";
 const CATEGORY_LABELS = new Set(["filmes", "séries", "series", "movie", "movies"]);
 const VIBE_MAP = {
   Terror: "Sombrio",
@@ -37,27 +36,6 @@ const VIBE_MAP = {
   Família: "Para a família",
   Tecnologia: "Tecnologia"
 };
-
-function readLikes() {
-  try {
-    const value = JSON.parse(localStorage.getItem(LIKE_KEY) || "[]");
-    return new Set(Array.isArray(value) ? value : []);
-  } catch {
-    return new Set();
-  }
-}
-
-function writeLikes(set) {
-  try {
-    localStorage.setItem(LIKE_KEY, JSON.stringify([...set]));
-  } catch {
-    /* modo privado */
-  }
-}
-
-function isLiked(id) {
-  return readLikes().has(id);
-}
 
 function mainGenres(genres) {
   return (genres || []).filter((genre) => !CATEGORY_LABELS.has(String(genre).toLowerCase()));
@@ -189,6 +167,44 @@ function episodeRow(entry, show, tmdbEpisode, current) {
   </a>`;
 }
 
+function openWatchOptions({ show, playId, selected }) {
+  const target = byId(playId) || show;
+  const episode = show.type === "series" && selected
+    ? `T${selected.season} E${selected.episode}`
+    : "";
+  const label = episode ? `${show.title} · ${episode}` : show.title;
+
+  openModal(`
+    <div class="watch-options">
+      <span class="watch-options-kicker">W00FILMES</span>
+      <h2>Como deseja assistir?</h2>
+      <p class="watch-options-title">${escapeHTML(label)}</p>
+      <div class="watch-options-list">
+        <button class="watch-option primary" data-watch-mode="solo" type="button">
+          <i class="fa-solid fa-play"></i><span>Player interno</span>
+        </button>
+        <a class="watch-option" href="${escapeHTML(raveHref(target))}" data-watch-mode="rave" target="_blank" rel="noopener">
+          <i class="fa-solid fa-tower-broadcast"></i><span>Assistir no Rave</span>
+        </a>
+        <button class="watch-option" data-watch-mode="party" type="button">
+          <i class="fa-solid fa-users"></i><span>Criar Watch Party</span>
+        </button>
+      </div>
+      <button class="watch-options-cancel" data-close-modal type="button">Cancelar</button>
+    </div>
+  `, { className: "modal-watch-options", label: "Como deseja assistir?" });
+  qs("#modal-root .modal-backdrop")?.classList.add("watch-options-backdrop");
+
+  qs('[data-watch-mode="solo"]')?.addEventListener("click", () => {
+    closeModal();
+    navigate(playerPath(target));
+  });
+
+  qs('[data-watch-mode="party"]')?.addEventListener("click", () => {
+    openWatchPartyModal(show, { episodeId: target.id, title: show.title, poster: show.poster });
+  });
+}
+
 function closeDetails() {
   if (window.history.length > 1) window.history.back();
   else navigate("/");
@@ -215,7 +231,6 @@ export function renderDetalhes() {
   const selected = group?.items.find((entry) => entry.item.id === item.id) || group?.first || null;
   const playId = selected?.item?.id || item.id;
   const inList = store.isInWatchlist(show.id);
-  const liked = isLiked(show.id);
   const title = show.title;
   const initialGenres = genresOf(null, show);
   const initialSynopsis = synopsisOf(null, show) || "Sinopse em preparação.";
@@ -239,20 +254,15 @@ export function renderDetalhes() {
             <h1 class="details-title" id="details-title">${escapeHTML(title)}</h1>
           </div>
           <div class="details-actions">
-            <a class="details-play" id="details-play" href="${playerPath(byId(playId) || show)}">
+            <button class="details-play" id="details-play" type="button">
               <i class="fa-solid fa-play"></i><span>Assistir</span>
-            </a>
+            </button>
             <button class="details-round ${inList ? "active" : ""}" id="details-watchlist" type="button" aria-label="${inList ? "Remover da minha lista" : "Adicionar à minha lista"}" title="${inList ? "Remover da minha lista" : "Adicionar à minha lista"}">
               <i class="fa-solid ${inList ? "fa-check" : "fa-plus"}"></i>
-            </button>
-            <button class="details-round ${liked ? "active" : ""}" id="details-like" type="button" aria-label="${liked ? "Remover curtida" : "Curtir"}" title="${liked ? "Remover curtida" : "Curtir"}">
-              <i class="fa-${liked ? "solid" : "regular"} fa-thumbs-up"></i>
             </button>
           </div>
           <div class="details-under-actions">
             <button class="details-text-link" id="details-trailer" type="button"><i class="fa-solid fa-film"></i>Trailer</button>
-            <button class="details-text-link" id="details-party" type="button"><i class="fa-solid fa-users"></i>Assistir junto</button>
-            <a class="details-text-link" href="${raveHref(byId(playId) || show)}" target="_blank" rel="noopener"><i class="fa-solid fa-tower-broadcast"></i>Rave</a>
             <button class="details-text-link" id="details-share" type="button"><i class="fa-solid fa-share-nodes"></i>Compartilhar</button>
           </div>
         </div>
@@ -292,11 +302,15 @@ export function renderDetalhes() {
         ${group ? `<section class="details-episodes" id="details-episodes-section">
           <div class="details-section-head">
             <h2>Episódios</h2>
-            <label class="nf-season-select">
-              <span class="sr-only">Temporada</span>
-              <select id="details-season">${group.seasons.map((season) => `<option value="${season.number}" ${season.number === seasonNumber ? "selected" : ""}>Temporada ${season.number}</option>`).join("")}</select>
-              <i class="fa-solid fa-caret-down" aria-hidden="true"></i>
-            </label>
+            <div class="nf-season-select" id="details-season-select">
+              <button class="nf-season-button" id="details-season-button" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="details-season-menu">
+                <span id="details-season-value">Temporada ${seasonNumber}</span>
+                <i class="fa-solid fa-caret-down" aria-hidden="true"></i>
+              </button>
+              <div class="nf-season-menu" id="details-season-menu" role="listbox" aria-label="Temporada">
+                ${group.seasons.map((season) => `<button class="nf-season-option ${season.number === seasonNumber ? "active" : ""}" type="button" role="option" data-season="${season.number}" aria-selected="${season.number === seasonNumber}"><span>Temporada ${season.number}</span><i class="fa-solid fa-check" aria-hidden="true"></i></button>`).join("")}
+              </div>
+            </div>
           </div>
           <div class="details-season-line">
             <span id="details-season-label">Temporada ${seasonNumber}:</span>
@@ -330,25 +344,12 @@ function mountDetails({ group, show, selected, playId, seasonNumber }) {
     button.setAttribute("aria-label", button.title);
   });
 
-  qs("#details-like")?.addEventListener("click", () => {
-    const likes = readLikes();
-    const button = qs("#details-like");
-    const nowLiked = !likes.has(show.id);
-    if (nowLiked) likes.add(show.id);
-    else likes.delete(show.id);
-    writeLikes(likes);
-    button.classList.toggle("active", nowLiked);
-    button.innerHTML = `<i class="fa-${nowLiked ? "solid" : "regular"} fa-thumbs-up"></i>`;
-    button.setAttribute("aria-label", nowLiked ? "Remover curtida" : "Curtir");
-    button.title = nowLiked ? "Remover curtida" : "Curtir";
-    toast(nowLiked ? "Você curtiu este título." : "Curtida removida.", "success");
+  qs("#details-play")?.addEventListener("click", () => {
+    openWatchOptions({ show, playId, selected });
   });
 
   qs("#details-trailer")?.addEventListener("click", () => openTrailerModal(show));
   qs("#details-share")?.addEventListener("click", () => shareItem(show));
-  qs("#details-party")?.addEventListener("click", () => {
-    openWatchPartyModal(show, { episodeId: playId, title: show.title, poster: show.poster });
-  });
 
   qs("#details-cast-names")?.addEventListener("click", (event) => {
     const more = event.target.closest("[data-cast-more]");
@@ -359,16 +360,45 @@ function mountDetails({ group, show, selected, playId, seasonNumber }) {
     more.remove();
   });
 
-  qs("#details-season")?.addEventListener("change", (event) => {
-    renderSeason(group, show, Number(event.target.value), null, playId);
+  const seasonSelect = qs("#details-season-select");
+  const seasonButton = qs("#details-season-button");
+  seasonButton?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    const open = seasonSelect?.classList.toggle("open");
+    seasonButton.setAttribute("aria-expanded", String(Boolean(open)));
   });
+  qs("#details-season-menu")?.addEventListener("click", (event) => {
+    const option = event.target.closest("[data-season]");
+    if (!option) return;
+    const number = Number(option.dataset.season);
+    seasonSelect?.classList.remove("open");
+    seasonButton?.setAttribute("aria-expanded", "false");
+    renderSeason(group, show, number, null, playId);
+  });
+  if (seasonSelect) {
+    document.addEventListener("click", function closeSeason(event) {
+      if (document.body.dataset.page !== "detalhes" || !seasonSelect.isConnected) {
+        document.removeEventListener("click", closeSeason);
+        return;
+      }
+      if (event.target.closest("#details-season-select")) return;
+      seasonSelect.classList.remove("open");
+      seasonButton?.setAttribute("aria-expanded", "false");
+    });
+  }
 
   document.addEventListener("keydown", function onEscape(event) {
     if (document.body.dataset.page !== "detalhes") {
       document.removeEventListener("keydown", onEscape);
       return;
     }
-    if (event.key === "Escape" && !document.querySelector("#modal-root .modal-backdrop")) closeDetails();
+    if (event.key !== "Escape") return;
+    if (seasonSelect?.classList.contains("open")) {
+      seasonSelect.classList.remove("open");
+      seasonButton?.setAttribute("aria-expanded", "false");
+      return;
+    }
+    if (!document.querySelector("#modal-root .modal-backdrop")) closeDetails();
   });
 
   if (group) setupSeasons(group, show, null, seasonNumber, playId);
@@ -438,14 +468,26 @@ async function hydrateDetails({ item, group, show, selected, request, playId, se
   if (group) setupSeasons(group, show, data.id, seasonNumber, playId);
 }
 
+function setSeasonSelection(seasonNumber) {
+  const value = qs("#details-season-value");
+  if (value) value.textContent = `Temporada ${seasonNumber}`;
+  const menu = qs("#details-season-menu");
+  if (!menu) return;
+  menu.querySelectorAll("[data-season]").forEach((button) => {
+    const active = Number(button.dataset.season) === Number(seasonNumber);
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-selected", String(active));
+  });
+}
+
 function setupSeasons(group, show, tvId = null, selectedSeason = null, currentId = "") {
   const section = qs("#details-episodes-section");
-  const select = qs("#details-season");
-  if (!section || !select) return;
+  const menu = qs("#details-season-menu");
+  if (!section || !menu) return;
   section.classList.remove("hidden");
-  select.innerHTML = group.seasons.map((season) => `<option value="${season.number}">Temporada ${season.number}</option>`).join("");
+  menu.innerHTML = group.seasons.map((season) => `<button class="nf-season-option" type="button" role="option" data-season="${season.number}" aria-selected="false"><span>Temporada ${season.number}</span><i class="fa-solid fa-check" aria-hidden="true"></i></button>`).join("");
   const firstSeason = selectedSeason ?? group.seasons[0]?.number ?? 1;
-  select.value = String(firstSeason);
+  setSeasonSelection(firstSeason);
   renderSeason(group, show, firstSeason, tvId, currentId);
 }
 
@@ -454,6 +496,7 @@ async function renderSeason(group, show, seasonNumber, tvId = null, currentId = 
   const season = group?.seasons.find((entry) => entry.number === seasonNumber);
   if (!root || !season) return;
   const request = ++seasonRequest;
+  setSeasonSelection(seasonNumber);
   const label = qs("#details-season-label");
   if (label) label.textContent = `Temporada ${seasonNumber}:`;
   root.innerHTML = season.episodes.map((entry) => episodeRow(entry, show, null, entry.item.id === currentId)).join("");

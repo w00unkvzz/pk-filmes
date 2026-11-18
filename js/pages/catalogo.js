@@ -1,7 +1,7 @@
 // Catalog page: compact header (type pills, genre/year dropdowns, search) and
 // incremental grid. Series are shown once per show, not once per episode.
 import { catalogTitles, allGenres } from "../data.js";
-import { qs, posterCard, emptyState, escapeHTML } from "../ui.js";
+import { qs, posterCard, emptyState, escapeHTML, bindSlidingTabs, refreshSlidingTabs } from "../ui.js";
 
 const PAGE_SIZE = 18;
 
@@ -66,6 +66,7 @@ function controls() {
   const yearLabel = state.year || "Anos";
   return `<div class="catalog-controls">
     <div class="type-pills" role="tablist" aria-label="Tipo de título">
+      <span class="type-pill-indicator" aria-hidden="true"></span>
       <button class="type-pill ${state.type === "" ? "active" : ""}" type="button" data-type-filter="" role="tab" aria-selected="${state.type === ""}">Todos</button>
       <button class="type-pill ${state.type === "movie" ? "active" : ""}" type="button" data-type-filter="movie" role="tab" aria-selected="${state.type === "movie"}">Filmes</button>
       <button class="type-pill ${state.type === "series" ? "active" : ""}" type="button" data-type-filter="series" role="tab" aria-selected="${state.type === "series"}">Séries</button>
@@ -155,6 +156,7 @@ function qsaActivePill() {
     button.classList.toggle("active", active);
     button.setAttribute("aria-selected", String(active));
   });
+  refreshSlidingTabs();
 }
 
 function updateUrl() {
@@ -183,6 +185,7 @@ function closeMenus(except = null) {
 
 function mountCatalogo() {
   let debounceTimer = null;
+  bindSlidingTabs(qs(".type-pills"), { selector: ".type-pill", indicator: ".type-pill-indicator" });
   const refresh = () => {
     state.visible = PAGE_SIZE;
     updateResults();

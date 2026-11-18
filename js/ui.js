@@ -165,22 +165,9 @@ export function renderShell() {
       <a class="nf-icon nf-bell" href="/amigos" aria-label="Amigos e pedidos" title="Amigos">
         <i class="fa-regular fa-bell"></i>${requestCount ? '<span class="dot-badge"></span>' : ""}
       </a>
-      <div class="topbar-menu nf-profile">
-        <button class="avatar-btn" data-profile-toggle type="button" aria-label="Abrir menu do perfil" aria-expanded="false">
-          ${avatar(user, "sm")}<i class="fa-solid fa-caret-down" aria-hidden="true"></i>
-        </button>
-        <div class="profile-menu" id="profile-menu">
-          <div class="profile-menu-head"><strong>${escapeHTML(user.name)}</strong><span>${escapeHTML(user.authed ? user.email : "Não conectado")}</span></div>
-          ${user.authed
-            ? `<a href="/perfil"><i class="fa-solid fa-user"></i>Meu perfil</a>
-               <a href="/perfil#minha-lista"><i class="fa-solid fa-bookmark"></i>Minha lista</a>
-               <a href="/amigos"><i class="fa-solid fa-user-group"></i>Amigos</a>
-               <a href="/party"><i class="fa-solid fa-tower-broadcast"></i>w00 Party</a>
-               <div class="sep"></div>
-               <button data-logout type="button"><i class="fa-solid fa-right-from-bracket"></i>Sair</button>`
-            : `<button data-auth-open type="button"><i class="fa-solid fa-right-to-bracket"></i>Entrar</button>`}
-        </div>
-      </div>
+      <a class="avatar-btn" href="/perfil" aria-label="Abrir meu perfil" title="Meu perfil">
+        ${avatar(user, "sm")}
+      </a>
     </div>
     <div class="nf-mobile-panel" id="nf-mobile-panel">
       ${CONFIG.nav.map((item) => `<a class="${page === item.page ? "active" : ""}" href="${item.href}">${escapeHTML(item.label)}</a>`).join("")}
@@ -290,13 +277,6 @@ export function posterCard(item, options = {}) {
         ${posterImage(item, variant)}
         <div class="poster-ring"></div>
         <span class="poster-title ${item.title.length > 18 ? "small" : ""}">${titleEsc}</span>
-      </div>
-      <div class="poster-overlay">
-        <button class="card-play" data-open-details="${escapeHTML(item.id)}" type="button" aria-label="Ver detalhes de ${titleEsc}"><i class="fa-solid fa-circle-info"></i></button>
-        <div class="card-quick">
-          <button data-watchlist="${escapeHTML(item.id)}" type="button" title="Minha lista" aria-label="Adicionar ${titleEsc} à minha lista"><i class="fa-solid fa-plus"></i></button>
-          <button data-open-details="${escapeHTML(item.id)}" type="button" title="Mais informações" aria-label="Mais informações"><i class="fa-solid fa-circle-info"></i></button>
-        </div>
       </div>
       ${options.remove ? `<button class="card-remove" data-remove-history="${escapeHTML(item.id)}" type="button" title="Remover do histórico" aria-label="Remover do histórico"><i class="fa-solid fa-xmark"></i></button>` : ""}
     </div>
@@ -445,6 +425,45 @@ export function setupRowArrows() {
     };
     row.addEventListener("scroll", update, { passive: true });
     update();
+  });
+}
+
+/* Sliding tabs: one indicator follows the active tab. */
+function paintSlidingTabs(container) {
+  if (!container) return;
+  const selector = container.dataset.slidingSelector || ".tab";
+  const activeClass = container.dataset.slidingActive || "active";
+  const indicator = container.querySelector(container.dataset.slidingIndicator || ".tab-indicator");
+  if (!indicator) return;
+  const active = container.querySelector(`${selector}.${activeClass}`);
+  if (!active) return;
+  indicator.style.width = `${active.offsetWidth}px`;
+  indicator.style.transform = `translateX(${active.offsetLeft}px)`;
+  indicator.style.opacity = "1";
+}
+
+export function bindSlidingTabs(container, options = {}) {
+  if (!container) return;
+  const indicator = container.querySelector(options.indicator || ".tab-indicator");
+  if (!indicator) return;
+  container.dataset.slidingSelector = options.selector || ".tab";
+  container.dataset.slidingActive = options.activeClass || "active";
+  container.dataset.slidingIndicator = options.indicator || ".tab-indicator";
+  container.dataset.slidingTabs = "1";
+  container.__paintSlidingTabs = () => paintSlidingTabs(container);
+  requestAnimationFrame(() => {
+    paintSlidingTabs(container);
+    setTimeout(() => paintSlidingTabs(container), 120);
+  });
+  if (!window.__w00SlidingTabsResize) {
+    window.__w00SlidingTabsResize = true;
+    window.addEventListener("resize", () => refreshSlidingTabs(), { passive: true });
+  }
+}
+
+export function refreshSlidingTabs(root = document) {
+  root.querySelectorAll("[data-sliding-tabs]").forEach((container) => {
+    container.__paintSlidingTabs?.();
   });
 }
 
@@ -972,19 +991,6 @@ export function bindGlobalEvents() {
       searchForm.querySelector("input")?.focus({ preventScroll: true });
     }
 
-    const profileToggle = target.closest("[data-profile-toggle]");
-    if (profileToggle) {
-      event.stopPropagation();
-      const menu = qs("#profile-menu");
-      const open = menu?.classList.toggle("open");
-      profileToggle.setAttribute("aria-expanded", String(Boolean(open)));
-      return;
-    }
-    if (!target.closest(".topbar-menu")) {
-      qs("#profile-menu")?.classList.remove("open");
-      qs('[data-profile-toggle]')?.setAttribute("aria-expanded", "false");
-    }
-
     if (target.closest("[data-auth-open]")) { event.preventDefault(); sidebarClose(); openAuthModal(); return; }
 
     if (target.closest("[data-logout]")) {
@@ -1079,7 +1085,6 @@ export function bindGlobalEvents() {
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
       closeModal();
-      qs("#profile-menu")?.classList.remove("open");
       document.body.classList.remove("mobile-search-open");
       qs("[data-mobile-search]")?.setAttribute("aria-expanded", "false");
       qs("#nf-mobile-panel")?.classList.remove("open");

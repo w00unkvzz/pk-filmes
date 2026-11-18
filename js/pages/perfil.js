@@ -5,7 +5,7 @@ import * as store from "../store.js";
 import { uploadAvatar, updateProfile, syncSocialCache } from "../social.js";
 import {
   qs, qsa, avatar, posterCard, posterImage, emptyState, formatDuration, formatDate,
-  escapeHTML, openModal, closeModal, toast
+  escapeHTML, openModal, closeModal, toast, bindSlidingTabs, refreshSlidingTabs
 } from "../ui.js";
 
 const validTabs = ["minha-lista", "historico", "amigos", "conquistas"];
@@ -86,6 +86,7 @@ export async function renderPerfil() {
 
         <div class="profile-section profile-panel">
           <div class="tabs" role="tablist">
+            <span class="tab-indicator" aria-hidden="true"></span>
             <button class="tab ${tab === "minha-lista" ? "active" : ""}" data-profile-tab="minha-lista" type="button">Minha lista</button>
             <button class="tab ${tab === "historico" ? "active" : ""}" data-profile-tab="historico" type="button">Histórico</button>
             <button class="tab ${tab === "amigos" ? "active" : ""}" data-profile-tab="amigos" type="button">Amigos</button>
@@ -93,7 +94,7 @@ export async function renderPerfil() {
           </div>
           <div class="profile-panel-body">
             <div class="profile-tab-panel ${tab === "minha-lista" ? "active" : ""}" id="profile-panel-minha-lista">
-              ${watchlist.length ? `<div class="card-grid">${watchlist.map((item) => posterCard(item)).join("")}</div>` : emptyState("fa-bookmark", "Sua lista está vazia", "Toque no + em qualquer pôster para guardar um título aqui.")}
+              ${watchlist.length ? `<div class="card-grid">${watchlist.map((item) => posterCard(item)).join("")}</div>` : emptyState("fa-bookmark", "Sua lista está vazia", "Abra um título e toque no + nos detalhes para guardar aqui.")}
             </div>
             <div class="profile-tab-panel ${tab === "historico" ? "active" : ""}" id="profile-panel-historico">
               <div class="row-between" style="margin-bottom:12px"><span class="tiny muted">${history.length} título${history.length === 1 ? "" : "s"} no histórico</span>${history.length ? '<button class="section-link" id="clear-history" type="button">Limpar histórico <i class="fa-solid fa-trash-can"></i></button>' : ""}</div>
@@ -124,11 +125,14 @@ export async function renderPerfil() {
 }
 
 function mountPerfil() {
+  bindSlidingTabs(qs(".tabs"), { selector: ".tab", indicator: ".tab-indicator" });
+
   qsa("[data-profile-tab]").forEach((button) => {
     button.addEventListener("click", () => {
       const tab = button.dataset.profileTab;
       qsa("[data-profile-tab]").forEach((entry) => entry.classList.toggle("active", entry === button));
       qsa(".profile-tab-panel").forEach((panel) => panel.classList.toggle("active", panel.id === `profile-panel-${tab}`));
+      refreshSlidingTabs();
       history.replaceState(history.state || {}, "", `#${tab}`);
     });
   });

@@ -5,14 +5,14 @@
 //   HTML pages    → network-first, fallback to cache
 //   Supabase/fonts/FA → network-only (no cache)
 
-const VERSION = "w00-v38";
-// v3 forces one fresh catalog download so the new Parede de Gelo rows appear.
-const CATALOG_CACHE = "w00-catalog-v6";
-const STATIC_CACHE  = "w00-static-v38";
-const HTML_CACHE    = "w00-html-v38";
-// Stylesheets are requested with ?v=27 from the HTML shells, so the precache
+const VERSION = "w00-v39";
+// Forces one fresh catalog download so new titles appear immediately.
+const CATALOG_CACHE = "w00-catalog-v7";
+const STATIC_CACHE  = "w00-static-v39";
+const HTML_CACHE    = "w00-html-v39";
+// Stylesheets are requested with ?v=28 from the HTML shells, so the precache
 // must use the same URL to be served from cache instead of the network.
-const CSS_VERSION = "?v=27";
+const CSS_VERSION = "?v=28";
 
 const STATIC_ASSETS = [
   "/",
