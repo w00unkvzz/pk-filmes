@@ -1772,8 +1772,8 @@ body[data-page="player"] { background: #000; }
 .capsule-btn:hover { background: rgba(255, 255, 255, .2); }
 
 .center-indicator {
-  background: rgba(0, 0, 0, .55);
-  border-radius: 50%;
+  background: transparent;
+  border-radius: 0;
 }
 
 .ep-card {

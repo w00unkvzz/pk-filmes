@@ -312,6 +312,7 @@ function mountPlayer({ item, group, show, current }) {
   const activeItem = current.item;
   const { mode, html } = stageMarkup(activeItem);
   detachHls();
+  qs("#player-buffering")?.classList.remove("is-visible");
   stage.innerHTML = html;
   overlay.hidden = mode === "none";
   overlay.classList.remove("controls-hidden", "hide-controls");
@@ -424,6 +425,11 @@ function bindVideoControls({ group, show, current, activeItem }) {
   const settings = store.getSettings();
   const history = store.getHistoryEntry(activeItem.id);
   const next = group ? nextEpisode(group, current) : null;
+  const spinner = qs("#player-buffering");
+  const setBuffering = (visible) => {
+    if (!spinner) return;
+    spinner.classList.toggle("is-visible", Boolean(visible) && !video.paused && !video.ended && !video.error);
+  };
   let lastSave = 0;
   let introSkipped = false;
   let pendingResume = 0;
@@ -559,23 +565,28 @@ function bindVideoControls({ group, show, current, activeItem }) {
     setPlayIcon(!video.paused);
   });
   video.addEventListener("play", () => {
+    setBuffering(false);
     save(true);
     setPlayIcon(true);
     showControls();
   });
   video.addEventListener("pause", () => {
+    setBuffering(false);
     save(true);
     setPlayIcon(false);
     revealPlayerControls();
   });
   video.addEventListener("playing", () => {
-    qs("#player-buffering")?.classList.remove("is-visible");
+    setBuffering(false);
     setPlayIcon(true);
     showControls();
   });
-  video.addEventListener("waiting", () => qs("#player-buffering")?.classList.add("is-visible"));
-  video.addEventListener("canplay", () => qs("#player-buffering")?.classList.remove("is-visible"));
+  video.addEventListener("waiting", () => setBuffering(true));
+  video.addEventListener("canplay", () => setBuffering(false));
+  video.addEventListener("loadeddata", () => setBuffering(false));
+  video.addEventListener("seeked", () => setBuffering(false));
   video.addEventListener("timeupdate", () => {
+    if (!video.paused) setBuffering(false);
     const duration = Number.isFinite(video.duration) ? video.duration : 0;
     const currentTime = Number.isFinite(video.currentTime) ? video.currentTime : 0;
     if (timeDisplay) timeDisplay.textContent = `${formatClock(currentTime)} / ${formatClock(duration)}`;
@@ -605,6 +616,7 @@ function bindVideoControls({ group, show, current, activeItem }) {
     buffered.style.width = `${Math.min(100, (end / video.duration) * 100)}%`;
   });
   video.addEventListener("ended", () => {
+    setBuffering(false);
     const duration = Number.isFinite(video.duration) ? video.duration : 0;
     store.addHistory(activeItem, duration, duration, group ? {
       episode: { season: current.season, number: current.episode, title: episodeName(current), id: activeItem.id }
@@ -620,6 +632,7 @@ function bindVideoControls({ group, show, current, activeItem }) {
     }
   });
   video.addEventListener("error", () => {
+    setBuffering(false);
     stageError(activeItem, group);
   });
 
