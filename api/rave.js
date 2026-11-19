@@ -162,17 +162,17 @@ function episodeListMarkup(item, group, stills = new Map()) {
       const thumb = stills.get(`${entry.season}:${entry.episode}`) || entry.item.backdrop || entry.item.capa || entry.item.poster || "";
       const synopsis = entry.item.sinopse || entry.item.synopsis || "";
       const num = String(entry.episode).padStart(2, "0");
-      return `<a class="episode${active ? " current" : ""}" href="/rave/${encodeURIComponent(entry.item.id)}"${active ? ' aria-current="true"' : ""}>
+      return `<div class="episode${active ? " current" : ""}" role="link" tabindex="0" data-href="/rave/${encodeURIComponent(entry.item.id)}"${active ? ' aria-current="true"' : ""}>
         <span class="episode-num">${num}</span>
         <span class="episode-thumb${thumb ? "" : " episode-thumb-empty"}">
-          ${thumb ? `<img src="${escapeHTML(thumb)}" alt="" loading="lazy" decoding="async">` : ""}
+          ${thumb ? `<img src="${escapeHTML(thumb)}" alt="" loading="lazy" decoding="async" draggable="false">` : ""}
           ${playIcon}
         </span>
         <span class="episode-body">
           <span class="episode-head"><strong>${escapeHTML(label)}</strong>${runtime ? `<span>${escapeHTML(runtime)}</span>` : ""}</span>
           ${synopsis ? `<span class="episode-synopsis">${escapeHTML(synopsis)}</span>` : ""}
         </span>
-      </a>`;
+      </div>`;
     }).join("");
     return `<div class="season">
       <div class="season-head">
@@ -350,6 +350,7 @@ html, body {
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
 }
 body {
   min-height: 100vh;
@@ -375,7 +376,13 @@ body::before {
   opacity: .035;
 }
 a { color: inherit; text-decoration: none; }
-img { display: block; max-width: 100%; }
+img {
+  display: block;
+  max-width: 100%;
+  pointer-events: none;
+  -webkit-user-drag: none;
+  user-select: none;
+}
 .page { width: 100%; max-width: 640px; margin: 0 auto; padding-bottom: 34px; }
 
 .topbar {
@@ -400,6 +407,8 @@ img { display: block; max-width: 100%; }
   background: rgba(255, 255, 255, .05);
   border: 1px solid var(--line);
   color: #fff;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 .back:active { background: var(--accent-soft); border-color: rgba(229, 9, 20, .32); }
 .back svg { width: 20px; height: 20px; }
@@ -506,6 +515,8 @@ h1 {
   padding: 11px 6px;
   border-bottom: 1px solid var(--line);
   color: #fff;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
   transition: background .18s ease;
 }
 .episode:last-child { border-bottom: 0; }
@@ -596,11 +607,11 @@ h1 {
 <body>
 <div class="page">
   <header class="topbar">
-    <a class="back" href="${escapeHTML(detailsHref)}" aria-label="Voltar">
+    <div class="back" role="link" tabindex="0" data-href="${escapeHTML(detailsHref)}" aria-label="Voltar">
       <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
-    </a>
+    </div>
     <span class="rave-badge">RAVE</span>
   </header>
 
@@ -619,6 +630,30 @@ h1 {
 
   <footer class="footer">w00filmes · player nativo do Rave</footer>
 </div>
+<script>
+(() => {
+  const go = (element) => {
+    const href = element && element.dataset ? element.dataset.href : "";
+    if (href) window.location.href = href;
+  };
+  document.addEventListener("click", (event) => {
+    const target = event.target.closest("[data-href]");
+    if (!target) return;
+    event.preventDefault();
+    go(target);
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    const target = event.target.closest("[data-href]");
+    if (!target) return;
+    event.preventDefault();
+    go(target);
+  });
+  document.addEventListener("contextmenu", (event) => event.preventDefault());
+  document.addEventListener("selectstart", (event) => event.preventDefault());
+  document.addEventListener("dragstart", (event) => event.preventDefault());
+})();
+</script>
 </body>
 </html>`;
 
