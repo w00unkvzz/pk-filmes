@@ -372,16 +372,6 @@ export async function getRoom(roomId) {
   return data;
 }
 
-export async function getRoomByCode(code) {
-  const { data, error } = await client()
-    .from("rooms")
-    .select("*")
-    .eq("code", String(code || "").trim().toUpperCase())
-    .maybeSingle();
-  throwIf(error);
-  return data;
-}
-
 export async function roomMembers(roomId) {
   const { data, error } = await client().rpc("room_members_view", { p_room: roomId });
   throwIf(error);

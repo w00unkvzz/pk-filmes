@@ -30,15 +30,6 @@ export function subscribe(fn) {
   return () => listeners.delete(fn);
 }
 
-export function onStoreChange(fn) {
-  const handler = (event) => {
-    _wlSet = null;
-    if (event.key && event.key.startsWith(P)) fn(event.key.slice(P.length), safeParse(event.newValue));
-  };
-  window.addEventListener("storage", handler);
-  return () => window.removeEventListener("storage", handler);
-}
-
 function safeParse(value) {
   try { return JSON.parse(value); } catch { return value; }
 }
@@ -72,10 +63,6 @@ export function logout() {
   write("watchlist", watchlist);
   write("history", history);
   setSocialCache([], []);
-}
-
-export function isLoggedIn() {
-  return Boolean(getUser().authed);
 }
 
 /* Watchlist — Set memoizado para lookup O(1) e atualização atômica */
@@ -139,15 +126,6 @@ export function addHistory(item, progress = 0, duration = null, extra = {}) {
   raw[item.id] = entry;
   write("history", raw);
   return entry;
-}
-
-export function updateProgress(id, progress, duration) {
-  const raw = read("history", {});
-  if (!raw[id]) return;
-  raw[id].progress = Math.max(0, Number(progress) || 0);
-  if (duration) raw[id].duration = duration;
-  raw[id].updatedAt = Date.now();
-  write("history", raw);
 }
 
 export function removeHistory(id) {
@@ -226,73 +204,6 @@ export function rejectRequest(id) {
 
 export function removeFriend(id) {
   return write("friends", getFriends().filter((friend) => friend.id !== id));
-}
-
-/* Rooms and chat */
-export function getCustomRooms() {
-  return read("rooms", []);
-}
-
-export function getRooms() {
-  return getCustomRooms();
-}
-
-export function getRoom(code) {
-  return getRooms().find((room) => room.code.toUpperCase() === String(code || "").toUpperCase()) || null;
-}
-
-export function saveRoom(room) {
-  const rooms = getCustomRooms().filter((item) => item.code !== room.code);
-  return write("rooms", [{ ...room, createdAt: room.createdAt || Date.now() }, ...rooms]);
-}
-
-export function updateRoom(code, patch) {
-  const rooms = getCustomRooms();
-  const index = rooms.findIndex((item) => item.code === code);
-  if (index < 0) return null;
-  rooms[index] = { ...rooms[index], ...patch };
-  write("rooms", rooms);
-  return rooms[index];
-}
-
-export function removeRoom(code) {
-  return write("rooms", getCustomRooms().filter((item) => item.code !== code));
-}
-
-export function getChat(code) {
-  return read(`chat.${code}`, [
-    { id: "system-1", system: true, text: "Sala criada. Envie uma mensagem para começar.", at: Date.now() }
-  ]);
-}
-
-export function addChatMessage(code, message) {
-  const chat = getChat(code);
-  const next = [...chat, { ...message, id: message.id || `msg-${Date.now()}-${Math.random().toString(16).slice(2)}`, at: Date.now() }].slice(-120);
-  write(`chat.${code}`, next);
-  return next;
-}
-
-export function clearChat(code) {
-  write(`chat.${code}`, [
-    { id: "system-2", system: true, text: "O histórico da conversa foi limpo.", at: Date.now() }
-  ]);
-}
-
-/* Search history */
-export function getSearchHistory() {
-  return read("searchHistory", []);
-}
-
-export function addSearchHistory(term) {
-  const clean = String(term || "").trim();
-  if (!clean) return getSearchHistory();
-  const history = getSearchHistory().filter((item) => item.toLowerCase() !== clean.toLowerCase());
-  const next = [clean, ...history].slice(0, 8);
-  return write("searchHistory", next);
-}
-
-export function clearSearchHistory() {
-  return write("searchHistory", []);
 }
 
 /* Settings */

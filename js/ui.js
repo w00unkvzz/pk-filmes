@@ -84,18 +84,6 @@ export function formatMonth(value) {
   return new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(date);
 }
 
-export function typeLabel(item) {
-  return item?.type === "series" ? "Série" : "Filme";
-}
-
-export function pageTitle(title, subtitle = "", eyebrow = "") {
-  return `<div class="page-hero">
-    ${eyebrow ? `<span class="eyebrow"><i class="fa-solid fa-sparkles"></i>${escapeHTML(eyebrow)}</span>` : ""}
-    <h1>${title}</h1>
-    ${subtitle ? `<p>${subtitle}</p>` : ""}
-  </div>`;
-}
-
 /* Shell */
 let lastShellSignature = "";
 
@@ -500,11 +488,6 @@ export function openDetails(item) {
   navigate(detailsPath(item));
 }
 
-export function daysUntil(date) {
-  const target = new Date(date).getTime();
-  return Math.max(0, Math.ceil((target - Date.now()) / 86400000));
-}
-
 /* Player */
 // Playback now happens on a dedicated immersive page (player.html).
 export function openPlayer(item, options = {}) {
@@ -547,16 +530,7 @@ export async function shareItem(item) {
   }
 }
 
-export function openDetailsFromUrl() {
-  const page = document.body.dataset.page;
-  if (page === "detalhes" || page === "player") return false;
-  const params = new URLSearchParams(location.search);
-  const id = params.get("filme") || params.get("id");
-  const item = id ? byId(id) : null;
-  if (!item) return false;
-  navigate(detailsPath(item), { replace: true });
-  return true;
-}
+
 
 /* Auth */
 function authErrorMessage(message = "") {

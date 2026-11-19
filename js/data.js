@@ -161,7 +161,6 @@ const remoteCatalog = await loadRemoteCatalog();
 // If catalog.json cannot be loaded, the site stays empty rather than showing
 // placeholder titles. This keeps the catalog strictly operator-supplied.
 export const CATALOG = remoteCatalog || [];
-export const CATALOG_SOURCE = remoteCatalog?.length ? "catalog.json" : "vazio";
 
 // Pré-computa haystack de busca uma vez por item (y evita reconcatenar strings
 // em cada filtragem dentro de filtered() em catalogo.js).
@@ -257,7 +256,6 @@ for (const group of SERIES_GROUP_LIST) {
 
 export const movies = CATALOG.filter((item) => item.type === "movie");
 export const series = SERIES_GROUP_LIST.map((group) => group.show);
-export const seriesEpisodes = CATALOG.filter((item) => item.type === "series");
 export const catalogTitles = [...movies, ...series];
 export const allGenres = [...new Set(catalogTitles.flatMap((item) => item.genres))].sort((a, b) => a.localeCompare(b, "pt-BR"));
 
@@ -265,12 +263,6 @@ export function getSeriesGroup(value) {
   const item = typeof value === "string" ? byId(value) : value;
   return item ? SERIES_GROUP_BY_ID.get(item.id) || null : null;
 }
-
-export function getSeriesShow(value) {
-  return getSeriesGroup(value)?.show || null;
-}
-
-export const POPULAR_SEARCHES = catalogTitles.slice(0, 8).map((item) => item.title);
 
 const flaggedFeatured = movies.filter((item) => item.featured);
 const flaggedTrending = catalogTitles.filter((item) => item.trending);
@@ -283,8 +275,4 @@ export const newReleases = [...catalogTitles].sort((a, b) => (b.year || 0) - (a.
 
 export function getGenreMeta(name) {
   return CONFIG.genres.find((genre) => genre.name === name) || { name, icon: "fa-film", colors: ["#1c0f0a", "#b34724"] };
-}
-
-export function episodesFor(item) {
-  return getSeriesGroup(item)?.items || [];
 }

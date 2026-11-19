@@ -188,11 +188,6 @@ export function backdropOf(data, fallbackItem) {
   return atSize(fallbackItem?.backdrop || fallbackItem?.poster || "", "original");
 }
 
-export function posterOf(data, fallbackItem) {
-  if (data?.poster_path) return imageUrl(data.poster_path, "w500");
-  return fallbackItem?.poster || "";
-}
-
 export function castOf(data) {
   return (data?.credits?.cast || []).slice(0, 14).map((person) => ({
     id: person.id,

@@ -7,8 +7,6 @@ import {
   initCloudSession,
   signOutCloud,
   appUserFromSession,
-  upsertProfile,
-  getSession,
   getClient
 } from "./supabase.js";
 import { syncSocialCache, startSocialRealtime, stopSocialRealtime } from "./social.js";
@@ -90,16 +88,4 @@ export async function logout() {
   stopSocialRealtime();
   store.logout();
   window.dispatchEvent(new CustomEvent("pk:auth-changed"));
-}
-
-export async function saveCloudProfile(patch) {
-  if (!cloudEnabled()) return null;
-  const session = await getSession();
-  if (!session?.user) return null;
-  const profile = await upsertProfile(session.user, patch);
-  if (profile) {
-    store.saveUser(appUserFromSession(session, profile));
-    window.dispatchEvent(new CustomEvent("pk:auth-changed"));
-  }
-  return profile;
 }

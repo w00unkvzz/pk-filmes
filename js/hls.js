@@ -8,10 +8,6 @@ export function isHlsUrl(url = "") {
   return /\.m3u8(\?|#|$)/i.test(value) || /\/api\/stream(\?|$)/i.test(value);
 }
 
-export function canPlayNativeHls(video) {
-  return Boolean(video?.canPlayType?.("application/vnd.apple.mpegurl"));
-}
-
 export function attachHls(video, url, { onFatal, onReady } = {}) {
   detachHls();
   if (!video || !url) return null;
