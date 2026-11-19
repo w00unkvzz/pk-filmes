@@ -121,7 +121,6 @@ function similarItems(show) {
 
 function similarCard(item) {
   const art = cardArt(item.backdrop || item.poster);
-  const inList = store.isInWatchlist(item.id);
   const length = durationLabel(item);
   return `<article class="nf-similar-card" data-open-details="${escapeHTML(item.id)}" tabindex="0" aria-label="${escapeHTML(item.title)}">
     <div class="nf-similar-art">
@@ -134,7 +133,6 @@ function similarCard(item) {
         ${ageBadge(item)}
         <span class="nf-hd">HD</span>
         ${item.year ? `<span>${escapeHTML(String(item.year))}</span>` : ""}
-        <button class="nf-similar-add" data-watchlist="${escapeHTML(item.id)}" type="button" aria-label="${inList ? "Remover da minha lista" : "Adicionar à minha lista"}" title="${inList ? "Remover da minha lista" : "Adicionar à minha lista"}"><i class="fa-solid ${inList ? "fa-check" : "fa-plus"}"></i></button>
       </div>
       <p>${escapeHTML(item.synopsis || "Sinopse em preparação.")}</p>
     </div>

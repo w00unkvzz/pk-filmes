@@ -1575,8 +1575,7 @@ a.details-tag:hover { color: #fff; text-decoration: underline; }
 .nf-similar-body { display: grid; gap: 7px; }
 .nf-similar-meta { display: flex; align-items: center; gap: 7px; color: #b3b3b3; font-size: 11px; }
 .nf-similar-meta .nf-age { min-width: 26px; height: 20px; font-size: 10px; }
-.nf-similar-add { margin-left: auto; width: 30px; height: 30px; display: grid; place-items: center; border: 1px solid #555; border-radius: 50%; background: transparent; color: #fff; font-size: 12px; cursor: pointer; }
-.nf-similar-add:hover { border-color: #fff; background: rgba(255, 255, 255, .1); }
+
 .nf-similar-body p { margin: 0; color: #a3a3a3; font-size: 11px; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .details-empty { color: #777; font-size: 13px; }
 
