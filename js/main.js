@@ -120,10 +120,28 @@ function bindRouter() {
 
   document.addEventListener("click", (event) => {
     if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    const dataLink = event.target.closest?.("[data-href]");
+    if (dataLink) {
+      const clean = routeForHref(dataLink.getAttribute("data-href"));
+      if (!clean) return;
+      event.preventDefault();
+      navigate(clean);
+      return;
+    }
     const anchor = event.target.closest?.("a[href]");
     if (!anchor || anchor.target === "_blank" || anchor.hasAttribute("download")) return;
     const href = anchor.getAttribute("href");
     const clean = routeForHref(href);
+    if (!clean) return;
+    event.preventDefault();
+    navigate(clean);
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    const dataLink = event.target.closest?.("[data-href]");
+    if (!dataLink) return;
+    const clean = routeForHref(dataLink.getAttribute("data-href"));
     if (!clean) return;
     event.preventDefault();
     navigate(clean);

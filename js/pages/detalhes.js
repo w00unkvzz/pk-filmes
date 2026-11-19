@@ -154,7 +154,7 @@ function episodeRow(entry, show, tmdbEpisode, current) {
   const name = tmdbEpisode?.name || entry.name || `Episódio ${entry.episode}`;
   const runtime = Number(tmdbEpisode?.runtime) || Number(entry.item.duration) || 0;
   const synopsis = tmdbEpisode?.overview || entry.item.synopsis || show.synopsis || "";
-  return `<a class="nf-episode ${current ? "current" : ""}" href="${playerPath(entry.item)}" aria-label="Assistir ${escapeHTML(name)}">
+  return `<div class="nf-episode ${current ? "current" : ""}" role="link" tabindex="0" data-href="${escapeHTML(playerPath(entry.item))}" aria-label="Assistir ${escapeHTML(name)}">
     <span class="nf-episode-num">${entry.episode}</span>
     <span class="nf-episode-thumb">
       ${still ? `<img src="${escapeHTML(still)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">` : ""}
@@ -164,7 +164,7 @@ function episodeRow(entry, show, tmdbEpisode, current) {
       <span class="nf-episode-head"><strong>${escapeHTML(name)}</strong>${runtime ? `<span>${escapeHTML(formatDuration(runtime))}</span>` : ""}</span>
       <span class="nf-episode-synopsis">${escapeHTML(synopsis)}</span>
     </span>
-  </a>`;
+  </div>`;
 }
 
 function openWatchOptions({ show, playId, selected }) {

@@ -50,6 +50,7 @@ input, textarea, select, [contenteditable="true"] {
   -webkit-touch-callout: default;
 }
 img, svg { -webkit-user-drag: none; }
+img { pointer-events: none; user-select: none; }
 a, button { -webkit-tap-highlight-color: transparent; }
 :focus:not(:focus-visible) { outline: none; }
 :focus-visible { outline: 2px solid rgba(246, 18, 29, .7); outline-offset: 3px; }

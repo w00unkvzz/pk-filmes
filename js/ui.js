@@ -941,6 +941,24 @@ export function bindGlobalEvents() {
   if (window.__pkGlobalBound) return;
   window.__pkGlobalBound = true;
 
+  // Long-press on mobile opens Chrome's native link/image menu even with
+  // user-select disabled. Keep it off the content, but preserve it on fields
+  // where copy/paste is actually useful.
+  document.addEventListener("contextmenu", (event) => {
+    if (event.target.closest?.("input, textarea, [contenteditable='true']")) return;
+    event.preventDefault();
+  }, { capture: true });
+
+  document.addEventListener("selectstart", (event) => {
+    if (event.target.closest?.("input, textarea, [contenteditable='true']")) return;
+    event.preventDefault();
+  });
+
+  document.addEventListener("dragstart", (event) => {
+    if (event.target.closest?.("input, textarea, [contenteditable='true']")) return;
+    event.preventDefault();
+  });
+
   document.addEventListener("click", (event) => {
     const target = event.target;
     if (document.body.classList.contains("mobile-search-open") &&
