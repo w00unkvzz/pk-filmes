@@ -8,6 +8,12 @@ const catalog = require("../catalog.json");
 const UA = "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36";
 const FALLBACK_ORIGIN = "https://w00filmes.vercel.app";
 const PROXY_SECRET = process.env.RAVE_PROXY_SECRET || "w00-rave-stream-v1";
+const TMDB_API_KEY = "af8b0300c48e26a8b4da9bbf571515ce";
+const TMDB_BASE = "https://api.themoviedb.org/3";
+const TMDB_IMAGE = "https://image.tmdb.org/t/p/w300";
+const TMDB_TTL = 6 * 60 * 60 * 1000;
+const TMDB_TIMEOUT = 2500;
+const TMDB_CACHE = new Map();
 
 function proxySignature(url) {
   return crypto.createHmac("sha256", PROXY_SECRET).update(String(url)).digest("base64url").slice(0, 32);
@@ -100,10 +106,51 @@ function seriesGroupFor(item) {
   return SERIES_INDEX.byId.get(item.id) || null;
 }
 
-function episodeListMarkup(item, group) {
+function tmdbIdFromItem(item) {
+  const matches = String(item?.id || "").match(/(?:^|-)(\d{3,})(?=-|$)/g) || [];
+  const nums = matches.map((entry) => entry.replace(/^-/, "")).filter(Boolean);
+  return nums.length ? nums[nums.length - 1] : "";
+}
+
+async function fetchSeasonDetails(tvId, seasonNumber) {
+  if (!tvId || seasonNumber == null) return null;
+  const key = `${tvId}:${seasonNumber}`;
+  const cached = TMDB_CACHE.get(key);
+  if (cached && Date.now() - cached.ts < TMDB_TTL) return cached.data;
+  try {
+    const url = `${TMDB_BASE}/tv/${encodeURIComponent(tvId)}/season/${encodeURIComponent(seasonNumber)}?api_key=${TMDB_API_KEY}&language=pt-BR`;
+    const response = await fetch(url, { signal: AbortSignal.timeout(TMDB_TIMEOUT) });
+    if (!response.ok) throw new Error(`TMDB ${response.status}`);
+    const data = await response.json();
+    TMDB_CACHE.set(key, { ts: Date.now(), data });
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+async function seriesStills(group) {
+  const stills = new Map();
+  if (!group || !group.items.length) return stills;
+  const tvId = tmdbIdFromItem(group.items[0].item);
+  if (!tvId) return stills;
+  const seasonNumbers = group.seasons.map((season) => season.number);
+  const results = await Promise.allSettled(seasonNumbers.map((number) => fetchSeasonDetails(tvId, number)));
+  results.forEach((result, index) => {
+    if (result.status !== "fulfilled" || !result.value) return;
+    const seasonNumber = seasonNumbers[index];
+    for (const episode of result.value.episodes || []) {
+      if (episode?.still_path) {
+        stills.set(`${seasonNumber}:${episode.episode_number}`, `${TMDB_IMAGE}${episode.still_path}`);
+      }
+    }
+  });
+  return stills;
+}
+
+function episodeListMarkup(item, group, stills = new Map()) {
   if (!group || !group.items.length) return "";
   const currentId = String(item.id);
-  const total = group.items.length;
   const playIcon = `<span class="episode-play" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>`;
   const seasons = group.seasons.map((season) => {
     const rows = season.episodes.map((entry) => {
@@ -112,7 +159,7 @@ function episodeListMarkup(item, group) {
         ? entry.name
         : `Episódio ${entry.episode}`;
       const runtime = durationLabel(entry.item.duracao || entry.item.duration || 0);
-      const thumb = entry.item.backdrop || entry.item.capa || entry.item.poster || "";
+      const thumb = stills.get(`${entry.season}:${entry.episode}`) || entry.item.backdrop || entry.item.capa || entry.item.poster || "";
       const synopsis = entry.item.sinopse || entry.item.synopsis || "";
       const num = String(entry.episode).padStart(2, "0");
       return `<a class="episode${active ? " current" : ""}" href="/rave/${encodeURIComponent(entry.item.id)}"${active ? ' aria-current="true"' : ""}>
@@ -136,10 +183,6 @@ function episodeListMarkup(item, group) {
     </div>`;
   }).join("");
   return `<section class="episodes">
-    <div class="section-head">
-      <h2>Episódios</h2>
-      <span>${total} ep${total === 1 ? "" : "s"}</span>
-    </div>
     ${seasons}
   </section>`;
 }
@@ -214,7 +257,8 @@ module.exports = async function handler(req, res) {
   const durationText = durationLabel(minutes);
   const duration = durationISO(minutes);
   const seriesGroup = seriesGroupFor(item);
-  const episodes = episodeListMarkup(item, seriesGroup);
+  const stills = await seriesStills(seriesGroup);
+  const episodes = episodeListMarkup(item, seriesGroup, stills);
   const currentEntry = seriesGroup?.items.find((entry) => String(entry.item.id) === String(item.id)) || null;
   const showTitle = seriesGroup?.base || title;
   const episodeLabel = currentEntry
@@ -302,6 +346,11 @@ ${playbackUrl ? `<meta property="og:video" content="${escapeHTML(playbackUrl)}">
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { background: #000; }
+html, body {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
 body {
   min-height: 100vh;
   background:
@@ -354,22 +403,6 @@ img { display: block; max-width: 100%; }
 }
 .back:active { background: var(--accent-soft); border-color: rgba(229, 9, 20, .32); }
 .back svg { width: 20px; height: 20px; }
-.brand { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.brand-mark {
-  width: 26px;
-  height: 26px;
-  flex: 0 0 26px;
-  display: grid;
-  place-items: center;
-  border-radius: 8px;
-  background: linear-gradient(145deg, #ffb08f, #e50914 58%, #c73516);
-  color: #070707;
-  font-size: 8px;
-  font-weight: 900;
-  letter-spacing: -.08em;
-  box-shadow: 0 6px 16px rgba(229, 9, 20, .28);
-}
-.brand-text { color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .08em; }
 .rave-badge {
   margin-left: auto;
   padding: 5px 9px;
@@ -417,7 +450,6 @@ img { display: block; max-width: 100%; }
   min-height: 250px;
   padding: 24px 18px 18px;
 }
-.kicker { color: var(--accent-bright); font-size: 9px; font-weight: 800; letter-spacing: .18em; }
 h1 {
   color: #fff;
   font-size: clamp(1.55rem, 6.2vw, 2.15rem);
@@ -455,15 +487,6 @@ h1 {
   padding-top: 18px;
   border-top: 1px solid var(--line);
 }
-.section-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
-}
-.section-head h2 { color: #fff; font-size: 18px; font-weight: 800; letter-spacing: -.03em; }
-.section-head > span { color: var(--muted-2); font-size: 9px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
 .season + .season { margin-top: 20px; }
 .season-head {
   display: flex;
@@ -487,10 +510,6 @@ h1 {
 }
 .episode:last-child { border-bottom: 0; }
 .episode:active { background: rgba(255, 255, 255, .045); }
-.episode.current {
-  background: linear-gradient(90deg, rgba(229, 9, 20, .14), rgba(229, 9, 20, .02));
-  border-bottom-color: rgba(229, 9, 20, .18);
-}
 .episode-num {
   color: var(--muted-2);
   font-size: 12px;
@@ -498,7 +517,6 @@ h1 {
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
-.episode.current .episode-num { color: var(--accent-bright); }
 .episode-thumb {
   position: relative;
   display: block;
@@ -524,8 +542,7 @@ h1 {
   opacity: .5;
   transition: opacity .18s ease, background .18s ease;
 }
-.episode:hover .episode-play,
-.episode.current .episode-play { opacity: 1; background: rgba(0, 0, 0, .22); }
+.episode:hover .episode-play { opacity: 1; background: rgba(0, 0, 0, .22); }
 .episode-play svg {
   width: 26px;
   height: 26px;
@@ -584,10 +601,6 @@ h1 {
         <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </a>
-    <div class="brand">
-      <span class="brand-mark">W00</span>
-      <span class="brand-text">w00filmes</span>
-    </div>
     <span class="rave-badge">RAVE</span>
   </header>
 
@@ -595,7 +608,6 @@ h1 {
     ${backdrop ? `<div class="hero-bg" style="background-image:url(${escapeHTML(backdrop)})"></div>` : ""}
     <div class="hero-veil"></div>
     <div class="hero-content">
-      <span class="kicker">${seriesGroup ? "ASSISTIR NO RAVE" : "FILME · RAVE"}</span>
       <h1>${escapeHTML(showTitle)}</h1>
       ${episodeLabel ? `<p class="episode-label">${escapeHTML(episodeLabel)}</p>` : ""}
       ${metaBits.length ? `<div class="meta">${metaBits.join("")}</div>` : ""}
