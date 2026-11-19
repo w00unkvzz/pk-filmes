@@ -89,6 +89,7 @@ function normalizeCatalogItem(raw, index) {
     director: String(raw.direcao || raw.director || ""),
     poster: String(raw.capa || raw.poster || raw.cover || "").trim(),
     backdrop: String(raw.backdrop || raw.backdrop_path || "").trim(),
+    still: String(raw.still || raw.thumb || "").trim(),
     player,
     stream: player,
     trailer: String(raw.trailer || "").trim(),
@@ -104,7 +105,7 @@ function normalizeCatalogItem(raw, index) {
   };
 }
 
-const CACHE_KEY = "w00filmes.catalog_cache_v6";
+const CACHE_KEY = "w00filmes.catalog_cache_v7";
 const CACHE_TTL = 60 * 60 * 1000; // 1 hour
 
 function readCache() {

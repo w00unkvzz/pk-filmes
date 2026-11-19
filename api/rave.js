@@ -151,39 +151,53 @@ async function seriesStills(group) {
 function episodeListMarkup(item, group, stills = new Map()) {
   if (!group || !group.items.length) return "";
   const currentId = String(item.id);
+  const currentEntry = group.items.find((entry) => String(entry.item.id) === currentId) || group.items[0];
+  const currentSeason = currentEntry?.season ?? group.seasons[0]?.number ?? 1;
   const playIcon = `<span class="episode-play" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>`;
-  const seasons = group.seasons.map((season) => {
-    const rows = season.episodes.map((entry) => {
-      const active = String(entry.item.id) === currentId;
-      const label = entry.name && entry.name !== entry.item.nome
-        ? entry.name
-        : `Episódio ${entry.episode}`;
-      const runtime = durationLabel(entry.item.duracao || entry.item.duration || 0);
-      const thumb = stills.get(`${entry.season}:${entry.episode}`) || entry.item.backdrop || entry.item.capa || entry.item.poster || "";
-      const synopsis = entry.item.sinopse || entry.item.synopsis || "";
-      const num = String(entry.episode).padStart(2, "0");
-      return `<div class="episode${active ? " current" : ""}" role="link" tabindex="0" data-href="/rave/${encodeURIComponent(entry.item.id)}"${active ? ' aria-current="true"' : ""}>
-        <span class="episode-num">${num}</span>
-        <span class="episode-thumb${thumb ? "" : " episode-thumb-empty"}">
-          ${thumb ? `<img src="${escapeHTML(thumb)}" alt="" loading="lazy" decoding="async" draggable="false">` : ""}
-          ${playIcon}
-        </span>
-        <span class="episode-body">
-          <span class="episode-head"><strong>${escapeHTML(label)}</strong>${runtime ? `<span>${escapeHTML(runtime)}</span>` : ""}</span>
-          ${synopsis ? `<span class="episode-synopsis">${escapeHTML(synopsis)}</span>` : ""}
-        </span>
-      </div>`;
-    }).join("");
-    return `<div class="season">
-      <div class="season-head">
-        <h3>Temporada ${season.number}</h3>
-        <span>${season.episodes.length} ep${season.episodes.length === 1 ? "" : "s"}</span>
-      </div>
-      <div class="episode-list">${rows}</div>
+  const checkIcon = `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+  const rowsFor = (season) => season.episodes.map((entry) => {
+    const active = String(entry.item.id) === currentId;
+    const label = entry.name && entry.name !== entry.item.nome
+      ? entry.name
+      : `Episódio ${entry.episode}`;
+    const runtime = durationLabel(entry.item.duracao || entry.item.duration || 0);
+    const thumb = stills.get(`${entry.season}:${entry.episode}`) || entry.item.still || entry.item.backdrop || entry.item.capa || entry.item.poster || "";
+    const synopsis = entry.item.sinopse || entry.item.synopsis || "";
+    const num = String(entry.episode).padStart(2, "0");
+    return `<div class="episode${active ? " current" : ""}" role="link" tabindex="0" data-href="/rave/${encodeURIComponent(entry.item.id)}"${active ? ' aria-current="true"' : ""}>
+      <span class="episode-num">${num}</span>
+      <span class="episode-thumb${thumb ? "" : " episode-thumb-empty"}">
+        ${thumb ? `<img src="${escapeHTML(thumb)}" alt="" loading="lazy" decoding="async" draggable="false">` : ""}
+        ${playIcon}
+      </span>
+      <span class="episode-body">
+        <span class="episode-head"><strong>${escapeHTML(label)}</strong>${runtime ? `<span>${escapeHTML(runtime)}</span>` : ""}</span>
+        ${synopsis ? `<span class="episode-synopsis">${escapeHTML(synopsis)}</span>` : ""}
+      </span>
     </div>`;
   }).join("");
+
+  const currentSeasonData = group.seasons.find((season) => season.number === currentSeason);
+  const count = currentSeasonData?.episodes.length || 0;
+  const options = group.seasons.map((season) => `<button class="nf-season-option ${season.number === currentSeason ? "active" : ""}" type="button" role="option" data-season="${season.number}" aria-selected="${season.number === currentSeason}"><span>Temporada ${season.number}</span>${checkIcon}</button>`).join("");
+  const panels = group.seasons.map((season) => `<div class="rave-season-panel" data-season="${season.number}"${season.number === currentSeason ? "" : " hidden"}>
+    <div class="episode-list">${rowsFor(season)}</div>
+  </div>`).join("");
+
   return `<section class="episodes">
-    ${seasons}
+    <div class="season-head">
+      <h2>Episódios</h2>
+      <div class="nf-season-select" id="rave-season-select">
+        <button class="nf-season-button" id="rave-season-button" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="rave-season-menu">
+          <span id="rave-season-value">Temporada ${currentSeason}</span>
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="nf-season-menu" id="rave-season-menu" role="listbox" aria-label="Temporada">${options}</div>
+      </div>
+    </div>
+    <div class="details-season-line"><span id="rave-season-label">Temporada ${currentSeason}:</span><span id="rave-season-count">${count} episódio${count === 1 ? "" : "s"}</span></div>
+    ${panels}
   </section>`;
 }
 
@@ -502,10 +516,70 @@ h1 {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin: 0 2px 4px;
+  margin: 0 2px 10px;
 }
+.season-head h2 { color: #fff; font-size: 1.05rem; font-weight: 800; letter-spacing: -.02em; margin: 0; }
 .season-head h3 { color: #fff; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
-.season-head span { color: var(--muted-2); font-size: 9px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.season-head > span { color: var(--muted-2); font-size: 9px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+
+.nf-season-select { position: relative; display: inline-flex; align-items: center; }
+.nf-season-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background: #141414;
+  color: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color .2s ease, background .2s ease;
+}
+.nf-season-button:hover { border-color: #777; background: #1a1a1a; }
+.nf-season-button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.nf-season-button svg { width: 14px; height: 14px; color: #bbb; transition: transform .2s ease; }
+.nf-season-select.open .nf-season-button svg { transform: rotate(180deg); }
+.nf-season-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 30;
+  display: none;
+  width: 178px;
+  padding: 6px;
+  border: 1px solid #333;
+  border-radius: 4px;
+  background: #0a0a0a;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, .7);
+}
+.nf-season-select.open .nf-season-menu { display: block; }
+.nf-season-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 3px;
+  background: none;
+  color: #b3b3b3;
+  font-family: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.nf-season-option:hover,
+.nf-season-option.active { background: #1f1f1f; color: #fff; }
+.nf-season-option svg { width: 14px; height: 14px; color: var(--accent); opacity: 0; }
+.nf-season-option.active svg { opacity: 1; }
+.details-season-line { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 2px 12px; color: var(--muted-2); font-size: 12px; }
+.details-season-line #rave-season-label { color: #fff; font-weight: 700; }
+.rave-season-panel[hidden] { display: none; }
 .episode-list { display: grid; }
 .episode {
   display: grid;
@@ -648,6 +722,50 @@ h1 {
     if (!target) return;
     event.preventDefault();
     go(target);
+  });
+  const seasonSelect = document.getElementById("rave-season-select");
+  const seasonButton = document.getElementById("rave-season-button");
+  const seasonMenu = document.getElementById("rave-season-menu");
+  const seasonValue = document.getElementById("rave-season-value");
+  const seasonLabel = document.getElementById("rave-season-label");
+  const seasonCount = document.getElementById("rave-season-count");
+  const setSeason = (number) => {
+    seasonSelect?.classList.remove("open");
+    seasonButton?.setAttribute("aria-expanded", "false");
+    if (seasonValue) seasonValue.textContent = "Temporada " + number;
+    if (seasonLabel) seasonLabel.textContent = "Temporada " + number + ":";
+    document.querySelectorAll(".rave-season-panel").forEach((panel) => {
+      panel.hidden = Number(panel.dataset.season) !== Number(number);
+    });
+    const panel = document.querySelector('.rave-season-panel[data-season="' + number + '"]');
+    const total = panel ? panel.querySelectorAll(".episode").length : 0;
+    if (seasonCount) seasonCount.textContent = total + " episódio" + (total === 1 ? "" : "s");
+    seasonMenu?.querySelectorAll("[data-season]").forEach((option) => {
+      const active = Number(option.dataset.season) === Number(number);
+      option.classList.toggle("active", active);
+      option.setAttribute("aria-selected", String(active));
+    });
+  };
+  seasonButton?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    const open = seasonSelect?.classList.toggle("open");
+    seasonButton.setAttribute("aria-expanded", String(Boolean(open)));
+  });
+  seasonMenu?.addEventListener("click", (event) => {
+    const option = event.target.closest("[data-season]");
+    if (!option) return;
+    setSeason(Number(option.dataset.season));
+  });
+  document.addEventListener("click", (event) => {
+    if (seasonSelect && !event.target.closest("#rave-season-select")) {
+      seasonSelect.classList.remove("open");
+      seasonButton?.setAttribute("aria-expanded", "false");
+    }
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    seasonSelect?.classList.remove("open");
+    seasonButton?.setAttribute("aria-expanded", "false");
   });
   document.addEventListener("contextmenu", (event) => event.preventDefault());
   document.addEventListener("selectstart", (event) => event.preventDefault());

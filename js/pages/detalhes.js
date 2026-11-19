@@ -150,7 +150,7 @@ function similarMarkup(show) {
 function episodeRow(entry, show, tmdbEpisode, current) {
   const still = tmdbEpisode?.still_path
     ? imageUrl(tmdbEpisode.still_path, "w300")
-    : cardArt(show.backdrop || show.poster);
+    : entry.item.still || cardArt(show.backdrop || show.poster);
   const name = tmdbEpisode?.name || entry.name || `Episódio ${entry.episode}`;
   const runtime = Number(tmdbEpisode?.runtime) || Number(entry.item.duration) || 0;
   const synopsis = tmdbEpisode?.overview || entry.item.synopsis || show.synopsis || "";
