@@ -167,8 +167,12 @@ export function genresOf(data, fallbackItem) {
 }
 
 export function ratingOf(data, fallbackItem) {
+  // O catálogo é enriquecido com a nota real do IMDb; TMDB fica só como
+  // fallback para títulos que ainda não têm correspondência no dataset.
+  const fallback = Number(fallbackItem?.rating) || 0;
+  if (fallback > 0) return fallback;
   const value = Number(data?.vote_average);
-  return value > 0 ? Math.round(value * 10) / 10 : Number(fallbackItem?.rating) || 0;
+  return value > 0 ? Math.round(value * 10) / 10 : 0;
 }
 
 export function synopsisOf(data, fallbackItem) {

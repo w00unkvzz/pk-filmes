@@ -81,6 +81,7 @@ function normalizeCatalogItem(raw, index) {
     year: Number(raw.ano ?? raw.year) || null,
     genres,
     rating: Number(raw.nota ?? raw.rating ?? 0),
+    imdb: String(raw.imdb || "").trim(),
     duration: Number(raw.duracao ?? raw.duration ?? 0),
     age: String(raw.idade ?? raw.age ?? "L"),
     synopsis: String(raw.sinopse || raw.synopsis || raw.description || "Sinopse em preparação."),
@@ -103,7 +104,7 @@ function normalizeCatalogItem(raw, index) {
   };
 }
 
-const CACHE_KEY = "w00filmes.catalog_cache_v5";
+const CACHE_KEY = "w00filmes.catalog_cache_v6";
 const CACHE_TTL = 60 * 60 * 1000; // 1 hour
 
 function readCache() {

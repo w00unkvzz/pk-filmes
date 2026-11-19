@@ -312,8 +312,6 @@ export function renderDetalhes() {
           </div>
           <div class="details-season-line">
             <span id="details-season-label">Temporada ${seasonNumber}:</span>
-            ${ageBadge(show)}
-            <span>${ageWarning(show)}</span>
           </div>
           <div class="nf-episode-list" id="details-episodes"></div>
         </section>` : ""}
