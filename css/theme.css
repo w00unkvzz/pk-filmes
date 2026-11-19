@@ -1443,9 +1443,24 @@ body[data-page="detalhes"] .page-content { max-width: none; padding-bottom: 0; }
 .party-guest-note.is-hidden { display: none !important; }
 
 /* Watch Party — AMOLED */
+body[data-page="pkparty"],
+body[data-page="pkparty"] .app,
+body[data-page="pkparty"] .page-shell,
+body[data-page="pkparty"] .page-content,
+body[data-page="pkparty"] .party-room-v2,
+body[data-page="pkparty"] .party-watch,
+body[data-page="pkparty"] .party-side {
+  background: #000;
+}
+body[data-page="pkparty"] .party-room-v2 { border-color: #1a1a1a; }
 body[data-page="pkparty"] .party-room-head,
 body[data-page="pkparty"] .party-room-actions,
-body[data-page="pkparty"] .party-chat {
+body[data-page="pkparty"] .party-chat,
+body[data-page="pkparty"] .party-stage,
+body[data-page="pkparty"] .party-stage-head,
+body[data-page="pkparty"] .party-stage-foot,
+body[data-page="pkparty"] .party-video-wrap,
+body[data-page="pkparty"] .party-embed-wrap {
   background: #000;
   border-color: #1a1a1a;
   box-shadow: none;
@@ -1472,12 +1487,18 @@ body[data-page="pkparty"] .party-action i { color: #d8d8d8; }
 body[data-page="pkparty"] .party-action.danger { color: #ff8a80; }
 body[data-page="pkparty"] .party-action.danger i { color: #ff6b5a; }
 body[data-page="pkparty"] .party-action.next {
-  background: #141414;
-  border-color: #2a2a2a;
+  background: #000;
+  border-color: #1a1a1a;
   color: #fff;
   box-shadow: none;
 }
 body[data-page="pkparty"] .party-action.next i { color: #fff; }
+body[data-page="pkparty"] .party-action.next:hover {
+  background: #111;
+  border-color: #2a2a2a;
+  box-shadow: none;
+  filter: none;
+}
 body[data-page="pkparty"] .party-chat-form input:focus {
   border-color: #333;
   box-shadow: 0 0 0 3px rgba(255, 255, 255, .04);

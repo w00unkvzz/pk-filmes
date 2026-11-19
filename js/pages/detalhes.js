@@ -204,8 +204,7 @@ function openWatchOptions({ show, playId, selected }) {
 }
 
 function closeDetails() {
-  if (window.history.length > 1) window.history.back();
-  else navigate("/");
+  navigate("/");
 }
 
 export function renderDetalhes() {
