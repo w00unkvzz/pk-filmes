@@ -1565,19 +1565,20 @@ a.details-tag:hover { color: #fff; text-decoration: underline; }
 
 .nf-similar-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
 .nf-similar-grid.is-collapsed .nf-similar-card:nth-child(n+7) { display: none; }
-.nf-similar-card { display: flex; flex-direction: column; gap: 0; color: #fff; text-decoration: none; min-width: 0; cursor: pointer; background: #2f2f2f; border-radius: 4px; overflow: hidden; }
+.nf-similar-card { display: flex; flex-direction: column; gap: 0; color: #fff; text-decoration: none; min-width: 0; cursor: pointer; background: #000; border: 1px solid #1a1a1a; border-radius: 4px; overflow: hidden; }
+.nf-similar-card:hover { border-color: #333; }
 .nf-similar-card:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
-.nf-similar-art { position: relative; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 0; background: #1b1b1b; }
+.nf-similar-art { position: relative; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 0; background: #000; }
 .nf-similar-art img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .35s var(--ease); }
 .nf-similar-card:hover .nf-similar-art img { transform: scale(1.04); }
 .nf-similar-art::before { content: ""; position: absolute; inset: 0; z-index: 1; background: linear-gradient(198deg, rgba(0, 0, 0, .9), rgba(23, 23, 23, .5) 20%, transparent 28%); pointer-events: none; }
 .nf-similar-duration { position: absolute; top: 5%; right: 5%; z-index: 2; padding: 0; background: transparent; color: #fff; font-size: 11px; font-weight: 600; white-space: nowrap; text-shadow: 0 1px 4px rgba(0, 0, 0, .85); }
-.nf-similar-body { display: flex; flex-direction: column; flex: 1 1 auto; gap: 7px; padding: 12px; background: #2f2f2f; }
+.nf-similar-body { display: flex; flex-direction: column; flex: 1 1 auto; gap: 7px; padding: 12px; background: #000; }
 .nf-similar-meta { display: flex; align-items: center; gap: 7px; color: #bcbcbc; font-size: 11px; }
 .nf-similar-meta .nf-age { min-width: 30px; height: 22px; font-size: 10px; }
 
 .nf-similar-body p { margin: 0; color: #d2d2d2; font-size: 11px; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.nf-similar-more-wrap { position: relative; display: flex; justify-content: center; margin-top: 18px; border-top: 1px solid #333; }
+.nf-similar-more-wrap { position: relative; display: flex; justify-content: center; margin-top: 18px; border-top: 1px solid #1a1a1a; }
 .nf-similar-more { transform: translateY(-50%); width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; background: #000; border: 1px solid #444; color: #fff; font-size: 12px; cursor: pointer; }
 .nf-similar-more:hover { background: #111; border-color: #777; }
 .nf-similar-more i { transition: transform .2s var(--ease); }

@@ -8,6 +8,17 @@ const SHOWS = {
   }
 };
 
+// Same idea for series hosted on 123flmsfree. Each season has its own slug and
+// every episode page carries a freshly signed mediaInfoList.
+const SHOWS_123 = {
+  "tokyo-ghoul": {
+    1: "dar6nORSM7rDtwcSOUeSq-Tokyo-Ghoulzz-Season-1",
+    2: "zTz3MoE9Ki9gzwBuoxt6n-Tokyo-Ghoul-Root-A-Season-2",
+    3: "T23Uy26UE6ooHwU94HrSo-Tokyo-Ghoul-Season-3",
+    4: "KmV1PE08kCdnp4zV5WXGS-Tokyo-Ghoul-Season-4"
+  }
+};
+
 // 123flmsfree also signs its HLS URLs. The detail page is server-rendered with
 // a fresh `mediaUrl`, so resolve it on demand instead of storing a token that
 // dies in a few days.
@@ -104,6 +115,66 @@ function pick123Stream(html, prefer) {
   return fallback ? decodeMediaUrl(fallback[0]) : "";
 }
 
+function parse123PageProps(html) {
+  const match = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/);
+  if (!match) return null;
+  try {
+    return JSON.parse(match[1])?.props?.pageProps || null;
+  } catch {
+    return null;
+  }
+}
+
+async function resolve123Show({ show, season, episode }) {
+  const params = SHOWS_123[show];
+  if (!params) throw Object.assign(new Error("show desconhecido"), { status: 404 });
+  const websiteParam = params[Number(season)];
+  if (!websiteParam) throw Object.assign(new Error("temporada não encontrada"), { status: 404 });
+  if (!episode) throw Object.assign(new Error("episódio inválido"), { status: 400 });
+
+  const key = `123show:${show}:${season}:${episode}`;
+  const hit = cache.get(key);
+  if (hit && hit.expires > Date.now()) return hit.url;
+
+  let lastStatus = 0;
+  for (const host of ["https://ww1.123flmsfree.com", "https://www.123flmsfree.com"]) {
+    const pageUrl = `${host}/pt/detail/drama/${websiteParam}/${episode}?t=${Date.now()}`;
+    let response;
+    try {
+      response = await fetch(pageUrl, {
+        headers: {
+          "user-agent": UA,
+          accept: "text/html,application/xhtml+xml",
+          "accept-language": "pt-BR,pt;q=0.9,en;q=0.8",
+          referer: "https://ww1.123flmsfree.com/",
+          "cache-control": "no-cache",
+          pragma: "no-cache"
+        },
+        redirect: "follow",
+        cache: "no-store"
+      });
+    } catch {
+      continue;
+    }
+    lastStatus = response.status;
+    if (!response.ok) continue;
+    const html = await response.text();
+    const page = parse123PageProps(html);
+    if (!page) continue;
+    if (page.currentEpisodeNumber != null && String(page.currentEpisodeNumber) !== String(episode)) continue;
+    if (page.currentSeason?.seriesNo != null && String(page.currentSeason.seriesNo) !== String(season)) continue;
+    const url = pick123Stream(html, "GROOT_SD");
+    if (!url) continue;
+    const expiresAt = hlsExpiry(url);
+    if (expiresAt && expiresAt < Date.now() + 60000) continue;
+    const ttl = expiresAt ? Math.min(CACHE_TTL, expiresAt - Date.now() - 60000) : CACHE_TTL;
+    cache.set(key, { url, expires: Date.now() + Math.max(60000, ttl) });
+    return url;
+  }
+
+  throw Object.assign(new Error(`123flmsfree HTTP ${lastStatus || "sem resposta"}`), { status: 502 });
+}
+
 async function resolve123Movie({ movie }) {
   const params = MOVIES[movie];
   if (!params) throw Object.assign(new Error("filme desconhecido"), { status: 404 });
@@ -155,7 +226,9 @@ module.exports = async function handler(req, res) {
     const episode = parseEpisode(req.query?.file || req.query?.ep || req.query?.episode);
     const url = movie
       ? await resolve123Movie({ movie })
-      : await resolveStream({ show, season, episode });
+      : SHOWS_123[show]
+        ? await resolve123Show({ show, season, episode })
+        : await resolveStream({ show, season, episode });
     res.statusCode = 302;
     res.setHeader("Location", url);
     res.setHeader("Cache-Control", "no-store, max-age=0");
