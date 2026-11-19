@@ -128,6 +128,7 @@ function similarCard(item) {
       ${length ? `<span class="nf-similar-duration">${escapeHTML(length)}</span>` : ""}
     </div>
     <div class="nf-similar-body">
+      <span class="card-title nf-similar-name">${escapeHTML(item.title)}</span>
       <div class="nf-similar-meta">
         ${ageBadge(item)}
         <span class="nf-hd">HD</span>

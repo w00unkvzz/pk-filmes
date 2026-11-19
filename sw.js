@@ -5,14 +5,14 @@
 //   HTML pages    → network-first, fallback to cache
 //   Supabase/fonts/FA → network-only (no cache)
 
-const VERSION = "w00-v47";
+const VERSION = "w00-v48";
 // Forces one fresh catalog download so new titles appear immediately.
 const CATALOG_CACHE = "w00-catalog-v9";
-const STATIC_CACHE  = "w00-static-v47";
-const HTML_CACHE    = "w00-html-v47";
-// Stylesheets are requested with ?v=34 from the HTML shells, so the precache
+const STATIC_CACHE  = "w00-static-v48";
+const HTML_CACHE    = "w00-html-v48";
+// Stylesheets are requested with ?v=35 from the HTML shells, so the precache
 // must use the same URL to be served from cache instead of the network.
-const CSS_VERSION = "?v=34";
+const CSS_VERSION = "?v=35";
 
 const STATIC_ASSETS = [
   "/",
