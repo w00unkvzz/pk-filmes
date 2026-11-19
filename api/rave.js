@@ -2,10 +2,25 @@
 // publishes a schema.org VideoObject with contentUrl/embedUrl and lets the Rave
 // app pick the stream up. Keeping the same shape is what makes the Rave player
 // appear instead of a dead HTML5 <video>.
+const crypto = require("crypto");
 const catalog = require("../catalog.json");
 
 const UA = "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36";
 const FALLBACK_ORIGIN = "https://w00filmes.vercel.app";
+const PROXY_SECRET = process.env.RAVE_PROXY_SECRET || "w00-rave-stream-v1";
+
+function proxySignature(url) {
+  return crypto.createHmac("sha256", PROXY_SECRET).update(String(url)).digest("base64url").slice(0, 32);
+}
+
+function isHlsUrl(url) {
+  return /\.m3u8(?:$|\?)/i.test(String(url || ""));
+}
+
+function ravePlaybackUrl(origin, stream) {
+  if (!isHlsUrl(stream)) return stream;
+  return `${origin}/rave-stream.m3u8?u=${encodeURIComponent(stream)}&s=${proxySignature(stream)}`;
+}
 
 function escapeHTML(value) {
   return String(value ?? "").replace(/[&<>"']/g, (ch) => ({
@@ -91,6 +106,8 @@ module.exports = async function handler(req, res) {
   const synopsis = item.sinopse || item.synopsis || `Assista ${title}`;
   const stream = item.rave || item.player || item.stream || "";
   const direct = await resolveDirectStream(stream, origin);
+  const playbackUrl = ravePlaybackUrl(origin, direct);
+  const hls = isHlsUrl(direct);
   const minutes = item.duracao || item.duration || 0;
   const durationText = durationLabel(minutes);
   const duration = durationISO(minutes);
@@ -115,8 +132,9 @@ module.exports = async function handler(req, res) {
       userInteractionCount: Number(item.popularity) || 0
     },
     duration,
-    contentUrl: direct,
-    embedUrl: direct
+    encodingFormat: hls ? "application/x-mpegURL" : "video/mp4",
+    contentUrl: playbackUrl,
+    embedUrl: playbackUrl
   };
 
   const html = `<!DOCTYPE html>
