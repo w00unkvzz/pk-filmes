@@ -17,6 +17,10 @@ function isHlsUrl(url) {
   return /\.m3u8(?:$|\?)/i.test(String(url || ""));
 }
 
+function isMp4Url(url) {
+  return /\.mp4(?:$|\?)/i.test(String(url || ""));
+}
+
 function ravePlaybackUrl(origin, stream) {
   if (!isHlsUrl(stream)) return stream;
   return `${origin}/rave-stream.m3u8?u=${encodeURIComponent(stream)}&s=${proxySignature(stream)}`;
@@ -104,7 +108,10 @@ module.exports = async function handler(req, res) {
   const title = item.nome || item.title || "Título";
   const poster = item.capa || item.poster || "";
   const synopsis = item.sinopse || item.synopsis || `Assista ${title}`;
-  const stream = item.rave || item.player || item.stream || "";
+  // Rave's native player only opens MP4. Prefer an MP4 field even when the
+  // item also has an HLS URL; fall back to the first available source.
+  const candidates = [item.rave, item.player, item.stream].filter(Boolean);
+  const stream = candidates.find(isMp4Url) || candidates[0] || "";
   const direct = await resolveDirectStream(stream, origin);
   const playbackUrl = ravePlaybackUrl(origin, direct);
   const hls = isHlsUrl(direct);
@@ -174,25 +181,11 @@ a { color: #ccc; text-decoration: none; }
 .back:active svg { opacity: 1; }
 h1 { font-size: 20px; margin: 8px 0 4px; }
 .poster { width: 100%; max-height: 220px; object-fit: cover; border-radius: 8px; display: block; }
-.stage {
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  margin: 10px 0 6px;
-  overflow: hidden;
-  border-radius: 10px;
-  background: #000;
-  border: 1px solid rgba(255,255,255,.10);
-}
-.stage video { display: block; width: 100%; height: 100%; background: #000; object-fit: contain; }
-.error { color: #fca5a5; font-size: 13px; line-height: 1.5; margin: 6px 0 0; }
 .duration { color: #aaa; font-size: 13px; margin: 4px 0 2px; }
 </style>
 </head>
 <body>
-${playbackUrl ? `<div class="stage">
-<video id="rave-video" controls autoplay playsinline webkit-playsinline preload="auto"${poster ? ` poster="${escapeHTML(poster)}"` : ""}></video>
-</div>
-<p class="error" id="rave-error" hidden></p>` : poster ? `<img class="poster" src="${escapeHTML(poster)}" alt="${escapeHTML(title)}" loading="lazy">` : ""}
+${poster ? `<img class="poster" src="${escapeHTML(poster)}" alt="${escapeHTML(title)}" loading="lazy">` : ""}
 <a class="back" href="${escapeHTML(detailsHref)}">
 <svg width="28" height="28" viewBox="0 0 24 24" fill="white">
 <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
@@ -200,51 +193,6 @@ ${playbackUrl ? `<div class="stage">
 </a>
 <h1>${escapeHTML(title)}</h1>
 ${durationText ? `<p class="duration">⏱ ${escapeHTML(durationText)}</p>` : ""}
-<script src="/js/vendor/hls.min.js"></script>
-<script>
-(function () {
-  var video = document.getElementById("rave-video");
-  var error = document.getElementById("rave-error");
-  var source = ${JSON.stringify(playbackUrl).replace(/</g, "\\u003c")};
-  var isHls = ${hls ? "true" : "false"};
-  if (!video || !source) return;
-  function showError(message) {
-    if (!error) return;
-    error.hidden = false;
-    error.textContent = message || "Não foi possível carregar o vídeo.";
-  }
-  function ready() {
-    if (error) error.hidden = true;
-  }
-  if (isHls && window.Hls && window.Hls.isSupported()) {
-    var retried = false;
-    var hls = new window.Hls({ enableWorker: true, lowLatencyMode: false, backBufferLength: 90 });
-    hls.on(window.Hls.Events.ERROR, function (_event, data) {
-      if (!data || !data.fatal) return;
-      if (data.type === window.Hls.ErrorTypes.NETWORK_ERROR && !retried) {
-        retried = true;
-        hls.startLoad();
-        return;
-      }
-      showError("Não foi possível carregar o vídeo HLS.");
-    });
-    hls.on(window.Hls.Events.MANIFEST_PARSED, function () {
-      video.play().catch(function () {});
-    });
-    hls.loadSource(source);
-    hls.attachMedia(video);
-  } else {
-    video.src = source;
-    video.addEventListener("error", function () { showError("Não foi possível carregar o vídeo."); }, { once: true });
-    video.play().catch(function () {});
-  }
-  video.addEventListener("loadedmetadata", ready, { once: true });
-  video.addEventListener("canplay", function () {
-    ready();
-    video.play().catch(function () {});
-  }, { once: true });
-})();
-</script>
 </body>
 </html>`;
 
