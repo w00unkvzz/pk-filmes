@@ -103,6 +103,8 @@ function seriesGroupFor(item) {
 function episodeListMarkup(item, group) {
   if (!group || !group.items.length) return "";
   const currentId = String(item.id);
+  const total = group.items.length;
+  const playIcon = `<span class="episode-play" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>`;
   const seasons = group.seasons.map((season) => {
     const rows = season.episodes.map((entry) => {
       const active = String(entry.item.id) === currentId;
@@ -110,19 +112,34 @@ function episodeListMarkup(item, group) {
         ? entry.name
         : `Episódio ${entry.episode}`;
       const runtime = durationLabel(entry.item.duracao || entry.item.duration || 0);
+      const thumb = entry.item.backdrop || entry.item.capa || entry.item.poster || "";
+      const synopsis = entry.item.sinopse || entry.item.synopsis || "";
+      const num = String(entry.episode).padStart(2, "0");
       return `<a class="episode${active ? " current" : ""}" href="/rave/${encodeURIComponent(entry.item.id)}"${active ? ' aria-current="true"' : ""}>
-        <span class="episode-num">${entry.episode}</span>
-        <span class="episode-name">${escapeHTML(label)}</span>
-        ${runtime ? `<span class="episode-time">${escapeHTML(runtime)}</span>` : ""}
+        <span class="episode-num">${num}</span>
+        <span class="episode-thumb${thumb ? "" : " episode-thumb-empty"}">
+          ${thumb ? `<img src="${escapeHTML(thumb)}" alt="" loading="lazy" decoding="async">` : ""}
+          ${playIcon}
+        </span>
+        <span class="episode-body">
+          <span class="episode-head"><strong>${escapeHTML(label)}</strong>${runtime ? `<span>${escapeHTML(runtime)}</span>` : ""}</span>
+          ${synopsis ? `<span class="episode-synopsis">${escapeHTML(synopsis)}</span>` : ""}
+        </span>
       </a>`;
     }).join("");
     return `<div class="season">
-      <h3>Temporada ${season.number}</h3>
-      ${rows}
+      <div class="season-head">
+        <h3>Temporada ${season.number}</h3>
+        <span>${season.episodes.length} ep${season.episodes.length === 1 ? "" : "s"}</span>
+      </div>
+      <div class="episode-list">${rows}</div>
     </div>`;
   }).join("");
   return `<section class="episodes">
-    <h2>Episódios</h2>
+    <div class="section-head">
+      <h2>Episódios</h2>
+      <span>${total} ep${total === 1 ? "" : "s"}</span>
+    </div>
     ${seasons}
   </section>`;
 }
@@ -175,7 +192,7 @@ module.exports = async function handler(req, res) {
     res.statusCode = 404;
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.setHeader("Cache-Control", "no-store");
-    res.end("<!DOCTYPE html><html lang=\"pt-BR\"><meta charset=\"utf-8\"><title>Título não encontrado</title><body style=\"background:#1a1a1a;color:#eee;font-family:sans-serif;padding:24px\">Título não encontrado. <a href=\"/\" style=\"color:#ccc\">Voltar</a></body></html>");
+    res.end("<!DOCTYPE html><html lang=\"pt-BR\"><meta charset=\"utf-8\"><meta name=\"theme-color\" content=\"#000000\"><title>Título não encontrado</title><body style=\"margin:0;min-height:100vh;display:grid;place-items:center;background:#000;color:#f5f3ef;font-family:Inter,Helvetica,Arial,sans-serif;padding:24px;text-align:center\"><div><strong style=\"display:block;font-size:18px;margin-bottom:8px\">Título não encontrado</strong><a href=\"/\" style=\"color:#f6121d;font-weight:700\">Voltar</a></div></body></html>");
     return;
   }
 
@@ -184,6 +201,7 @@ module.exports = async function handler(req, res) {
   const origin = `${proto}://${host}`;
   const title = item.nome || item.title || "Título";
   const poster = item.capa || item.poster || "";
+  const backdrop = item.backdrop || item.capa || item.poster || "";
   const synopsis = item.sinopse || item.synopsis || `Assista ${title}`;
   // Rave's native player only opens MP4. Prefer an MP4 field even when the
   // item also has an HLS URL; fall back to the first available source.
@@ -197,6 +215,23 @@ module.exports = async function handler(req, res) {
   const duration = durationISO(minutes);
   const seriesGroup = seriesGroupFor(item);
   const episodes = episodeListMarkup(item, seriesGroup);
+  const currentEntry = seriesGroup?.items.find((entry) => String(entry.item.id) === String(item.id)) || null;
+  const showTitle = seriesGroup?.base || title;
+  const episodeLabel = currentEntry
+    ? `T${currentEntry.season} E${currentEntry.episode}${currentEntry.name ? ` · ${currentEntry.name}` : ""}`
+    : "";
+  const episodeCount = seriesGroup?.items.length || 0;
+  const seasonCount = seriesGroup?.seasons.length || 0;
+  const metaBits = [];
+  if (item.ano || item.year) metaBits.push(`<span class="meta-pill">${escapeHTML(item.ano || item.year)}</span>`);
+  if (seriesGroup) {
+    metaBits.push(`<span class="meta-pill">${episodeCount} episódio${episodeCount === 1 ? "" : "s"}</span>`);
+    metaBits.push(`<span class="meta-pill">${seasonCount} temporada${seasonCount === 1 ? "" : "s"}</span>`);
+  } else if (durationText) {
+    metaBits.push(`<span class="meta-pill">${escapeHTML(durationText)}</span>`);
+  }
+  if (item.idade) metaBits.push(`<span class="meta-pill age">${escapeHTML(item.idade)}</span>`);
+  if (item.nota) metaBits.push(`<span class="meta-pill rating">★ ${escapeHTML(item.nota)}</span>`);
   const canonical = `${origin}/rave/${encodeURIComponent(item.id)}`;
   const detailsHref = seriesGroup
     ? `/serie/${encodeURIComponent(slugify(seriesGroup.base || title))}`
@@ -232,6 +267,9 @@ module.exports = async function handler(req, res) {
 <title>${escapeHTML(videoName)}</title>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <meta name="description" content="${escapeHTML(synopsis)}">
 <link rel="canonical" href="${escapeHTML(canonical)}">
 <meta property="og:locale" content="pt_BR">
@@ -245,47 +283,330 @@ ${playbackUrl ? `<meta property="og:video" content="${escapeHTML(playbackUrl)}">
 <meta property="og:video:type" content="${hls ? "application/vnd.apple.mpegurl" : "video/mp4"}">
 <meta property="og:video:width" content="1280">
 <meta property="og:video:height" content="720">` : ""}
-<meta name="theme-color" content="#1a1a1a">
+<meta name="theme-color" content="#000000">
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  background: #1a1a1a;
-  color: #eee;
-  font-family: -apple-system, sans-serif;
-  padding: 12px;
-  max-width: 480px;
-  margin: 0 auto;
+:root {
+  --bg: #000;
+  --surface: #0a0a0b;
+  --surface-2: #111114;
+  --line: rgba(255, 255, 255, .08);
+  --line-strong: rgba(255, 255, 255, .14);
+  --text: #f5f3ef;
+  --muted: #b8b4ac;
+  --muted-2: #7a756d;
+  --accent: #e50914;
+  --accent-bright: #f6121d;
+  --accent-soft: rgba(229, 9, 20, .14);
+  --radius: 18px;
+  --font: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
-a { color: #ccc; text-decoration: none; }
-.back { display: inline-flex; align-items: center; padding: 8px 0; }
-.back svg { opacity: .85; }
-.back:active svg { opacity: 1; }
-h1 { font-size: 20px; margin: 8px 0 4px; }
-.poster { width: 100%; max-height: 220px; object-fit: cover; border-radius: 8px; display: block; }
-.duration { color: #aaa; font-size: 13px; margin: 4px 0 2px; }
-.episodes { margin-top: 18px; border-top: 1px solid rgba(255,255,255,.1); padding-top: 14px; }
-.episodes h2 { font-size: 15px; margin-bottom: 10px; }
-.season + .season { margin-top: 14px; }
-.season h3 { font-size: 12px; color: #999; font-weight: 600; margin: 0 0 6px; text-transform: uppercase; letter-spacing: .04em; }
-.episode { display: flex; align-items: center; gap: 10px; padding: 9px 8px; border-radius: 8px; color: #ddd; }
-.episode:active { background: rgba(255,255,255,.07); }
-.episode.current { background: rgba(255,255,255,.09); color: #fff; }
-.episode-num { flex: 0 0 26px; text-align: center; color: #888; font-size: 12px; font-variant-numeric: tabular-nums; }
-.episode.current .episode-num { color: #fff; }
-.episode-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
-.episode-time { color: #888; font-size: 11px; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { background: #000; }
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(900px 520px at 8% -10%, rgba(229, 9, 20, .14), transparent 60%),
+    radial-gradient(760px 480px at 96% 6%, rgba(229, 9, 20, .08), transparent 62%),
+    #000;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(255, 255, 255, .18) .5px, transparent .5px);
+  background-size: 9px 9px;
+  opacity: .035;
+}
+a { color: inherit; text-decoration: none; }
+img { display: block; max-width: 100%; }
+.page { width: 100%; max-width: 640px; margin: 0 auto; padding-bottom: 34px; }
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 16px;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, .94), rgba(0, 0, 0, .62) 70%, transparent);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+.back {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .05);
+  border: 1px solid var(--line);
+  color: #fff;
+}
+.back:active { background: var(--accent-soft); border-color: rgba(229, 9, 20, .32); }
+.back svg { width: 20px; height: 20px; }
+.brand { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.brand-mark {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: linear-gradient(145deg, #ffb08f, #e50914 58%, #c73516);
+  color: #070707;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: -.08em;
+  box-shadow: 0 6px 16px rgba(229, 9, 20, .28);
+}
+.brand-text { color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .08em; }
+.rave-badge {
+  margin-left: auto;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  border: 1px solid rgba(229, 9, 20, .28);
+  color: #ffd9c9;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .16em;
+}
+
+.hero {
+  position: relative;
+  margin: 4px 16px 0;
+  min-height: 250px;
+  overflow: hidden;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .55), 0 0 0 1px rgba(246, 18, 29, .025);
+}
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center 22%;
+  opacity: .52;
+  transform: scale(1.02);
+}
+.hero-veil {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to top, rgba(0, 0, 0, .97) 0%, rgba(0, 0, 0, .58) 46%, rgba(0, 0, 0, .12) 100%),
+    linear-gradient(90deg, rgba(0, 0, 0, .72), transparent 72%);
+}
+.hero-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 8px;
+  min-height: 250px;
+  padding: 24px 18px 18px;
+}
+.kicker { color: var(--accent-bright); font-size: 9px; font-weight: 800; letter-spacing: .18em; }
+h1 {
+  color: #fff;
+  font-size: clamp(1.55rem, 6.2vw, 2.15rem);
+  font-weight: 800;
+  line-height: 1.04;
+  letter-spacing: -.04em;
+  text-shadow: 0 2px 22px rgba(0, 0, 0, .6);
+}
+.episode-label { color: #fff; font-size: 12px; font-weight: 700; letter-spacing: .01em; }
+.meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.meta-pill {
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, .07);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+.meta-pill.age { background: var(--accent-soft); border-color: rgba(229, 9, 20, .28); color: #ffd9c9; }
+.meta-pill.rating { color: #ffd9c9; }
+.synopsis {
+  color: var(--muted);
+  font-size: 11.5px;
+  line-height: 1.55;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.episodes {
+  margin: 24px 16px 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+.section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.section-head h2 { color: #fff; font-size: 18px; font-weight: 800; letter-spacing: -.03em; }
+.section-head > span { color: var(--muted-2); font-size: 9px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.season + .season { margin-top: 20px; }
+.season-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 2px 4px;
+}
+.season-head h3 { color: #fff; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.season-head span { color: var(--muted-2); font-size: 9px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.episode-list { display: grid; }
+.episode {
+  display: grid;
+  grid-template-columns: 26px 92px minmax(0, 1fr);
+  gap: 11px;
+  align-items: center;
+  padding: 11px 6px;
+  border-bottom: 1px solid var(--line);
+  color: #fff;
+  transition: background .18s ease;
+}
+.episode:last-child { border-bottom: 0; }
+.episode:active { background: rgba(255, 255, 255, .045); }
+.episode.current {
+  background: linear-gradient(90deg, rgba(229, 9, 20, .14), rgba(229, 9, 20, .02));
+  border-bottom-color: rgba(229, 9, 20, .18);
+}
+.episode-num {
+  color: var(--muted-2);
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.episode.current .episode-num { color: var(--accent-bright); }
+.episode-thumb {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #141416;
+  border: 1px solid var(--line);
+}
+.episode-thumb img { width: 100%; height: 100%; object-fit: cover; opacity: .9; }
+.episode-thumb-empty {
+  background:
+    radial-gradient(circle at 30% 20%, rgba(229, 9, 20, .24), transparent 58%),
+    #141416;
+}
+.episode-play {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  color: #fff;
+  opacity: .5;
+  transition: opacity .18s ease, background .18s ease;
+}
+.episode:hover .episode-play,
+.episode.current .episode-play { opacity: 1; background: rgba(0, 0, 0, .22); }
+.episode-play svg {
+  width: 26px;
+  height: 26px;
+  padding: 6px;
+  border-radius: 50%;
+  background: rgba(229, 9, 20, .92);
+  box-shadow: 0 6px 18px rgba(229, 9, 20, .35);
+}
+.episode-body { min-width: 0; display: grid; gap: 4px; }
+.episode-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.episode-head strong {
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.episode-head span { flex: 0 0 auto; color: var(--muted-2); font-size: 10px; font-weight: 600; }
+.episode-synopsis {
+  color: var(--muted-2);
+  font-size: 10.5px;
+  line-height: 1.42;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.footer {
+  margin: 26px 16px 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  color: var(--muted-2);
+  font-size: 9px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+@media (max-width: 360px) {
+  .hero { margin-left: 12px; margin-right: 12px; }
+  .episodes { margin-left: 12px; margin-right: 12px; }
+  .episode { grid-template-columns: 22px 78px minmax(0, 1fr); gap: 9px; }
+  .episode-head strong { font-size: 12px; }
+  .episode-synopsis { -webkit-line-clamp: 1; }
+}
 </style>
 </head>
 <body>
-${poster ? `<img class="poster" src="${escapeHTML(poster)}" alt="${escapeHTML(title)}" loading="lazy">` : ""}
-<a class="back" href="${escapeHTML(detailsHref)}">
-<svg width="28" height="28" viewBox="0 0 24 24" fill="white">
-<path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
-</svg>
-</a>
-<h1>${escapeHTML(title)}</h1>
-${durationText ? `<p class="duration">⏱ ${escapeHTML(durationText)}</p>` : ""}
-${episodes}
+<div class="page">
+  <header class="topbar">
+    <a class="back" href="${escapeHTML(detailsHref)}" aria-label="Voltar">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </a>
+    <div class="brand">
+      <span class="brand-mark">W00</span>
+      <span class="brand-text">w00filmes</span>
+    </div>
+    <span class="rave-badge">RAVE</span>
+  </header>
+
+  <section class="hero">
+    ${backdrop ? `<div class="hero-bg" style="background-image:url(${escapeHTML(backdrop)})"></div>` : ""}
+    <div class="hero-veil"></div>
+    <div class="hero-content">
+      <span class="kicker">${seriesGroup ? "ASSISTIR NO RAVE" : "FILME · RAVE"}</span>
+      <h1>${escapeHTML(showTitle)}</h1>
+      ${episodeLabel ? `<p class="episode-label">${escapeHTML(episodeLabel)}</p>` : ""}
+      ${metaBits.length ? `<div class="meta">${metaBits.join("")}</div>` : ""}
+      ${synopsis ? `<p class="synopsis">${escapeHTML(synopsis)}</p>` : ""}
+    </div>
+  </section>
+
+  ${episodes}
+
+  <footer class="footer">w00filmes · player nativo do Rave</footer>
+</div>
 </body>
 </html>`;
 
