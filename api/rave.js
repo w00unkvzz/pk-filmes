@@ -132,7 +132,7 @@ module.exports = async function handler(req, res) {
       userInteractionCount: Number(item.popularity) || 0
     },
     duration,
-    encodingFormat: hls ? "application/x-mpegURL" : "video/mp4",
+    encodingFormat: hls ? "application/vnd.apple.mpegurl" : "video/mp4",
     contentUrl: playbackUrl,
     embedUrl: playbackUrl
   };
@@ -152,6 +152,11 @@ module.exports = async function handler(req, res) {
 <meta property="og:description" content="${escapeHTML(synopsis)}">
 ${poster ? `<meta property="og:image" content="${escapeHTML(poster)}">` : ""}
 <meta property="og:url" content="${escapeHTML(canonical)}">
+${playbackUrl ? `<meta property="og:video" content="${escapeHTML(playbackUrl)}">
+<meta property="og:video:secure_url" content="${escapeHTML(playbackUrl)}">
+<meta property="og:video:type" content="${hls ? "application/vnd.apple.mpegurl" : "video/mp4"}">
+<meta property="og:video:width" content="1280">
+<meta property="og:video:height" content="720">` : ""}
 <meta name="theme-color" content="#1a1a1a">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -169,11 +174,25 @@ a { color: #ccc; text-decoration: none; }
 .back:active svg { opacity: 1; }
 h1 { font-size: 20px; margin: 8px 0 4px; }
 .poster { width: 100%; max-height: 220px; object-fit: cover; border-radius: 8px; display: block; }
+.stage {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  margin: 10px 0 6px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #000;
+  border: 1px solid rgba(255,255,255,.10);
+}
+.stage video { display: block; width: 100%; height: 100%; background: #000; object-fit: contain; }
+.error { color: #fca5a5; font-size: 13px; line-height: 1.5; margin: 6px 0 0; }
 .duration { color: #aaa; font-size: 13px; margin: 4px 0 2px; }
 </style>
 </head>
 <body>
-${poster ? `<img class="poster" src="${escapeHTML(poster)}" alt="${escapeHTML(title)}" loading="lazy">` : ""}
+${playbackUrl ? `<div class="stage">
+<video id="rave-video" controls autoplay playsinline webkit-playsinline preload="auto"${poster ? ` poster="${escapeHTML(poster)}"` : ""}></video>
+</div>
+<p class="error" id="rave-error" hidden></p>` : poster ? `<img class="poster" src="${escapeHTML(poster)}" alt="${escapeHTML(title)}" loading="lazy">` : ""}
 <a class="back" href="${escapeHTML(detailsHref)}">
 <svg width="28" height="28" viewBox="0 0 24 24" fill="white">
 <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
@@ -181,6 +200,51 @@ ${poster ? `<img class="poster" src="${escapeHTML(poster)}" alt="${escapeHTML(ti
 </a>
 <h1>${escapeHTML(title)}</h1>
 ${durationText ? `<p class="duration">⏱ ${escapeHTML(durationText)}</p>` : ""}
+<script src="/js/vendor/hls.min.js"></script>
+<script>
+(function () {
+  var video = document.getElementById("rave-video");
+  var error = document.getElementById("rave-error");
+  var source = ${JSON.stringify(playbackUrl).replace(/</g, "\\u003c")};
+  var isHls = ${hls ? "true" : "false"};
+  if (!video || !source) return;
+  function showError(message) {
+    if (!error) return;
+    error.hidden = false;
+    error.textContent = message || "Não foi possível carregar o vídeo.";
+  }
+  function ready() {
+    if (error) error.hidden = true;
+  }
+  if (isHls && window.Hls && window.Hls.isSupported()) {
+    var retried = false;
+    var hls = new window.Hls({ enableWorker: true, lowLatencyMode: false, backBufferLength: 90 });
+    hls.on(window.Hls.Events.ERROR, function (_event, data) {
+      if (!data || !data.fatal) return;
+      if (data.type === window.Hls.ErrorTypes.NETWORK_ERROR && !retried) {
+        retried = true;
+        hls.startLoad();
+        return;
+      }
+      showError("Não foi possível carregar o vídeo HLS.");
+    });
+    hls.on(window.Hls.Events.MANIFEST_PARSED, function () {
+      video.play().catch(function () {});
+    });
+    hls.loadSource(source);
+    hls.attachMedia(video);
+  } else {
+    video.src = source;
+    video.addEventListener("error", function () { showError("Não foi possível carregar o vídeo."); }, { once: true });
+    video.play().catch(function () {});
+  }
+  video.addEventListener("loadedmetadata", ready, { once: true });
+  video.addEventListener("canplay", function () {
+    ready();
+    video.play().catch(function () {});
+  }, { once: true });
+})();
+</script>
 </body>
 </html>`;
 
