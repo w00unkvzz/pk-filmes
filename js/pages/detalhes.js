@@ -124,9 +124,8 @@ function similarCard(item) {
   const length = durationLabel(item);
   return `<article class="nf-similar-card" data-open-details="${escapeHTML(item.id)}" tabindex="0" aria-label="${escapeHTML(item.title)}">
     <div class="nf-similar-art">
-      ${art ? `<img src="${escapeHTML(art)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">` : ""}
+      ${art ? `<img src="${escapeHTML(art)}" alt="${escapeHTML(item.title)}" loading="lazy" decoding="async" referrerpolicy="no-referrer">` : ""}
       ${length ? `<span class="nf-similar-duration">${escapeHTML(length)}</span>` : ""}
-      <span class="nf-similar-title">${escapeHTML(item.title)}</span>
     </div>
     <div class="nf-similar-body">
       <div class="nf-similar-meta">
@@ -142,7 +141,9 @@ function similarCard(item) {
 function similarMarkup(show) {
   const items = similarItems(show);
   if (!items.length) return `<p class="details-empty">Nenhum título similar encontrado.</p>`;
-  return `<div class="nf-similar-grid">${items.map(similarCard).join("")}</div>`;
+  const collapsible = items.length > 6;
+  return `<div class="nf-similar-grid${collapsible ? " is-collapsed" : ""}">${items.map(similarCard).join("")}</div>
+    ${collapsible ? `<div class="nf-similar-more-wrap"><button class="nf-similar-more" type="button" data-similar-more aria-expanded="false" aria-label="Mostrar mais títulos semelhantes"><i class="fa-solid fa-chevron-down"></i></button></div>` : ""}`;
 }
 
 function episodeRow(entry, show, tmdbEpisode, current) {
@@ -459,6 +460,18 @@ async function hydrateDetails({ item, group, show, selected, request, playId, se
 
   const similar = qs("#details-similar");
   if (similar && genres.length) similar.innerHTML = similarMarkup({ ...show, genres });
+  if (similar && !similar.dataset.similarBound) {
+    similar.dataset.similarBound = "1";
+    similar.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-similar-more]");
+      if (!button) return;
+      const grid = similar.querySelector(".nf-similar-grid");
+      if (!grid) return;
+      const collapsed = grid.classList.toggle("is-collapsed");
+      button.setAttribute("aria-expanded", collapsed ? "false" : "true");
+      button.setAttribute("aria-label", collapsed ? "Mostrar mais títulos semelhantes" : "Mostrar menos títulos semelhantes");
+    });
+  }
 
   if (group) setupSeasons(group, show, data.id, seasonNumber, playId);
 }

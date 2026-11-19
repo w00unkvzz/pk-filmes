@@ -1563,20 +1563,25 @@ a.details-tag:hover { color: #fff; text-decoration: underline; }
 .details-similar { margin-top: 34px; }
 .details-similar h2 { margin-bottom: 16px; }
 
-.nf-similar-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px 14px; }
-.nf-similar-card { display: flex; flex-direction: column; gap: 10px; color: #fff; text-decoration: none; min-width: 0; cursor: pointer; }
+.nf-similar-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.nf-similar-grid.is-collapsed .nf-similar-card:nth-child(n+7) { display: none; }
+.nf-similar-card { display: flex; flex-direction: column; gap: 0; color: #fff; text-decoration: none; min-width: 0; cursor: pointer; background: #2f2f2f; border-radius: 4px; overflow: hidden; }
 .nf-similar-card:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
-.nf-similar-art { position: relative; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 3px; background: #1b1b1b; }
+.nf-similar-art { position: relative; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 0; background: #1b1b1b; }
 .nf-similar-art img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .35s var(--ease); }
 .nf-similar-card:hover .nf-similar-art img { transform: scale(1.04); }
-.nf-similar-art::after { content: ""; position: absolute; inset: 0; background: linear-gradient(0deg, rgba(0, 0, 0, .72), transparent 55%); pointer-events: none; }
-.nf-similar-title { position: absolute; left: 10px; right: 10px; bottom: 9px; z-index: 1; font-size: 13px; font-weight: 700; line-height: 1.15; text-shadow: 0 1px 8px rgba(0, 0, 0, .8); }
-.nf-similar-duration { position: absolute; top: 8px; right: 8px; z-index: 1; padding: 2px 6px; border-radius: 2px; background: rgba(0, 0, 0, .72); color: #fff; font-size: 10px; font-weight: 600; }
-.nf-similar-body { display: grid; gap: 7px; }
-.nf-similar-meta { display: flex; align-items: center; gap: 7px; color: #b3b3b3; font-size: 11px; }
-.nf-similar-meta .nf-age { min-width: 26px; height: 20px; font-size: 10px; }
+.nf-similar-art::before { content: ""; position: absolute; inset: 0; z-index: 1; background: linear-gradient(198deg, rgba(0, 0, 0, .9), rgba(23, 23, 23, .5) 20%, transparent 28%); pointer-events: none; }
+.nf-similar-duration { position: absolute; top: 5%; right: 5%; z-index: 2; padding: 0; background: transparent; color: #fff; font-size: 11px; font-weight: 600; white-space: nowrap; text-shadow: 0 1px 4px rgba(0, 0, 0, .85); }
+.nf-similar-body { display: flex; flex-direction: column; flex: 1 1 auto; gap: 7px; padding: 12px; background: #2f2f2f; }
+.nf-similar-meta { display: flex; align-items: center; gap: 7px; color: #bcbcbc; font-size: 11px; }
+.nf-similar-meta .nf-age { min-width: 30px; height: 22px; font-size: 10px; }
 
-.nf-similar-body p { margin: 0; color: #a3a3a3; font-size: 11px; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.nf-similar-body p { margin: 0; color: #d2d2d2; font-size: 11px; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.nf-similar-more-wrap { position: relative; display: flex; justify-content: center; margin-top: 18px; border-top: 1px solid #333; }
+.nf-similar-more { transform: translateY(-50%); width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; background: #000; border: 1px solid #444; color: #fff; font-size: 12px; cursor: pointer; }
+.nf-similar-more:hover { background: #111; border-color: #777; }
+.nf-similar-more i { transition: transform .2s var(--ease); }
+.nf-similar-more[aria-expanded="true"] i { transform: rotate(180deg); }
 .details-empty { color: #777; font-size: 13px; }
 
 .details-missing { padding-top: calc(var(--nav-h) + 40px); }
@@ -2152,7 +2157,7 @@ body[data-page="player"] { background: #000; }
   .details-body { padding-bottom: calc(60px + env(safe-area-inset-bottom)); }
   .details-section-head h2,
   .details-similar h2 { font-size: 1.2rem; }
-  .nf-similar-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 10px; }
+  .nf-similar-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 10px; }
   .nf-episode { grid-template-columns: 20px 112px minmax(0, 1fr); gap: 10px; padding: 12px 0; }
   .nf-episode-head { gap: 10px; }
   .nf-episode-head strong { font-size: 13px; }
