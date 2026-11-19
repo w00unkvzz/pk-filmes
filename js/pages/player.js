@@ -5,7 +5,6 @@ import { getRoute, detailsPath, playerPath, replaceRoute } from "../router.js";
 import * as store from "../store.js";
 import { qs, escapeHTML, formatDuration, formatClock, toast, emptyState } from "../ui.js";
 import { getTitleDetails, getSeasonDetails, tmdbIdFromItem, imageUrl, yearOf, runtimeOf, ratingOf } from "../tmdb.js";
-import { openWatchPartyModal } from "../watchparty.js";
 import { attachHls, detachHls, isHlsUrl } from "../hls.js";
 
 const DIRECT_VIDEO = /\.(mp4|m4v|webm|ogv|ogg|mov|m3u8)(\?|#|$)/i;
@@ -182,7 +181,6 @@ export function renderPlayer() {
                 ${group.seasons.map((season) => `<button class="season-option ${season.number === (current.season || group.seasons[0]?.number) ? "active" : ""}" type="button" role="option" aria-selected="${season.number === (current.season || group.seasons[0]?.number) ? "true" : "false"}" data-season="${season.number}">Temporada ${season.number}</button>`).join("")}
               </div>
             </div>
-            <button class="btn btn-party btn-sm player-party-btn" id="player-party" type="button"><i class="fa-solid fa-users"></i>Watch Party</button>
           </div>
 
           <div class="episodes-container-wrapper">
@@ -202,10 +200,6 @@ export function renderPlayer() {
             <span class="badge badge-accent">${show.type === "series" ? "Série" : "Filme"}</span>
             <strong>${escapeHTML(title)}</strong>
             <span id="player-movie-meta">${escapeHTML(playerSubtitle(current, group, show, null))}</span>
-          </div>
-          <div class="player-movie-actions">
-            <a class="btn btn-ghost" href="${detailsPath(current.item)}"><i class="fa-solid fa-circle-info"></i>Detalhes</a>
-            <button class="btn btn-party" id="player-party" type="button"><i class="fa-solid fa-users"></i>Criar Watch Party</button>
           </div>
         </section>`}
     </div>`;
@@ -260,16 +254,10 @@ function overlayMarkup(mode, current, group, show) {
           <span class="meta-subtitle" id="player-subtitle">${escapeHTML(playerSubtitle(current, group, show, null))}</span>
         </div>
       </div>
-      <a class="brand-logo-pk" href="/" aria-label="Início">W00</a>
     </div>
 
     <div class="player-bottom-wrapper">
       ${canControl ? `
-        <div class="controls-row">
-          <button class="skip-intro-btn" id="player-skip-intro" type="button" hidden>Pular Abertura</button>
-          <button class="skip-next-btn" id="player-skip-next" type="button" hidden><i class="fa-solid fa-forward-step"></i> Próximo Episódio</button>
-        </div>
-
         <div class="continue-prompt" id="player-continue" hidden>
           <span>Você parou em <strong id="player-continue-time">00:00</strong>. Deseja continuar assistindo?</span>
           <div class="prompt-buttons">
@@ -335,16 +323,6 @@ function mountPlayer({ item, group, show, current }) {
 }
 
 function bindSharedControls({ group, show, activeItem }) {
-  const partyButton = qs("#player-party");
-  if (partyButton && !partyButton.dataset.bound) {
-    partyButton.dataset.bound = "1";
-    partyButton.addEventListener("click", () => {
-      const activeId = qs("#player-page")?.dataset.activeId;
-      const active = group?.items.find((entry) => entry.item.id === activeId)?.item || activeItem;
-      openWatchPartyModal(show, { episodeId: active.id, title: show.title, poster: show.poster });
-    });
-  }
-
   const seasonButton = qs("#player-season-btn");
   const seasonDropdown = qs("#player-season-dropdown");
   if (seasonButton && !seasonButton.dataset.bound) {

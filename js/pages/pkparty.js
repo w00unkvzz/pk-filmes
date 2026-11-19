@@ -639,13 +639,22 @@ function renderParticipants(onlineIds = new Set()) {
   if (onlineCount) onlineCount.textContent = `${online} online`;
 }
 
-function chatMessageMarkup(message) {
+function chatMessageMarkup(message, showIdentity = true) {
   const self = message.user_id === user.id;
-  return `<div class="chat-msg ${self ? "self" : ""}">${avatar({ name: message.sender_name || "Convidado", avatar_url: message.sender_avatar || "" }, "xs")}<div class="chat-msg-body"><strong>${escapeHTML(self ? "Você" : message.sender_name || "Convidado")}</strong><p>${escapeHTML(message.body)}</p></div></div>`;
+  const identity = showIdentity
+    ? avatar({ name: message.sender_name || "Convidado", avatar_url: message.sender_avatar || "" }, "xs")
+    : "";
+  const name = showIdentity
+    ? `<strong>${escapeHTML(self ? "Você" : message.sender_name || "Convidado")}</strong>`
+    : "";
+  return `<div class="chat-msg ${self ? "self" : ""}${showIdentity ? "" : " grouped"}">${identity}<div class="chat-msg-body">${name}<p>${escapeHTML(message.body)}</p></div></div>`;
 }
 
 function chatMarkup() {
-  return chatRows.map(chatMessageMarkup).join("");
+  return chatRows.map((message, index) => {
+    const previous = chatRows[index - 1];
+    return chatMessageMarkup(message, !previous || previous.user_id !== message.user_id);
+  }).join("");
 }
 
 function renderChat() {
@@ -658,10 +667,12 @@ function renderChat() {
 function appendChat(message) {
   if (!message?.client_id) return;
   if (chatRows.some((row) => row.client_id === message.client_id)) return;
+  const previous = chatRows[chatRows.length - 1];
+  const showIdentity = !previous || previous.user_id !== message.user_id;
   chatRows.push(message);
   const log = qs("#party-chat-log");
   if (!log) return;
-  log.insertAdjacentHTML("beforeend", chatMessageMarkup(message));
+  log.insertAdjacentHTML("beforeend", chatMessageMarkup(message, showIdentity));
   log.scrollTop = log.scrollHeight;
 }
 

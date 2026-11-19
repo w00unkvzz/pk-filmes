@@ -489,11 +489,11 @@ body[data-page="perfil"] .profile-section:last-child { margin-bottom: 0; }
 .party-chat-log { gap: 13px; padding: 14px; }
 .chat-msg .avatar { width: 27px; height: 27px; flex-basis: 27px; }
 .chat-msg-body strong { color: #ffd9c9; font-size: 9.5px; }
-.chat-msg-body p { color: #e8e4dd; font-size: 11.5px; line-height: 1.5; background: rgba(246, 18, 29,.07); border: 1px solid rgba(246, 18, 29,.08); padding: 7px 10px; border-radius: 3px 12px 12px 12px; margin-top: 3px; display: inline-block; }
+.chat-msg-body p { color: #e8e4dd; font-size: 11.5px; line-height: 1.5; background: rgba(255, 255, 255,.055); border: 1px solid rgba(255, 255, 255,.075); padding: 7px 10px; border-radius: 3px 12px 12px 12px; margin-top: 3px; display: inline-block; }
 .chat-msg.self { flex-direction: row-reverse; }
 .chat-msg.self .chat-msg-body { text-align: right; }
 .chat-msg.self .chat-msg-body strong { color: var(--accent-bright); }
-.chat-msg.self .chat-msg-body p { background: rgba(229, 9, 20,.18); border-color: rgba(229, 9, 20,.2); border-radius: 12px 3px 12px 12px; }
+.chat-msg.self .chat-msg-body p { background: rgba(255, 255, 255,.06); border-color: rgba(255, 255, 255,.08); border-radius: 12px 3px 12px 12px; }
 .party-chat-form { border-color: rgba(246, 18, 29,.1); background: rgba(246, 18, 29,.02); }
 .party-chat-form input { border-radius: 10px; background: rgba(246, 18, 29,.06); border-color: rgba(246, 18, 29,.1); min-height: 38px; }
 .party-chat-form button { border-radius: 10px; background: linear-gradient(135deg, #f6121d, var(--accent)); color: #070707; }
@@ -795,25 +795,6 @@ body[data-page="perfil"] .profile-section:last-child { margin-bottom: 0; }
 .catalog-menu::-webkit-scrollbar { width: 6px; }
 .catalog-menu::-webkit-scrollbar-track { background: transparent; }
 .catalog-menu::-webkit-scrollbar-thumb { border-radius: 999px; background: rgba(246, 18, 29, .55); }
-/* Sticky hint so the year list never looks abruptly cut: it makes it obvious
-   that the remaining years are a scroll away. */
-#year-menu::after {
-  content: "role para ver mais";
-  position: sticky;
-  bottom: 0;
-  display: block;
-  margin: 6px -6px -8px;
-  padding: 7px 10px 8px;
-  border-top: 1px solid rgba(246, 18, 29, .16);
-  background: #101012;
-  color: #a3a09a;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: .09em;
-  text-align: center;
-  text-transform: uppercase;
-  pointer-events: none;
-}
 .catalog-dropdown.open .catalog-menu { display: block; }
 .catalog-menu-item {
   display: block; width: 100%; padding: 9px 10px; border-radius: 8px;
@@ -1149,7 +1130,7 @@ body[data-page="pkparty"] .page-shell { min-height: calc(100dvh - var(--topbar-h
 .party-chat-log .chat-msg.self .chat-msg-body { background: transparent; border: 0; }
 .party-chat-log .chat-msg-body strong { display: block; color: #ffd9c9; font-size: 8px; letter-spacing: 0.05em; text-transform: uppercase; }
 .party-chat-log .chat-msg-body p { display: inline-block; max-width: 100%; margin-top: 3px; padding: 7px 10px; color: #e8e4dd; font-size: 11px; line-height: 1.45; overflow-wrap: anywhere; background: rgba(255, 255, 255, 0.055); border: 1px solid rgba(255, 255, 255, 0.075); border-radius: 3px 12px 12px 12px; }
-.party-chat-log .chat-msg.self .chat-msg-body p { background: rgba(229, 9, 20, 0.18); border-color: rgba(246, 18, 29, 0.22); border-radius: 12px 3px 12px 12px; }
+.party-chat-log .chat-msg.self .chat-msg-body p { background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.08); border-radius: 12px 3px 12px 12px; }
 .party-chat-form { flex: 0 0 auto; display: flex; gap: 7px; padding: 10px; border-top: 1px solid rgba(255, 255, 255, 0.08); background: rgba(8, 10, 20, 0.35); }
 .party-chat-form input { flex: 1 1 auto; min-width: 0; height: 38px; padding: 0 12px; border-radius: 10px; color: #f5f3ef; font-size: 11px; background: rgba(255, 255, 255, 0.055); border: 1px solid rgba(255, 255, 255, 0.1); outline: none; }
 .party-chat-form input:focus { border-color: rgba(246, 18, 29, 0.55); box-shadow: 0 0 0 3px rgba(229, 9, 20, 0.1); }
@@ -1460,3 +1441,44 @@ body[data-page="detalhes"] .page-content { max-width: none; padding-bottom: 0; }
   transition: none !important;
 }
 .party-guest-note.is-hidden { display: none !important; }
+
+/* Watch Party — AMOLED */
+body[data-page="pkparty"] .party-room-head,
+body[data-page="pkparty"] .party-room-actions,
+body[data-page="pkparty"] .party-chat {
+  background: #000;
+  border-color: #1a1a1a;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+body[data-page="pkparty"] .party-chat-head,
+body[data-page="pkparty"] .party-chat-form {
+  background: #000;
+  border-color: #1a1a1a;
+}
+body[data-page="pkparty"] .party-chat-log { background: #000; }
+body[data-page="pkparty"] .chat-msg { background: transparent; }
+body[data-page="pkparty"] .party-action {
+  background: #0a0a0a;
+  border-color: #222;
+  color: #f5f5f5;
+}
+body[data-page="pkparty"] .party-action:hover {
+  background: #151515;
+  border-color: #333;
+}
+body[data-page="pkparty"] .party-action i { color: #d8d8d8; }
+body[data-page="pkparty"] .party-action.danger { color: #ff8a80; }
+body[data-page="pkparty"] .party-action.danger i { color: #ff6b5a; }
+body[data-page="pkparty"] .party-action.next {
+  background: #141414;
+  border-color: #2a2a2a;
+  color: #fff;
+  box-shadow: none;
+}
+body[data-page="pkparty"] .party-action.next i { color: #fff; }
+body[data-page="pkparty"] .party-chat-form input:focus {
+  border-color: #333;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, .04);
+}

@@ -1732,7 +1732,7 @@ a.details-tag:hover { color: #fff; text-decoration: underline; }
   background: #1f1f1f;
 }
 
-.chat-msg.self { background: rgba(229, 9, 20, .18); }
+.chat-msg.self { background: transparent; }
 
 .party-live-pill {
   background: var(--accent);
