@@ -2,7 +2,7 @@
 // profile studio. The site keeps rendering behind the overlay, so after the
 // gate closes the current route is already painted.
 import { CONFIG } from "./config.js";
-import { CATALOG, DEFAULT_USER } from "./data.js";
+import { DEFAULT_USER } from "./data.js";
 import * as store from "./store.js";
 import { authEnabled } from "./auth.js";
 import {
@@ -115,14 +115,6 @@ function unlockBodyIfIdle() {
   document.body.classList.remove("w00-onboarding-active");
 }
 
-function heroPosters() {
-  const pool = CATALOG.filter((item) => item.backdrop && item.title).slice(0, 3);
-  return pool.map((item, index) => `<figure class="gate-poster" style="--tilt:${index === 0 ? "-7deg" : index === 1 ? "2deg" : "8deg"}">
-    <img src="${esc(item.backdrop)}" alt="" loading="eager" decoding="async">
-    <figcaption>${esc(item.title)}</figcaption>
-  </figure>`).join("");
-}
-
 /* --------------------------------------------------------------------------
    Preloader
    ------------------------------------------------------------------------ */
@@ -159,60 +151,32 @@ function gateMarkup() {
     <div class="gate-shell">
       <header class="gate-top">
         <a class="gate-brand" href="/" aria-label="w00filmes"><span>w00</span>filmes</a>
-        <span class="gate-secure"><i class="fa-solid fa-lock"></i> sessão segura</span>
       </header>
       <main class="gate-main">
-        <section class="gate-copy">
-          <div class="gate-kicker">Sua sessão começa aqui</div>
-          <h1>Cinema sem limites.<br><em>Com gente do lado.</em></h1>
-          <p>Filmes, séries, watchlist e salas sincronizadas. Crie sua conta para entrar no w00filmes.</p>
-          <ul class="gate-points">
-            <li><i class="fa-solid fa-circle-check"></i> Catálogo completo e atualizado</li>
-            <li><i class="fa-solid fa-circle-check"></i> Watch Party com chat em tempo real</li>
-            <li><i class="fa-solid fa-circle-check"></i> Seu perfil em qualquer dispositivo</li>
-          </ul>
-          <div class="gate-posters" aria-hidden="true">${heroPosters()}</div>
-        </section>
         <section class="gate-panel" aria-label="Entrar ou criar conta">
-          <div class="gate-tabs" role="tablist">
-            <button class="gate-tab active" data-gate-tab="signup" type="button" role="tab">Criar conta</button>
-            <button class="gate-tab" data-gate-tab="login" type="button" role="tab">Entrar</button>
-          </div>
+          <h1 class="gate-title" data-gate-title>Informe seus dados<br>para entrar</h1>
+          <p class="gate-subtitle">
+            <span data-gate-copy="login">Ou <button class="gate-switch" data-gate-tab="signup" type="button">crie uma conta</button>.</span>
+            <span data-gate-copy="signup" hidden>Já tem uma conta? <button class="gate-switch" data-gate-tab="login" type="button">Entrar</button>.</span>
+          </p>
 
-          <form class="gate-form" id="gate-signup-form" novalidate>
-            <div class="gate-field">
-              <label for="gate-name">Nome</label>
-              <span class="gate-input-wrap"><i class="fa-solid fa-user"></i><input class="gate-input" id="gate-name" name="name" autocomplete="name" maxlength="40" placeholder="Como podemos te chamar?" required></span>
-            </div>
-            <div class="gate-field">
-              <label for="gate-signup-email">E-mail</label>
-              <span class="gate-input-wrap"><i class="fa-solid fa-envelope"></i><input class="gate-input" id="gate-signup-email" name="email" type="email" autocomplete="email" placeholder="voce@email.com" required></span>
-            </div>
-            <div class="gate-field">
-              <label for="gate-signup-password">Senha</label>
-              <span class="gate-input-wrap"><i class="fa-solid fa-key"></i><input class="gate-input" id="gate-signup-password" name="password" type="password" autocomplete="new-password" minlength="6" placeholder="Mínimo de 6 caracteres" required></span>
-            </div>
+          <form class="gate-form" id="gate-login-form" novalidate>
+            <input class="gate-input" id="gate-login-email" name="email" type="email" autocomplete="email" placeholder="E-mail" aria-label="E-mail" required>
+            <input class="gate-input" id="gate-login-password" name="password" type="password" autocomplete="current-password" placeholder="Senha" aria-label="Senha" required>
+            <p class="gate-msg" data-gate-msg></p>
+            <button class="gate-submit" type="submit"><span>Continuar</span><i class="fa-solid fa-arrow-right"></i></button>
+            <button class="gate-forgot" data-gate-forgot type="button">Esqueci minha senha</button>
+          </form>
+
+          <form class="gate-form" id="gate-signup-form" hidden novalidate>
+            <input class="gate-input" id="gate-name" name="name" autocomplete="name" maxlength="40" placeholder="Nome" aria-label="Nome" required>
+            <input class="gate-input" id="gate-signup-email" name="email" type="email" autocomplete="email" placeholder="E-mail" aria-label="E-mail" required>
+            <input class="gate-input" id="gate-signup-password" name="password" type="password" autocomplete="new-password" minlength="6" placeholder="Senha (mínimo 6 caracteres)" aria-label="Senha" required>
             <p class="gate-msg" data-gate-msg></p>
             <button class="gate-submit" type="submit"><span>Criar conta</span><i class="fa-solid fa-arrow-right"></i></button>
           </form>
 
-          <form class="gate-form" id="gate-login-form" hidden novalidate>
-            <div class="gate-field">
-              <label for="gate-login-email">E-mail</label>
-              <span class="gate-input-wrap"><i class="fa-solid fa-envelope"></i><input class="gate-input" id="gate-login-email" name="email" type="email" autocomplete="email" placeholder="voce@email.com" required></span>
-            </div>
-            <div class="gate-field">
-              <label for="gate-login-password">Senha</label>
-              <span class="gate-input-wrap"><i class="fa-solid fa-key"></i><input class="gate-input" id="gate-login-password" name="password" type="password" autocomplete="current-password" placeholder="Sua senha" required></span>
-            </div>
-            <p class="gate-msg" data-gate-msg></p>
-            <button class="gate-submit" type="submit"><span>Entrar</span><i class="fa-solid fa-arrow-right"></i></button>
-            <button class="gate-forgot" data-gate-forgot type="button">Esqueci minha senha</button>
-          </form>
-
-          <div class="gate-divider"><span>ou</span></div>
           <button class="gate-social" data-gate-google type="button"><i class="fa-brands fa-google"></i> Continuar com Google</button>
-          <p class="gate-legal">Ao continuar, você concorda em manter o respeito nas salas e no chat. Seus dados ficam ligados à sua conta.</p>
         </section>
       </main>
     </div>`;
@@ -254,22 +218,26 @@ function showGate() {
   document.body.appendChild(root);
   requestAnimationFrame(() => root.classList.add("is-open"));
 
-  const tabs = [...root.querySelectorAll("[data-gate-tab]")];
+  const tabButtons = [...root.querySelectorAll("[data-gate-tab]")];
   const signupForm = root.querySelector("#gate-signup-form");
   const loginForm = root.querySelector("#gate-login-form");
+  const gateTitle = root.querySelector("[data-gate-title]");
+  const copyBlocks = [...root.querySelectorAll("[data-gate-copy]")];
 
   function switchTab(tab) {
-    tabs.forEach((button) => button.classList.toggle("active", button.dataset.gateTab === tab));
-    if (signupForm) signupForm.hidden = tab !== "signup";
-    if (loginForm) loginForm.hidden = tab !== "login";
+    const signup = tab === "signup";
+    if (signupForm) signupForm.hidden = !signup;
+    if (loginForm) loginForm.hidden = signup;
+    if (gateTitle) gateTitle.innerHTML = signup ? "Crie sua conta" : "Informe seus dados<br>para entrar";
+    copyBlocks.forEach((block) => { block.hidden = block.dataset.gateCopy !== tab; });
     gateMessage(root, "");
     requestAnimationFrame(() => {
-      const input = root.querySelector(tab === "signup" ? "#gate-name" : "#gate-login-email");
+      const input = root.querySelector(signup ? "#gate-name" : "#gate-login-email");
       input?.focus({ preventScroll: true });
     });
   }
 
-  tabs.forEach((button) => button.addEventListener("click", () => switchTab(button.dataset.gateTab)));
+  tabButtons.forEach((button) => button.addEventListener("click", () => switchTab(button.dataset.gateTab)));
 
   signupForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -370,7 +338,7 @@ function showGate() {
     hideGate();
   };
   window.addEventListener("pk:auth-changed", gateAuthListener);
-  setTimeout(() => root.querySelector("#gate-name")?.focus({ preventScroll: true }), 180);
+  setTimeout(() => root.querySelector("#gate-login-email")?.focus({ preventScroll: true }), 180);
   return root;
 }
 
