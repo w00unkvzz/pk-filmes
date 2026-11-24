@@ -4,7 +4,7 @@
 import { CONFIG } from "./config.js";
 
 const GENRE_COLORS = {
-  Ação: ["#450a0a", "#dc2626"],
+  Ação: ["#2e1065", "#8b5cf6"],
   Aventura: ["#052e16", "#16a34a"],
   Animação: ["#3b1d0b", "#e8a13a"],
   Comédia: ["#422006", "#f59e0b"],
@@ -14,9 +14,9 @@ const GENRE_COLORS = {
   Fantasia: ["#2a0f1c", "#d95c8a"],
   Ficção: ["#0a0a0b", "#5fc4b8"],
   Mistério: ["#101012", "#8a857c"],
-  Romance: ["#3a0f1a", "#ff8a8a"],
-  Suspense: ["#101012", "#c73516"],
-  Terror: ["#0a0a0a", "#991b1b"],
+  Romance: ["#3a0f1a", "#d8b4fe"],
+  Suspense: ["#101012", "#6d28d9"],
+  Terror: ["#0a0a0a", "#5b21b6"],
   Tecnologia: ["#0b2a24", "#6fd6a8"]
 };
 

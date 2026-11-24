@@ -1,11 +1,11 @@
 // Profile: Supabase identity, avatar upload, watchlist, history and friends.
-import { CONFIG } from "../config.js";
-import { byId, DEFAULT_USER } from "../data.js";
+import { byId } from "../data.js";
 import * as store from "../store.js";
-import { uploadAvatar, updateProfile, syncSocialCache } from "../social.js";
+import { uploadAvatar, syncSocialCache } from "../social.js";
+import { openProfileStudio } from "../onboarding.js";
 import {
   qs, qsa, avatar, posterCard, posterImage, emptyState, formatDuration, formatDate,
-  escapeHTML, openModal, closeModal, toast, bindSlidingTabs, refreshSlidingTabs
+  escapeHTML, toast, bindSlidingTabs, refreshSlidingTabs
 } from "../ui.js";
 
 const validTabs = ["minha-lista", "historico", "amigos", "conquistas"];
@@ -71,7 +71,7 @@ export async function renderPerfil() {
         <div class="meta"><span>${escapeHTML(user.email || "sem e-mail")}</span><span class="dot"></span><span>Desde ${formatDate(user.joined)}</span><span class="dot"></span><span>${escapeHTML(user.bio)}</span></div>
       </div>
       <div class="profile-actions">
-        ${user.authed ? `<button class="btn btn-primary" id="edit-profile" type="button"><i class="fa-solid fa-pen"></i>Editar perfil</button>` : `<button class="btn btn-primary" data-auth-open type="button"><i class="fa-solid fa-right-to-bracket"></i>Entrar</button>`}
+        ${user.authed ? `<button class="btn btn-primary" id="edit-profile" type="button"><i class="fa-solid fa-user-pen"></i>Gerenciar perfil</button>` : `<button class="btn btn-primary" data-auth-open type="button"><i class="fa-solid fa-right-to-bracket"></i>Entrar</button>`}
       </div>
     </div>
 
@@ -137,7 +137,7 @@ function mountPerfil() {
     });
   });
 
-  qs("#edit-profile")?.addEventListener("click", openEditProfile);
+  qs("#edit-profile")?.addEventListener("click", () => openProfileStudio({ mode: "manage" }));
   qs("#profile-avatar-edit")?.addEventListener("click", () => qs("#avatar-file")?.click());
   qs("#avatar-file")?.addEventListener("change", async (event) => {
     const file = event.target.files?.[0];
@@ -169,51 +169,5 @@ function mountPerfil() {
   qs("#setting-notifications")?.addEventListener("change", (event) => {
     store.saveSettings({ notifications: event.target.checked });
     toast("Preferência salva.", "success");
-  });
-}
-
-function openEditProfile() {
-  const user = store.getUser();
-  if (!user.authed) { toast("Entre na sua conta para editar o perfil.", "info"); return; }
-  const content = `
-    <button class="modal-close" data-close-modal type="button" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
-    <div class="auth-head"><div class="brand-mark">w00</div><h2>Editar perfil</h2></div>
-    <form class="auth-body" id="edit-profile-form">
-      <div class="field"><label for="edit-name">Nome</label><input class="input" id="edit-name" name="name" required maxlength="40" value="${escapeHTML(user.name)}"></div>
-      <div class="field"><label for="edit-email">E-mail</label><input class="input" id="edit-email" type="email" value="${escapeHTML(user.email)}" disabled></div>
-      <div class="field"><label for="edit-bio">Bio</label><textarea class="textarea" id="edit-bio" name="bio" maxlength="140">${escapeHTML(user.bio)}</textarea></div>
-      <div class="field"><label for="edit-genre">Gênero favorito</label><select class="select" id="edit-genre" name="favoriteGenre">${CONFIG.genres.map((genre) => `<option value="${genre.name}" ${user.favoriteGenre === genre.name ? "selected" : ""}>${genre.name}</option>`).join("")}</select></div>
-      <button class="btn btn-primary btn-block" type="submit"><i class="fa-solid fa-check"></i>Salvar alterações</button>
-    </form>`;
-
-  openModal(content, {
-    className: "modal-sm",
-    label: "Editar perfil",
-    onMount: () => {
-      qs("#edit-profile-form")?.addEventListener("submit", async (event) => {
-        event.preventDefault();
-        const data = new FormData(event.currentTarget);
-        const patch = {
-          name: String(data.get("name") || "").trim() || DEFAULT_USER.name,
-          bio: String(data.get("bio") || "").trim() || "Explorando o catálogo.",
-          favoriteGenre: data.get("favoriteGenre")
-        };
-        const submit = event.currentTarget.querySelector("button[type=submit]");
-        submit.disabled = true;
-        try {
-          if (user.cloud) {
-            await updateProfile(patch);
-          } else {
-            store.saveUser(patch);
-            window.dispatchEvent(new CustomEvent("pk:auth-changed"));
-          }
-          closeModal();
-          toast("Perfil atualizado.", "success", "Tudo certo");
-        } catch (error) {
-          toast(error.message, "error");
-          submit.disabled = false;
-        }
-      });
-    }
   });
 }

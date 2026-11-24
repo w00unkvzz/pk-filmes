@@ -241,7 +241,7 @@ export function renderDetalhes() {
   document.title = `${title} — w00filmes`;
 
   content.innerHTML = `
-    <section class="details-page" id="details-page" style="--c1:${show.colors?.[0] || "#101012"};--c2:${show.colors?.[1] || "#e50914"}">
+    <section class="details-page" id="details-page" style="--c1:${show.colors?.[0] || "#101012"};--c2:${show.colors?.[1] || "#7c3aed"}">
       <button class="details-close" data-details-close type="button" aria-label="Fechar detalhes"><i class="fa-solid fa-xmark"></i></button>
 
       <div class="details-hero">

@@ -249,7 +249,7 @@ module.exports = async function handler(req, res) {
     res.statusCode = 404;
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.setHeader("Cache-Control", "no-store");
-    res.end("<!DOCTYPE html><html lang=\"pt-BR\"><meta charset=\"utf-8\"><meta name=\"theme-color\" content=\"#000000\"><title>Título não encontrado</title><body style=\"margin:0;min-height:100vh;display:grid;place-items:center;background:#000;color:#f5f3ef;font-family:Inter,Helvetica,Arial,sans-serif;padding:24px;text-align:center\"><div><strong style=\"display:block;font-size:18px;margin-bottom:8px\">Título não encontrado</strong><a href=\"/\" style=\"color:#f6121d;font-weight:700\">Voltar</a></div></body></html>");
+    res.end("<!DOCTYPE html><html lang=\"pt-BR\"><meta charset=\"utf-8\"><meta name=\"theme-color\" content=\"#000000\"><title>Título não encontrado</title><body style=\"margin:0;min-height:100vh;display:grid;place-items:center;background:#000;color:#f5f3ef;font-family:Inter,Helvetica,Arial,sans-serif;padding:24px;text-align:center\"><div><strong style=\"display:block;font-size:18px;margin-bottom:8px\">Título não encontrado</strong><a href=\"/\" style=\"color:#a855f7;font-weight:700\">Voltar</a></div></body></html>");
     return;
   }
 
@@ -352,9 +352,9 @@ ${playbackUrl ? `<meta property="og:video" content="${escapeHTML(playbackUrl)}">
   --text: #f5f3ef;
   --muted: #b8b4ac;
   --muted-2: #7a756d;
-  --accent: #e50914;
-  --accent-bright: #f6121d;
-  --accent-soft: rgba(229, 9, 20, .14);
+  --accent: #7c3aed;
+  --accent-bright: #a855f7;
+  --accent-soft: rgba(124, 58, 237, .14);
   --radius: 18px;
   --font: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
@@ -369,8 +369,8 @@ html, body {
 body {
   min-height: 100vh;
   background:
-    radial-gradient(900px 520px at 8% -10%, rgba(229, 9, 20, .14), transparent 60%),
-    radial-gradient(760px 480px at 96% 6%, rgba(229, 9, 20, .08), transparent 62%),
+    radial-gradient(900px 520px at 8% -10%, rgba(124, 58, 237, .14), transparent 60%),
+    radial-gradient(760px 480px at 96% 6%, rgba(124, 58, 237, .08), transparent 62%),
     #000;
   color: var(--text);
   font-family: var(--font);
@@ -424,14 +424,14 @@ img {
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
-.back:active { background: var(--accent-soft); border-color: rgba(229, 9, 20, .32); }
+.back:active { background: var(--accent-soft); border-color: rgba(124, 58, 237, .32); }
 .back svg { width: 20px; height: 20px; }
 .rave-badge {
   margin-left: auto;
   padding: 5px 9px;
   border-radius: 999px;
   background: var(--accent-soft);
-  border: 1px solid rgba(229, 9, 20, .28);
+  border: 1px solid rgba(124, 58, 237, .28);
   color: #ffd9c9;
   font-size: 8px;
   font-weight: 800;
@@ -446,7 +446,7 @@ img {
   border-radius: var(--radius);
   border: 1px solid var(--line);
   background: var(--surface);
-  box-shadow: 0 24px 70px rgba(0, 0, 0, .55), 0 0 0 1px rgba(246, 18, 29, .025);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .55), 0 0 0 1px rgba(168, 85, 247, .025);
 }
 .hero-bg {
   position: absolute;
@@ -493,7 +493,7 @@ h1 {
   font-weight: 700;
   line-height: 1.1;
 }
-.meta-pill.age { background: var(--accent-soft); border-color: rgba(229, 9, 20, .28); color: #ffd9c9; }
+.meta-pill.age { background: var(--accent-soft); border-color: rgba(124, 58, 237, .28); color: #ffd9c9; }
 .meta-pill.rating { color: #ffd9c9; }
 .synopsis {
   color: var(--muted);
@@ -614,7 +614,7 @@ h1 {
 .episode-thumb img { width: 100%; height: 100%; object-fit: cover; opacity: .9; }
 .episode-thumb-empty {
   background:
-    radial-gradient(circle at 30% 20%, rgba(229, 9, 20, .24), transparent 58%),
+    radial-gradient(circle at 30% 20%, rgba(124, 58, 237, .24), transparent 58%),
     #141416;
 }
 .episode-play {
@@ -633,8 +633,8 @@ h1 {
   height: 26px;
   padding: 6px;
   border-radius: 50%;
-  background: rgba(229, 9, 20, .92);
-  box-shadow: 0 6px 18px rgba(229, 9, 20, .35);
+  background: rgba(124, 58, 237, .92);
+  box-shadow: 0 6px 18px rgba(124, 58, 237, .35);
 }
 .episode-body { min-width: 0; display: grid; gap: 4px; }
 .episode-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }

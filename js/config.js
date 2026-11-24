@@ -20,7 +20,7 @@ export const CONFIG = {
     { page: "perfil", href: "/perfil", label: "Perfil", icon: "fa-user" }
   ],
   genres: [
-    { name: "Ação", icon: "fa-fire", colors: ["#450a0a", "#dc2626"] },
+    { name: "Ação", icon: "fa-fire", colors: ["#2e1065", "#8b5cf6"] },
     { name: "Aventura", icon: "fa-compass", colors: ["#052e16", "#16a34a"] },
     { name: "Animação", icon: "fa-wand-magic-sparkles", colors: ["#3b1d0b", "#e8a13a"] },
     { name: "Comédia", icon: "fa-face-laugh", colors: ["#422006", "#f59e0b"] },
@@ -30,9 +30,9 @@ export const CONFIG = {
     { name: "Fantasia", icon: "fa-dragon", colors: ["#2a0f1c", "#d95c8a"] },
     { name: "Ficção", icon: "fa-rocket", colors: ["#0a0a0b", "#5fc4b8"] },
     { name: "Mistério", icon: "fa-magnifying-glass", colors: ["#101012", "#8a857c"] },
-    { name: "Romance", icon: "fa-heart", colors: ["#3a0f1a", "#ff8a8a"] },
-    { name: "Suspense", icon: "fa-eye", colors: ["#101012", "#c73516"] },
-    { name: "Terror", icon: "fa-ghost", colors: ["#0a0a0a", "#991b1b"] },
+    { name: "Romance", icon: "fa-heart", colors: ["#3a0f1a", "#d8b4fe"] },
+    { name: "Suspense", icon: "fa-eye", colors: ["#101012", "#6d28d9"] },
+    { name: "Terror", icon: "fa-ghost", colors: ["#0a0a0a", "#5b21b6"] },
     { name: "Tecnologia", icon: "fa-microchip", colors: ["#0b2a24", "#6fd6a8"] }
   ]
 };

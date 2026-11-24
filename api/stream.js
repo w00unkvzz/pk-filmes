@@ -16,6 +16,46 @@ const SHOWS_123 = {
     2: "zTz3MoE9Ki9gzwBuoxt6n-Tokyo-Ghoul-Root-A-Season-2",
     3: "T23Uy26UE6ooHwU94HrSo-Tokyo-Ghoul-Season-3",
     4: "KmV1PE08kCdnp4zV5WXGS-Tokyo-Ghoul-Season-4"
+  },
+  "re-zero": {
+    1: "5ZIPVy4ee52KntdwB2zzP-Re-Zero-Starting-Life-in-Another-World-Season-1",
+    2: "Cf5bdkIyL3uNBc1S08t5N-Re-Zero-Starting-Life-in-Another-World-Season-2",
+    3: "34NGFGFwI1QlkcZ1uKuMF-Re-Zero---Starting-Life-in-Another-World-Season-3",
+    4: "NOnkn3d0cMj65VpKzQ8O3-ReZERO--Starting-Life-in-Another-World--Season-4"
+  }
+};
+
+// Portuguese-dubbed catalog hosted by Solo Latino. The detail page has the
+// same __NEXT_DATA__/mediaInfoList shape as the 123 providers.
+const SHOWS_SOLO = {
+  "cyberpunk-edgerunners": {
+    1: "uz3w95M25qjEPFjwLINT5-Cyberpunk-Edgerunners",
+    2: "AdwGi7kRPTmnbib8GW9ps-Cyberpunk-Edgerunners-Season-2"
+  },
+  "mushoku-tensei": {
+    1: "AuCMkZ1pTBMPfdSm3aFzK-Mushoku-Tensei-Jobless-Reincarnation-Season-1-Part",
+    2: "lZfmlPHuNgV35ujUKwKmc-Mushoku-Tensei-Jobless-Reincarnation-Season-1-Part",
+    3: "PHMNZXJIgChfewfnDWtWQ-Mushoku-Tensei-Jobless-Reincarnation-Season-2",
+    4: "eKCTLEtHhIHRuiUyP51qq-Mushoku-Tensei-Jobless-Reincarnation-Season-2---Pa",
+    5: "zeAjUeWZnYgWAi0Vu2wj3-Mushoku-Tensei-Jobless-Reincarnation-Season-3"
+  }
+};
+
+// 123pelicula uses its own delivery host, but the same server-rendered player.
+const SHOWS_PELICULA = {
+  "tokyo-revengers": {
+    1: "GwV9ANLggA1A2pX6jW6qd-Tokyo-Revengers",
+    2: "ltlKYA6EFuXJsKVGJfiUL-Tokyo-Revengers-Christmas-Showdown",
+    3: "q76GTesxqqGZ2TxbYfrHs-Tokyo-Revengers-3",
+    4: "AcM5BXTMhLdhqA3aPV7Kd-Tokyo-Revengers-War-of-the-Three-Titan-Arc"
+  },
+  "attack-on-titan": {
+    1: "dBKavOrgaDFmwENv8XcDc-Attack-on-Titan-Season-1",
+    2: "h5HxJzTlpXyX9gzyeOtyV-Attack-on-Titan-Season-2",
+    3: "g11qVIYvMhVF31tXiGiXV-Attack-on-Titan-Season-3",
+    4: "100CHtwY6JRJgwLd7FAgE-Attack-on-Titan-Final-Season---The-Final-Chapters",
+    5: "bilIGpodzCg6JwIZqaSqR-Attack-on-Titan-The-Fina-Season-Part2",
+    6: "Hxd7CyXKajEfKcaTRqfX3-Attack-on-Titan-The-Final-Season-Part-3"
   }
 };
 
@@ -30,6 +70,13 @@ const MOVIES = {
     ],
     // GROOT_SD is the 720P variant on this provider; LD/FD are 540P/360P.
     prefer: "GROOT_SD"
+  },
+  "bird-box": {
+    pages: [
+      "https://video.playspelis.com/pt/detail/movie/zyTu0lMjaqZ1H3TAXH73a-Bird-Box"
+    ],
+    prefer: "GROOT_SD",
+    referer: "https://video.playspelis.com/"
   }
 };
 
@@ -175,6 +222,56 @@ async function resolve123Show({ show, season, episode }) {
   throw Object.assign(new Error(`123flmsfree HTTP ${lastStatus || "sem resposta"}`), { status: 502 });
 }
 
+async function resolveHostedShow({ show, season, episode, params, hosts, referer, keyPrefix }) {
+  const seasons = params[show];
+  if (!seasons) throw Object.assign(new Error("show desconhecido"), { status: 404 });
+  const websiteParam = seasons[Number(season)];
+  if (!websiteParam) throw Object.assign(new Error("temporada não encontrada"), { status: 404 });
+  if (!episode) throw Object.assign(new Error("episódio inválido"), { status: 400 });
+
+  const key = `${keyPrefix}:${show}:${season}:${episode}`;
+  const hit = cache.get(key);
+  if (hit && hit.expires > Date.now()) return hit.url;
+
+  let lastStatus = 0;
+  for (const host of hosts) {
+    const pageUrl = `${host}/pt/detail/drama/${websiteParam}/${episode}?t=${Date.now()}`;
+    let response;
+    try {
+      response = await fetch(pageUrl, {
+        headers: {
+          "user-agent": UA,
+          accept: "text/html,application/xhtml+xml",
+          "accept-language": "pt-BR,pt;q=0.9,en;q=0.8",
+          referer,
+          "cache-control": "no-cache",
+          pragma: "no-cache"
+        },
+        redirect: "follow",
+        cache: "no-store"
+      });
+    } catch {
+      continue;
+    }
+    lastStatus = response.status;
+    if (!response.ok) continue;
+    const html = await response.text();
+    const page = parse123PageProps(html);
+    if (!page) continue;
+    if (page.currentEpisodeNumber != null && String(page.currentEpisodeNumber) !== String(episode)) continue;
+    if (page.currentSeason?.seriesNo != null && String(page.currentSeason.seriesNo) !== String(season)) continue;
+    const url = pick123Stream(html, "GROOT_SD");
+    if (!url) continue;
+    const expiresAt = hlsExpiry(url);
+    if (expiresAt && expiresAt < Date.now() + 60000) continue;
+    const ttl = expiresAt ? Math.min(CACHE_TTL, expiresAt - Date.now() - 60000) : CACHE_TTL;
+    cache.set(key, { url, expires: Date.now() + Math.max(60000, ttl) });
+    return url;
+  }
+
+  throw Object.assign(new Error(`${keyPrefix} HTTP ${lastStatus || "sem resposta"}`), { status: 502 });
+}
+
 async function resolve123Movie({ movie }) {
   const params = MOVIES[movie];
   if (!params) throw Object.assign(new Error("filme desconhecido"), { status: 404 });
@@ -193,7 +290,7 @@ async function resolve123Movie({ movie }) {
           "user-agent": UA,
           accept: "text/html,application/xhtml+xml",
           "accept-language": "pt-BR,pt;q=0.9,en;q=0.8",
-          referer: "https://ww1.123flmsfree.com/",
+          referer: params.referer || "https://ww1.123flmsfree.com/",
           "cache-control": "no-cache",
           pragma: "no-cache"
         },
@@ -228,7 +325,23 @@ module.exports = async function handler(req, res) {
       ? await resolve123Movie({ movie })
       : SHOWS_123[show]
         ? await resolve123Show({ show, season, episode })
-        : await resolveStream({ show, season, episode });
+        : SHOWS_SOLO[show]
+          ? await resolveHostedShow({
+              show, season, episode,
+              params: SHOWS_SOLO,
+              hosts: ["https://latino.solo-latino.com"],
+              referer: "https://latino.solo-latino.com/",
+              keyPrefix: "solo"
+            })
+          : SHOWS_PELICULA[show]
+            ? await resolveHostedShow({
+                show, season, episode,
+                params: SHOWS_PELICULA,
+                hosts: ["https://ver.123pelicula.com"],
+                referer: "https://ver.123pelicula.com/",
+                keyPrefix: "pelicula"
+              })
+            : await resolveStream({ show, season, episode });
     res.statusCode = 302;
     res.setHeader("Location", url);
     res.setHeader("Cache-Control", "no-store, max-age=0");

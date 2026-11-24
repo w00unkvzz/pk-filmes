@@ -1,7 +1,7 @@
 // Home page: hero carousel, continue watching and curated rows.
-import { CATALOG, catalogTitles, featured, top10, movies, series, newReleases, allGenres } from "../data.js";
+import { CATALOG, catalogTitles, featured, top10, movies, series, newReleases } from "../data.js";
 import * as store from "../store.js";
-import { mediaRow, top10Row, genreStrip, qs, escapeHTML, formatDuration, toast, emptyState } from "../ui.js";
+import { mediaRow, top10Row, qs, escapeHTML, formatDuration, toast, emptyState } from "../ui.js";
 import { getLogo } from "../tmdb.js";
 
 let heroTimer = null;
@@ -68,7 +68,6 @@ export function renderHome() {
   const progressMap = Object.fromEntries(history.map((entry) => [entry.id, store.progressPercent(entry)]));
   const family = catalogTitles.filter((item) => item.genres.some((genre) => ["Família", "Animação", "Aventura"].includes(genre))).slice(0, 12);
   const hero = featured[0];
-  const genreSelection = allGenres.slice(0, 12);
 
   if (!hero) {
     qs("#page-content").innerHTML = `
@@ -99,15 +98,7 @@ export function renderHome() {
     ${mediaRow("Filmes", movies, { id: "movies-row", href: "/catalogo?tipo=movie" })}
     ${mediaRow("Séries", series, { id: "series-row", href: "/catalogo?tipo=series" })}
     ${mediaRow("Novidades", newReleases, { id: "new-row" })}
-    ${mediaRow("Família & animação", family, { id: "family-row" })}
-
-    <section class="page-section nf-genre-section">
-      <div class="section-head">
-        <h2>Navegue por gêneros</h2>
-        <a class="section-link" href="/catalogo">Explorar tudo <i class="fa-solid fa-chevron-right"></i></a>
-      </div>
-      ${genreStrip(genreSelection)}
-    </section>`;
+    ${mediaRow("Família & animação", family, { id: "family-row" })}`;
 
   qs("#page-content").innerHTML = content;
   mountHome();

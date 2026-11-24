@@ -1,6 +1,6 @@
 // Shared UI: shell, cards, rows, modals, details, player, toasts and auth.
 import { CONFIG } from "./config.js";
-import { byId, getGenreMeta } from "./data.js";
+import { byId } from "./data.js";
 import { navigate, detailsPath, playerPath } from "./router.js";
 import * as store from "./store.js";
 import { authEnabled, logout as authLogout } from "./auth.js";
@@ -379,13 +379,6 @@ export function top10Row(items) {
       <button class="row-arrow right" data-row-scroll="right" data-target="top10-row" type="button" aria-label="Rolar para a direita"><i class="fa-solid fa-chevron-right"></i></button>
     </div>
   </section>`;
-}
-
-export function genreStrip(genres) {
-  return `<div class="genre-strip">${genres.map((genre) => {
-    const meta = getGenreMeta(genre);
-    return `<a class="genre-pill" style="--g1:${meta.colors[0]};--g2:${meta.colors[1]}" href="/catalogo?genero=${encodeURIComponent(genre)}"><span>${escapeHTML(genre)}</span><i class="fa-solid ${meta.icon}" aria-hidden="true"></i></a>`;
-  }).join("")}</div>`;
 }
 
 export function emptyState(icon, title, text) {

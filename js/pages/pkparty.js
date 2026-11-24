@@ -49,6 +49,9 @@ let lobbyRequest = 0;
 let membersRequest = 0;
 let membersSyncTimer = null;
 let partyControlsTimer = 0;
+let typingUsers = new Map();
+let typingPruneTimer = 0;
+let lastTypingSent = 0;
 
 const DIRECT_VIDEO = /\.(mp4|webm|ogv|mov|m3u8)(\?|#|$)/i;
 
@@ -220,6 +223,10 @@ function cleanupParty() {
   membersSyncTimer = null;
   clearTimeout(partyControlsTimer);
   partyControlsTimer = 0;
+  clearTimeout(typingPruneTimer);
+  typingPruneTimer = 0;
+  typingUsers.clear();
+  lastTypingSent = 0;
   try {
     const sb = getClient();
     if (realtimeChannel) sb?.removeChannel(realtimeChannel);
@@ -617,6 +624,8 @@ function handlePresenceLeave(payload = {}) {
   if (user?.id) leftIds.delete(user.id);
   if (leftIds.size) {
     members = members.filter((member) => !leftIds.has(member.user_id));
+    leftIds.forEach((id) => typingUsers.delete(id));
+    renderTypingIndicator();
     renderParticipants(currentPresenceIds());
   }
   // Let the leave RPC finish deleting room_members before the DB refresh.
@@ -657,11 +666,78 @@ function chatMarkup() {
   }).join("");
 }
 
+function typingLabel() {
+  const names = [...typingUsers.values()].map((entry) => entry.name).filter(Boolean);
+  if (!names.length) return "";
+  if (names.length > 2) return "Várias pessoas estão digitando";
+  if (names.length === 2) return `${names[0]} e ${names[1]} estão digitando`;
+  return `${names[0]} está digitando`;
+}
+
+function renderTypingIndicator() {
+  const log = qs("#party-chat-log");
+  if (!log) return;
+  let indicator = qs("#party-typing", log);
+  const label = typingLabel();
+  if (!label) {
+    indicator?.remove();
+    return;
+  }
+  if (!indicator) {
+    indicator = document.createElement("div");
+    indicator.id = "party-typing";
+    indicator.className = "chat-typing";
+    indicator.setAttribute("aria-live", "polite");
+  }
+  indicator.innerHTML = `<span class="chat-typing-dots" aria-hidden="true"><span></span><span></span><span></span></span><span>${escapeHTML(label)}</span>`;
+  log.appendChild(indicator);
+  log.scrollTop = log.scrollHeight;
+}
+
+function pruneTyping() {
+  const now = Date.now();
+  let changed = false;
+  typingUsers.forEach((entry, id) => {
+    if (now - entry.at > 3400) {
+      typingUsers.delete(id);
+      changed = true;
+    }
+  });
+  if (changed) renderTypingIndicator();
+  typingPruneTimer = typingUsers.size ? setTimeout(pruneTyping, 1200) : 0;
+}
+
+function markTyping(payload) {
+  if (!payload?.user_id || payload.user_id === user.id) return;
+  typingUsers.set(payload.user_id, {
+    name: payload.sender_name || "Alguém",
+    at: Date.now()
+  });
+  clearTimeout(typingPruneTimer);
+  typingPruneTimer = setTimeout(pruneTyping, 1200);
+  renderTypingIndicator();
+}
+
+function broadcastTyping() {
+  if (!room?.id || !realtimeChannel) return;
+  const now = Date.now();
+  if (now - lastTypingSent < 900) return;
+  lastTypingSent = now;
+  try {
+    realtimeChannel.send({
+      type: "broadcast",
+      event: "typing",
+      payload: { room_id: room.id, user_id: user.id, sender_name: user.name }
+    });
+  } catch {}
+}
+
 function renderChat() {
   const log = qs("#party-chat-log");
   if (!log) return;
   log.innerHTML = chatMarkup();
   log.scrollTop = log.scrollHeight;
+  renderTypingIndicator();
 }
 
 function appendChat(message) {
@@ -673,6 +749,7 @@ function appendChat(message) {
   const log = qs("#party-chat-log");
   if (!log) return;
   log.insertAdjacentHTML("beforeend", chatMessageMarkup(message, showIdentity));
+  renderTypingIndicator();
   log.scrollTop = log.scrollHeight;
 }
 
@@ -840,6 +917,10 @@ function mountRoom() {
     }
   });
 
+  qs("#party-chat-input")?.addEventListener("input", (event) => {
+    if (String(event.target.value || "").trim()) broadcastTyping();
+  });
+
   if (!window.__w00PartyKeyBound) {
     window.__w00PartyKeyBound = true;
     document.addEventListener("keydown", (event) => {
@@ -929,6 +1010,9 @@ function connectRoomRealtime() {
     })
     .on("broadcast", { event: "chat" }, ({ payload }) => {
       if (payload?.room_id === room.id && payload.user_id !== user.id && payload.sender_name !== "Você") appendChat(payload);
+    })
+    .on("broadcast", { event: "typing" }, ({ payload }) => {
+      if (payload?.room_id === room.id) markTyping(payload);
     })
     .on("presence", { event: "sync" }, syncPresenceMembers)
     .on("presence", { event: "join" }, syncPresenceMembers)

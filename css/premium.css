@@ -13,12 +13,12 @@
   --text: #fff;
   --muted: #b3b3b3;
   --muted-2: #8c8c8c;
-  --accent: #e50914;
-  --accent-bright: #f6121d;
-  --accent-soft: rgba(229, 9, 20, .16);
-  --pink: #e50914;
-  --pink-soft: rgba(229, 9, 20, .16);
-  --red: #e50914;
+  --accent: #7c3aed;
+  --accent-bright: #a855f7;
+  --accent-soft: rgba(124, 58, 237, .16);
+  --pink: #7c3aed;
+  --pink-soft: rgba(124, 58, 237, .16);
+  --red: #7c3aed;
   --green: #46d369;
   --gold: #f5c518;
   --line: rgba(255, 255, 255, .16);
@@ -307,7 +307,7 @@ body[data-page="player"] .topbar { display: none !important; }
   width: 32px;
   height: 32px;
   border-radius: var(--radius);
-  background: linear-gradient(135deg, #e50914, #7a050b);
+  background: linear-gradient(135deg, #7c3aed, #4c1d95);
   color: #fff;
   font-size: 11px;
   font-weight: 700;
@@ -965,39 +965,6 @@ body[data-page="player"] .topbar { display: none !important; }
   text-align: center;
 }
 
-/* Gêneros ------------------------------------------------------------ */
-.genre-strip {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-  gap: 8px;
-}
-
-.genre-pill {
-  position: relative;
-  display: flex;
-  align-items: flex-end;
-  min-height: 90px;
-  padding: 12px;
-  overflow: hidden;
-  border: 0;
-  border-radius: var(--radius);
-  background: linear-gradient(135deg, var(--g1, #1a1a1a), var(--g2, #333));
-  color: #fff;
-  font-size: 15px;
-  font-weight: 700;
-  transition: filter .2s var(--ease);
-}
-
-.genre-pill i {
-  position: absolute;
-  right: 10px;
-  bottom: 8px;
-  font-size: 30px;
-  opacity: .3;
-}
-
-.genre-pill:hover { filter: brightness(1.15); }
-
 /* Catálogo ----------------------------------------------------------- */
 .catalog-head {
   display: flex;
@@ -1430,7 +1397,7 @@ body[data-page="detalhes"] .topbar { display: none !important; }
   height: 24px;
   padding: 0 5px;
   border-radius: 2px;
-  background: #d81f26;
+  background: #6d28d9;
   color: #fff;
   font-size: 11px;
   font-weight: 700;
@@ -1791,7 +1758,7 @@ body[data-page="player"] { background: #000; }
 
 .ep-card:hover,
 .ep-card.active {
-  border-color: rgba(229, 9, 20, .55);
+  border-color: rgba(124, 58, 237, .55);
   background: #1f1f1f;
 }
 
@@ -1869,7 +1836,7 @@ body[data-page="player"] { background: #000; }
 .watch-option.primary { background: #fff; border-color: #fff; color: #000; }
 .watch-option.primary i { color: #000; }
 .watch-option.primary:hover { background: #e6e6e6; }
-.watch-option[data-watch-mode="party"] { border-color: rgba(229, 9, 20, .55); }
+.watch-option[data-watch-mode="party"] { border-color: rgba(124, 58, 237, .55); }
 .watch-option[data-watch-mode="party"] i { color: var(--accent); }
 .watch-options-cancel {
   min-height: 44px;
@@ -2129,9 +2096,6 @@ body[data-page="player"] { background: #000; }
   .top10-card { flex-basis: 60vw; }
   .top10-num { left: -6px; font-size: 82px; -webkit-text-stroke-width: 2px; }
   .top10-badge { width: 24px; height: 24px; font-size: 8px; }
-
-  .genre-strip { grid-template-columns: repeat(2, 1fr); gap: 6px; }
-  .genre-pill { min-height: 76px; font-size: 13px; }
 
   .catalog-head { padding: 24px 4% 14px; }
   .catalog-head h1 { font-size: 1.8rem; }

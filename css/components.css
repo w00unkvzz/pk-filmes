@@ -46,7 +46,7 @@
 .hero-bg.no-image {
   width: 100%;
   background:
-    radial-gradient(60% 90% at 78% 18%, rgba(229,9,20,.4), transparent 58%),
+    radial-gradient(60% 90% at 78% 18%, rgba(124,58,237,.4), transparent 58%),
     radial-gradient(48% 80% at 18% 105%, rgba(0,0,0,.72), transparent 62%),
     linear-gradient(135deg, var(--c1, #1c0f0a), var(--c2, #b34724));
 }
@@ -157,7 +157,7 @@
 .hero-btn-play {
   background: var(--accent, #b34724);
   color: #fff;
-  box-shadow: 0 14px 38px rgba(229,9,20,.34);
+  box-shadow: 0 14px 38px rgba(124,58,237,.34);
 }
 .hero-btn-play:hover { background: #ff7a4f; }
 .hero-btn-trailer {
@@ -186,7 +186,7 @@
   background: rgba(255,255,255,.28);
   transition: background .25s var(--ease), opacity .25s var(--ease);
 }
-.hero-dot.active { width: 20px; background: var(--accent-bright, #f6121d); opacity: 1; }
+.hero-dot.active { width: 20px; background: var(--accent-bright, #a855f7); opacity: 1; }
 .hero-dot:hover { background: rgba(255,255,255,.6); }
 
 /* Cards */
@@ -307,7 +307,7 @@
 .card-progress span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--accent-bright), var(--pink)); }
 .card-remove { position: absolute; z-index: 5; top: 8px; right: 8px; width: 25px; height: 25px; border-radius: 50%; display: grid; place-items: center; background: rgba(0,0,0,.72); color: rgba(255,255,255,.8); font-size: 9px; opacity: 0; transition: opacity .18s; }
 .title-card:hover .card-remove { opacity: 1; }
-.card-remove:hover { background: var(--red); color: #1b0206; }
+.card-remove:hover { background: var(--red); color: #1e1033; }
 
 /* Rows */
 .media-row-wrap { position: relative; }
@@ -361,18 +361,11 @@
   font-weight: 800;
   letter-spacing: -.02em;
   color: #fff;
-  background: linear-gradient(135deg, rgba(229, 9, 20, .96), rgba(232, 67, 31, .96));
+  background: linear-gradient(135deg, rgba(124, 58, 237, .96), rgba(232, 67, 31, .96));
   box-shadow: 0 6px 16px rgba(0,0,0,.45);
   pointer-events: none;
   user-select: none;
 }
-
-/* Genre pills */
-.genre-strip { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 4px; scrollbar-width: none; }
-.genre-strip::-webkit-scrollbar { display: none; }
-.genre-pill { display: inline-flex; align-items: center; gap: 7px; min-height: 35px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.045); color: #b8b4ac; font-size: 11px; font-weight: 650; white-space: nowrap; transition: all .18s; }
-.genre-pill:hover { color: #fff; background: rgba(255,255,255,.09); border-color: var(--line-strong); }
-.genre-pill i { color: var(--accent-bright); font-size: 10px; }
 
 /* Details modal */
 .modal-backdrop {
@@ -420,7 +413,7 @@
 .modal-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 20px; }
 
 /* Trailer modal */
-.modal.modal-trailer { position: relative; width: min(980px, 100%); overflow: hidden; background: #070912; border-color: rgba(246,18,29,.22); }
+.modal.modal-trailer { position: relative; width: min(980px, 100%); overflow: hidden; background: #070912; border-color: rgba(168,85,247,.22); }
 .modal-trailer .modal-close { position: absolute; top: 13px; right: 13px; float: none; margin: 0; z-index: 4; }
 .trailer-modal-head { padding: 24px 26px 15px; background: linear-gradient(180deg, rgba(58,22,13,.48), transparent); }
 .trailer-modal-kicker { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 6px; color: var(--accent-bright); font-size: 9px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
@@ -431,7 +424,7 @@
 .modal-trailer .trailer-loading { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; color: var(--muted-2); font-size: 11px; }
 .modal-trailer .trailer-loading i { color: var(--accent-bright); font-size: 24px; }
 .modal-trailer .trailer-unavailable { position: relative; z-index: 1; width: 100%; height: 100%; min-height: 0; border: 0; border-radius: 0; background: rgba(0,0,0,.42); }
-.modal-trailer .trailer-unavailable .trailer-unavailable-icon { background: rgba(229,9,20,.2); }
+.modal-trailer .trailer-unavailable .trailer-unavailable-icon { background: rgba(124,58,237,.2); }
 @media (max-width: 760px) {
   .modal.modal-trailer { width: calc(100vw - 20px); border-radius: 16px; }
   .trailer-modal-head { padding: 20px 18px 12px; }
@@ -443,7 +436,7 @@
 
 .episode-item { display: flex; align-items: center; gap: 12px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255,255,255,.025); }
 .episode-item:hover { background: rgba(255,255,255,.055); border-color: var(--line-strong); }
-.episode-num { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; background: rgba(229, 9, 20,.18); color: #ffd9c9; font-size: 11px; font-weight: 800; flex: 0 0 30px; }
+.episode-num { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; background: rgba(124, 58, 237,.18); color: #ffd9c9; font-size: 11px; font-weight: 800; flex: 0 0 30px; }
 .episode-item strong { display: block; font-size: 12px; }
 .episode-item span { color: var(--muted-2); font-size: 10px; }
 .episode-play { margin-left: auto; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: #fff; color: #08080c; font-size: 9px; }

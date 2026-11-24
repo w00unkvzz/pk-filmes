@@ -3,6 +3,7 @@ import { renderShell, bindGlobalEvents, refreshShell, refreshSocialBadges, setup
 import { CONFIG } from "./config.js";
 import * as store from "./store.js";
 import { initAuth } from "./auth.js";
+import { startOnboarding } from "./onboarding.js";
 import { normalizeLocation, getRoute, navigate, routeForHref, searchPath } from "./router.js";
 import { renderHome, destroyHome } from "./pages/home.js";
 import { renderCatalogo } from "./pages/catalogo.js";
@@ -210,11 +211,22 @@ async function boot() {
   bindRouter();
   renderShell();
   setupChrome();
+
+  // A sessão restaurada decide se o gate aparece. O site já está sendo pintado
+  // atrás do overlay, então quando o gate fecha a rota atual está pronta.
+  const authReady = initAuth().catch((error) => {
+    console.warn("[auth] não restaurado:", error.message);
+    return false;
+  });
+  const onboarding = startOnboarding({ authReady });
+
   await renderCurrent();
   authRenderKey = currentAuthKey();
-
-  // Sessão do Supabase em background — não bloqueia a pintura inicial.
-  initAuth().catch((error) => console.warn("[auth] não restaurado:", error.message));
+  onboarding.then((authed) => {
+    refreshShell();
+    authRenderKey = currentAuthKey();
+    if (authed && currentPage !== "player") renderCurrent();
+  }).catch(() => {});
 
   // Password recovery links land on /perfil?recovery=1.
   if (currentPage === "perfil" && currentRoute.params.has("recovery")) {

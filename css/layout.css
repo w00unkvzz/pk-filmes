@@ -68,7 +68,7 @@
 .sidebar-link:hover { background: rgba(255,255,255,.055); color: #fff; }
 .sidebar-link.active {
   color: #fff;
-  background: linear-gradient(90deg, rgba(229, 9, 20,.24), rgba(229, 9, 20,.06));
+  background: linear-gradient(90deg, rgba(124, 58, 237,.24), rgba(124, 58, 237,.06));
 }
 .sidebar-link.active::before {
   content: "";
@@ -79,7 +79,7 @@
   width: 3px;
   border-radius: 0 3px 3px 0;
   background: var(--accent-bright);
-  box-shadow: 0 0 14px rgba(246,18,29,.8);
+  box-shadow: 0 0 14px rgba(168,85,247,.8);
 }
 .sidebar-label { opacity: 0; transform: translateX(-5px); transition: all .2s var(--ease); font-size: 13px; font-weight: 600; }
 .sidebar-badge { margin-left: auto; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 20px; display: grid; place-items: center; background: var(--pink); color: #fff; font-size: 9px; font-weight: 800; opacity: 0; transition: opacity .2s; }
@@ -125,7 +125,7 @@
   transition: border-color .18s, background .18s, box-shadow .18s;
 }
 .topbar-search input::placeholder { color: var(--muted-2); }
-.topbar-search input:focus { border-color: rgba(246,18,29,.5); background: rgba(255,255,255,.08); box-shadow: 0 0 0 3px rgba(229, 9, 20,.12); }
+.topbar-search input:focus { border-color: rgba(168,85,247,.5); background: rgba(255,255,255,.08); box-shadow: 0 0 0 3px rgba(124, 58, 237,.12); }
 .topbar-spacer { flex: 1; }
 .topbar-actions { display: flex; align-items: center; gap: 9px; flex-shrink: 0; }
 .topbar-icon { position: relative; width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; color: #b8b4ac; background: rgba(255,255,255,.045); border: 1px solid transparent; transition: all .18s; }
