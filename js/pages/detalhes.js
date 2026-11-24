@@ -248,7 +248,6 @@ export function renderDetalhes() {
         <div class="details-bg" id="details-bg" aria-hidden="true"${initialBackdrop ? ` style="background-image:url(${escapeHTML(initialBackdrop)})"` : ""}></div>
         <div class="details-veil" aria-hidden="true"></div>
         <div class="details-hero-content">
-          <div class="details-brand">W00FILMES</div>
           <div class="details-title-wrap" id="details-title-wrap">
             <h1 class="details-title" id="details-title">${escapeHTML(title)}</h1>
           </div>

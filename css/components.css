@@ -6,7 +6,7 @@
 .section-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; margin-bottom: 16px; }
 .section-head h2 { display: flex; align-items: center; gap: 10px; }
 .section-head h2 .fire { color: var(--pink); font-size: .72em; }
-.section-kicker { display: flex; align-items: center; gap: 7px; color: var(--accent-bright); font-size: 9px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; margin-bottom: 5px; }
+.section-kicker { display: flex; align-items: center; gap: 7px; color: var(--muted-2, #a3a09a); font-size: 9px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; margin-bottom: 5px; }
 .section-link { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); font-size: 11px; font-weight: 700; white-space: nowrap; }
 .section-link:hover { color: #fff; }
 .section-link i { font-size: 9px; }
@@ -416,7 +416,7 @@
 .modal.modal-trailer { position: relative; width: min(980px, 100%); overflow: hidden; background: #070912; border-color: rgba(168,85,247,.22); }
 .modal-trailer .modal-close { position: absolute; top: 13px; right: 13px; float: none; margin: 0; z-index: 4; }
 .trailer-modal-head { padding: 24px 26px 15px; background: linear-gradient(180deg, rgba(58,22,13,.48), transparent); }
-.trailer-modal-kicker { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 6px; color: var(--accent-bright); font-size: 9px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+.trailer-modal-kicker { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 6px; color: var(--muted-2, #a3a09a); font-size: 9px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
 .trailer-modal-head h2 { padding-right: 44px; font-size: clamp(1.2rem, 2.4vw, 1.7rem); }
 .trailer-player { position: relative; width: 100%; aspect-ratio: 16 / 9; display: grid; place-items: center; overflow: hidden; background: #000; border-top: 1px solid rgba(255,255,255,.06); }
 .trailer-player iframe { width: 100%; height: 100%; border: 0; background: #000; }

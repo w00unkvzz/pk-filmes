@@ -1,6 +1,6 @@
 /* Page-specific compositions */
 .page-hero { padding: clamp(28px, 5vw, 54px) clamp(18px, 3.2vw, 46px) 10px; }
-.page-hero .eyebrow { display: inline-flex; align-items: center; gap: 7px; color: var(--accent-bright); font-size: 9px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; margin-bottom: 10px; }
+.page-hero .eyebrow { display: inline-flex; align-items: center; gap: 7px; color: var(--muted-2, #a3a09a); font-size: 9px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; margin-bottom: 10px; }
 .page-hero h1 { font-size: clamp(2rem, 4.4vw, 3.6rem); }
 .page-hero p { max-width: 640px; margin-top: 12px; font-size: 13px; }
 .page-hero .row { margin-top: 18px; }

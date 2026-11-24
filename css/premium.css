@@ -1244,15 +1244,6 @@ body[data-page="detalhes"] .topbar { display: none !important; }
   margin: 0 auto;
 }
 
-.details-brand {
-  margin-bottom: 10px;
-  color: var(--accent);
-  font-size: 13px;
-  font-weight: 900;
-  letter-spacing: .16em;
-  line-height: 1;
-}
-
 .details-title-wrap { display: flex; justify-content: flex-start; min-height: 0; }
 
 .details-title {
@@ -1794,7 +1785,7 @@ body[data-page="player"] { background: #000; }
 
 .watch-options { display: flex; flex-direction: column; }
 .watch-options-kicker {
-  color: var(--accent);
+  color: #a3a09a;
   font-size: 10px;
   font-weight: 800;
   letter-spacing: .16em;
@@ -2111,7 +2102,6 @@ body[data-page="player"] { background: #000; }
   .details-hero { min-height: 58vh; padding: 0 4% 26px; }
   .details-title { font-size: clamp(2rem, 9vw, 3rem); }
   .details-logo { max-width: 82%; max-height: 110px; }
-  .details-brand { font-size: 11px; }
   .details-actions { gap: 8px; margin-top: 18px; }
   .details-play { min-height: 42px; padding: 0 20px; font-size: 14px; }
   .details-round { width: 40px; height: 40px; font-size: 14px; }

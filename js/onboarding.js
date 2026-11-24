@@ -10,9 +10,10 @@ import {
   signUp,
   signInWithGoogle,
   sendPasswordReset,
-  appUserFromSession
+  appUserFromSession,
+  upsertProfile
 } from "./supabase.js";
-import { updateProfile } from "./social.js";
+import { updateProfile, uploadAvatar } from "./social.js";
 
 const P = CONFIG.storagePrefix;
 const PRELOADER_KEY = `${P}preloader.seen`;
@@ -20,17 +21,9 @@ const PENDING_KEY = `${P}profile.pending`;
 const GATE_ID = "w00-auth-gate";
 const PRELOADER_ID = "w00-preloader";
 const STUDIO_ID = "w00-profile-studio";
-
-const AVATARS = [
-  { id: "nova", label: "Nova", url: "https://api.dicebear.com/9.x/adventurer/svg?seed=Nova&backgroundColor=7c3aed&radius=50" },
-  { id: "rio", label: "Rio", url: "https://api.dicebear.com/9.x/adventurer/svg?seed=Rio&backgroundColor=0891b2&radius=50" },
-  { id: "luna", label: "Luna", url: "https://api.dicebear.com/9.x/micah/svg?seed=Luna&backgroundColor=db2777&radius=50" },
-  { id: "moss", label: "Moss", url: "https://api.dicebear.com/9.x/adventurer/svg?seed=Moss&backgroundColor=059669&radius=50" },
-  { id: "sol", label: "Sol", url: "https://api.dicebear.com/9.x/micah/svg?seed=Sol&backgroundColor=d97706&radius=50" },
-  { id: "bolt", label: "Bolt", url: "https://api.dicebear.com/9.x/bottts/svg?seed=Bolt&backgroundColor=2563eb&radius=50" },
-  { id: "zed", label: "Zed", url: "https://api.dicebear.com/9.x/fun-emoji/svg?seed=Zed&backgroundColor=a855f7&radius=50" },
-  { id: "ash", label: "Ash", url: "https://api.dicebear.com/9.x/micah/svg?seed=Ash&backgroundColor=334155&radius=50" }
-];
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+const LOCAL_IMAGE_BYTES = 2 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 
 const esc = (value = "") => String(value)
   .replaceAll("&", "&amp;")
@@ -47,6 +40,71 @@ let studioOnDone = null;
 let studioMode = "manage";
 let studioEditing = false;
 let studioAvatar = "";
+let studioAvatarFile = null;
+let studioPreviewUrl = "";
+
+function readPendingProfile() {
+  try {
+    const raw = localStorage.getItem(PENDING_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : { email: String(raw) };
+  } catch {
+    return null;
+  }
+}
+
+function markProfilePending(email) {
+  try { localStorage.setItem(PENDING_KEY, JSON.stringify({ email: String(email || "").toLowerCase() })); } catch {}
+}
+
+function clearProfilePending() {
+  try { localStorage.removeItem(PENDING_KEY); } catch {}
+}
+
+function pendingProfileFor(user) {
+  const pending = readPendingProfile();
+  if (!pending) return false;
+  const email = String(user?.email || "").toLowerCase();
+  return !pending.email || !email || pending.email === email;
+}
+
+function openPendingProfileIfAny(user) {
+  const pending = readPendingProfile();
+  if (pending && !pendingProfileFor(user)) clearProfilePending();
+  if (!pendingProfileFor(user)) return false;
+  openProfileStudio({ mode: "onboarding" });
+  return true;
+}
+
+function initials(name) {
+  const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "W";
+  return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
+}
+
+function photoMarkup(src, name) {
+  if (!src) return `<span class="ps-photo-fallback" aria-hidden="true">${esc(initials(name))}</span>`;
+  return `<img src="${esc(src)}" alt="" loading="eager" decoding="async">`;
+}
+
+function revokePreview() {
+  if (studioPreviewUrl.startsWith("blob:")) URL.revokeObjectURL(studioPreviewUrl);
+  studioPreviewUrl = "";
+}
+
+function previewSource(user) {
+  return studioPreviewUrl || studioAvatar || user?.avatar_url || "";
+}
+
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("Não foi possível ler a imagem."));
+    reader.readAsDataURL(file);
+  });
+}
 
 function lockBody() {
   document.body.classList.add("w00-onboarding-active");
@@ -76,12 +134,9 @@ function showPreloader() {
   el.setAttribute("role", "status");
   el.setAttribute("aria-label", "Abrindo w00filmes");
   el.innerHTML = `
-    <div class="preloader-beam" aria-hidden="true"></div>
     <div class="preloader-core">
-      <div class="preloader-word" aria-hidden="true"><span style="--i:0">w</span><span style="--i:1">0</span><span style="--i:2">0</span></div>
-      <div class="preloader-sub">FILMES</div>
+      <div class="preloader-brand" aria-hidden="true"><span>w00</span>filmes</div>
       <div class="preloader-line" aria-hidden="true"><i></i></div>
-      <div class="preloader-caption">abrindo a sala de projeção</div>
     </div>`;
   document.body.appendChild(el);
   return el;
@@ -90,7 +145,7 @@ function showPreloader() {
 async function hidePreloader(el) {
   if (!el) return;
   el.classList.add("is-leaving");
-  await wait(reducedMotion() ? 120 : 520);
+  await wait(reducedMotion() ? 80 : 280);
   el.remove();
   unlockBodyIfIdle();
 }
@@ -231,7 +286,7 @@ function showGate() {
       if (!authEnabled()) {
         const local = store.login(name, email);
         store.saveUser({ ...local, name });
-        sessionStorage.setItem(PENDING_KEY, "1");
+        markProfilePending(email);
         window.dispatchEvent(new CustomEvent("pk:auth-changed"));
         hideGate();
         openProfileStudio({ mode: "onboarding" });
@@ -239,13 +294,14 @@ function showGate() {
       }
       const { session } = await signUp({ name, email, password });
       if (!session?.user) {
+        markProfilePending(email);
         gateMessage(root, "Conta criada. Confirme o e-mail e depois entre para continuar.", "success");
         setFormBusy(signupForm, false);
         return;
       }
       const user = appUserFromSession(session);
       store.saveUser({ ...user, name });
-      sessionStorage.setItem(PENDING_KEY, "1");
+      markProfilePending(email);
       window.dispatchEvent(new CustomEvent("pk:auth-changed"));
       hideGate();
       openProfileStudio({ mode: "onboarding" });
@@ -267,16 +323,19 @@ function showGate() {
     try {
       if (!authEnabled()) {
         const current = store.getUser();
-        store.login(current.name || email.split("@")[0], email);
+        const next = store.login(current.name || email.split("@")[0], email);
         window.dispatchEvent(new CustomEvent("pk:auth-changed"));
         hideGate();
+        openPendingProfileIfAny(next);
         return;
       }
       const { session } = await signIn({ email, password });
       if (!session?.user) throw new Error("Sessão não iniciada. Tente novamente.");
-      store.saveUser(appUserFromSession(session));
+      const next = appUserFromSession(session);
+      store.saveUser(next);
       window.dispatchEvent(new CustomEvent("pk:auth-changed"));
       hideGate();
+      openPendingProfileIfAny(next);
     } catch (error) {
       gateMessage(root, error.message || "E-mail ou senha incorretos.");
       setFormBusy(loginForm, false);
@@ -329,73 +388,57 @@ function hideGate() {
    Profile studio (create + manage)
    ------------------------------------------------------------------------ */
 function selectedAvatarUrl(user) {
-  return user.avatar_url || AVATARS[0].url;
-}
-
-function avatarOptionsMarkup() {
-  return AVATARS.map((avatar) => `<button class="ps-avatar-option${avatar.url === studioAvatar ? " is-selected" : ""}" type="button" data-avatar-url="${esc(avatar.url)}" aria-label="Avatar ${esc(avatar.label)}" aria-pressed="${avatar.url === studioAvatar}">
-    <img src="${esc(avatar.url)}" alt="" loading="lazy" decoding="async">
-  </button>`).join("");
+  return user?.avatar_url || "";
 }
 
 function manageMarkup(user) {
   const photo = selectedAvatarUrl(user);
   return `
     <div class="ps-view ps-view-manage">
-      <div class="ps-head">
-        <div>
-          <div class="ps-kicker"><i class="fa-solid fa-users"></i> conta w00filmes</div>
-          <h1>Gerenciar perfil</h1>
-          <p>Este é o perfil que aparece no seu histórico, na watchlist e nas salas do Party.</p>
+      <div class="ps-stage">
+        <div class="ps-kicker">conta w00filmes</div>
+        <h1 class="ps-title">Quem está assistindo?</h1>
+        <p class="ps-subtitle">Gerencie seu perfil ou entre para continuar.</p>
+        <div class="ps-profile-grid">
+          <button class="ps-profile-card" data-ps-edit type="button" aria-label="Editar perfil ${esc(user.name)}">
+            <span class="ps-profile-avatar">${photoMarkup(photo, user.name)}<span class="ps-profile-pencil"><i class="fa-solid fa-pen"></i></span></span>
+            <span class="ps-profile-name">${esc(user.name)}</span>
+          </button>
         </div>
-        <button class="ps-close" data-ps-close type="button" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-      <div class="ps-profiles">
-        <button class="ps-profile-card" data-ps-edit type="button" aria-label="Editar perfil ${esc(user.name)}">
-          <span class="ps-profile-avatar"><img src="${esc(photo)}" alt="" loading="lazy" decoding="async"><span class="ps-profile-pencil"><i class="fa-solid fa-pen"></i></span></span>
-          <span class="ps-profile-name">${esc(user.name)}</span>
-          <span class="ps-profile-caption">perfil principal</span>
-        </button>
-      </div>
-      <div class="ps-manage-footer">
-        <button class="ps-btn ghost" data-ps-edit type="button"><i class="fa-solid fa-pen"></i> Editar perfil</button>
-        <button class="ps-btn primary" data-ps-close type="button">Concluir</button>
+        <div class="ps-manage-actions">
+          <button class="ps-btn primary" data-ps-close type="button">Concluir</button>
+        </div>
       </div>
     </div>`;
 }
 
 function editorMarkup(user) {
   const onboarding = studioMode === "onboarding";
+  const displayName = user.name === DEFAULT_USER.name ? "Seu nome" : user.name;
+  const preview = previewSource(user);
   return `
-    <div class="ps-view ps-view-create">
-      <div class="ps-head">
-        <div>
-          <div class="ps-kicker">${onboarding ? '<i class="fa-solid fa-wand-magic-sparkles"></i> primeiro acesso' : '<i class="fa-solid fa-pen"></i> editar perfil'}</div>
-          <h1>${onboarding ? "Crie seu perfil" : "Ajuste seu perfil"}</h1>
-          <p>${onboarding ? "Escolha um avatar e um nome. É assim que você aparece no w00filmes." : "Troque o nome ou o avatar. O restante da conta continua igual."}</p>
-        </div>
-        ${onboarding ? "" : '<button class="ps-close" data-ps-back type="button" aria-label="Voltar"><i class="fa-solid fa-arrow-left"></i></button>'}
+    <div class="ps-view ps-view-editor">
+      <div class="ps-editor-head">
+        ${onboarding ? "" : '<button class="ps-back" data-ps-back type="button" aria-label="Voltar"><i class="fa-solid fa-arrow-left"></i> Voltar</button>'}
+        <div class="ps-kicker">${onboarding ? "primeiro acesso" : "editar perfil"}</div>
+        <h1 class="ps-title">${onboarding ? "Crie seu perfil" : "Editar perfil"}</h1>
+        <p class="ps-subtitle">${onboarding ? "Adicione uma foto ou GIF e escolha como você quer aparecer." : "Atualize sua foto, GIF ou nome do perfil."}</p>
       </div>
-      <div class="ps-create-layout">
-        <div class="ps-preview">
-          <span class="ps-preview-avatar"><img id="ps-preview-img" src="${esc(studioAvatar)}" alt="" loading="eager" decoding="async"></span>
-          <span class="ps-preview-name" id="ps-preview-name">${esc(user.name === DEFAULT_USER.name ? "Seu nome" : user.name)}</span>
-          <span class="ps-preview-tag">perfil principal</span>
-        </div>
-        <div class="ps-form">
-          <label class="ps-field" for="ps-name">
-            <span class="ps-label">Nome do perfil</span>
-            <input class="ps-input" id="ps-name" maxlength="30" autocomplete="nickname" value="${esc(user.name === DEFAULT_USER.name ? "" : user.name)}" placeholder="Como você quer ser chamado?">
-          </label>
-          <div>
-            <div class="ps-label">Escolha um avatar</div>
-            <div class="ps-avatar-grid" role="group" aria-label="Avatares">${avatarOptionsMarkup()}</div>
-          </div>
-          <p class="ps-msg" data-ps-msg></p>
-          <div class="ps-actions">
-            ${onboarding ? "" : '<button class="ps-btn ghost" data-ps-back type="button">Cancelar</button>'}
-            <button class="ps-btn primary" data-ps-save type="button"><i class="fa-solid fa-check"></i> ${onboarding ? "Criar perfil e entrar" : "Salvar alterações"}</button>
-          </div>
+      <div class="ps-editor-card">
+        <button class="ps-photo-picker" data-ps-photo type="button" aria-label="Alterar foto ou GIF">
+          <span class="ps-photo-frame" data-ps-photo-frame>${photoMarkup(preview, displayName)}</span>
+          <span class="ps-photo-action"><i class="fa-solid fa-camera"></i> ${preview ? "Trocar foto ou GIF" : "Adicionar foto ou GIF"}</span>
+        </button>
+        <input class="ps-file" id="ps-photo-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" tabindex="-1">
+        <label class="ps-field" for="ps-name">
+          <span class="ps-label">Nome do perfil</span>
+          <input class="ps-input" id="ps-name" maxlength="30" autocomplete="nickname" value="${esc(user.name === DEFAULT_USER.name ? "" : user.name)}" placeholder="Como você quer ser chamado?">
+        </label>
+        <p class="ps-hint">JPG, PNG, WEBP ou GIF · até 10 MB</p>
+        <p class="ps-msg" data-ps-msg></p>
+        <div class="ps-actions">
+          ${onboarding ? "" : '<button class="ps-btn ghost" data-ps-back type="button">Cancelar</button>'}
+          <button class="ps-btn primary" data-ps-save type="button"><i class="fa-solid fa-check"></i> ${onboarding ? "Criar perfil e entrar" : "Salvar alterações"}</button>
         </div>
       </div>
     </div>`;
@@ -430,32 +473,59 @@ function bindStudio(root, user) {
   root.querySelectorAll("[data-ps-close]").forEach((button) => button.addEventListener("click", closeProfileStudio));
   root.querySelectorAll("[data-ps-back]").forEach((button) => button.addEventListener("click", () => {
     studioEditing = false;
+    studioAvatarFile = null;
+    revokePreview();
+    studioAvatar = selectedAvatarUrl(store.getUser());
     renderStudio();
   }));
   root.querySelectorAll("[data-ps-edit]").forEach((button) => button.addEventListener("click", () => {
     studioEditing = true;
     studioAvatar = selectedAvatarUrl(store.getUser());
+    studioAvatarFile = null;
+    revokePreview();
     renderStudio();
     setTimeout(() => root.querySelector("#ps-name")?.focus({ preventScroll: true }), 80);
   }));
 
   const nameInput = root.querySelector("#ps-name");
-  const previewName = root.querySelector("#ps-preview-name");
-  nameInput?.addEventListener("input", () => {
-    if (previewName) previewName.textContent = nameInput.value.trim() || "Seu nome";
+  const photoInput = root.querySelector("#ps-photo-file");
+  const photoFrame = root.querySelector("[data-ps-photo-frame]");
+
+  function updatePhotoPreview() {
+    if (!photoFrame) return;
+    photoFrame.innerHTML = photoMarkup(previewSource(store.getUser()), nameInput?.value.trim() || user.name);
+  }
+
+  root.querySelector("[data-ps-photo]")?.addEventListener("click", () => photoInput?.click());
+
+  photoInput?.addEventListener("change", () => {
+    const file = photoInput.files?.[0];
+    if (!file) return;
+    if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+      studioMessage(root, "Use JPG, PNG, WEBP ou GIF.");
+      photoInput.value = "";
+      return;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      studioMessage(root, "A imagem deve ter no máximo 10 MB.");
+      photoInput.value = "";
+      return;
+    }
+    if (!store.getUser().cloud && file.size > LOCAL_IMAGE_BYTES) {
+      studioMessage(root, "No modo local, use uma imagem de até 2 MB.");
+      photoInput.value = "";
+      return;
+    }
+    studioAvatarFile = file;
+    revokePreview();
+    studioPreviewUrl = URL.createObjectURL(file);
+    updatePhotoPreview();
+    studioMessage(root, "");
   });
 
-  root.querySelectorAll("[data-avatar-url]").forEach((button) => {
-    button.addEventListener("click", () => {
-      studioAvatar = button.dataset.avatarUrl;
-      root.querySelectorAll("[data-avatar-url]").forEach((option) => {
-        const active = option === button;
-        option.classList.toggle("is-selected", active);
-        option.setAttribute("aria-pressed", active ? "true" : "false");
-      });
-      const image = root.querySelector("#ps-preview-img");
-      if (image) image.src = studioAvatar;
-    });
+  nameInput?.addEventListener("input", () => {
+    if (studioPreviewUrl || studioAvatar) return;
+    updatePhotoPreview();
   });
 
   root.querySelector("[data-ps-save]")?.addEventListener("click", async (event) => {
@@ -467,16 +537,52 @@ function bindStudio(root, user) {
       return;
     }
     const current = store.getUser();
-    const patch = {
-      name,
-      avatar_url: studioAvatar || selectedAvatarUrl(current),
-      bio: current.bio || "Explorando o catálogo.",
-      favoriteGenre: current.favoriteGenre || "Ficção"
-    };
+    const hasPhoto = Boolean(studioAvatarFile || studioAvatar || current.avatar_url);
+    if (studioMode === "onboarding" && !hasPhoto) {
+      studioMessage(root, "Adicione uma foto ou GIF para criar seu perfil.");
+      return;
+    }
+
     studioMessage(root, "");
     button.disabled = true;
     button.classList.add("is-loading");
     try {
+      // Contas criadas com confirmação de e-mail podem não ter a linha em
+      // `profiles` ainda. Garante a linha antes de subir a foto ou o nome.
+      if (current.cloud && authEnabled()) {
+        try {
+          await upsertProfile(
+            { id: current.id, email: current.email, user_metadata: { name: current.name } },
+            {
+              name,
+              email: current.email,
+              avatar_url: current.avatar_url || "",
+              bio: current.bio,
+              favoriteGenre: current.favoriteGenre,
+              joined: current.joined
+            }
+          );
+        } catch (error) {
+          console.warn("[onboarding] não foi possível preparar o perfil remoto:", error.message);
+        }
+      }
+
+      let avatarUrl = studioAvatar || current.avatar_url || "";
+      if (studioAvatarFile) {
+        if (current.cloud && authEnabled()) {
+          avatarUrl = await uploadAvatar(studioAvatarFile);
+        } else {
+          avatarUrl = await fileToDataUrl(studioAvatarFile);
+        }
+      }
+
+      const patch = {
+        name,
+        avatar_url: avatarUrl,
+        bio: current.bio || "Explorando o catálogo.",
+        favoriteGenre: current.favoriteGenre || "Ficção"
+      };
+
       if (current.cloud && authEnabled()) {
         try {
           await updateProfile(patch);
@@ -488,8 +594,10 @@ function bindStudio(root, user) {
       // ou o update remoto falhar.
       store.saveUser(patch);
       try { localStorage.setItem(`${P}profile.ready`, "1"); } catch {}
-      sessionStorage.removeItem(PENDING_KEY);
-      window.dispatchEvent(new CustomEvent("pk:auth-changed"));
+      clearProfilePending();
+      studioAvatarFile = null;
+      revokePreview();
+      try { window.dispatchEvent(new CustomEvent("pk:auth-changed")); } catch {}
       closeProfileStudio();
     } catch (error) {
       studioMessage(root, error.message || "Não foi possível salvar o perfil.");
@@ -505,6 +613,8 @@ export function openProfileStudio({ mode = "manage", onDone = null } = {}) {
   studioMode = mode;
   studioEditing = mode === "onboarding";
   studioOnDone = onDone;
+  studioAvatarFile = null;
+  revokePreview();
   studioAvatar = selectedAvatarUrl(store.getUser());
   lockBody();
 
@@ -524,6 +634,8 @@ function closeProfileStudio() {
   root.classList.add("is-leaving");
   setTimeout(() => {
     root.remove();
+    studioAvatarFile = null;
+    revokePreview();
     unlockBodyIfIdle();
     const callback = studioOnDone;
     studioOnDone = null;
@@ -537,28 +649,25 @@ function closeProfileStudio() {
 export async function startOnboarding({ authReady } = {}) {
   lockBody();
   let seen = false;
-  try { seen = sessionStorage.getItem(PRELOADER_KEY) === "1"; } catch {}
+  try { seen = localStorage.getItem(PRELOADER_KEY) === "1"; } catch {}
   const preloader = seen ? null : showPreloader();
   const authPromise = Promise.resolve(authReady).catch(() => false);
 
   if (preloader) {
     await Promise.race([
-      Promise.all([authPromise, wait(reducedMotion() ? 520 : 1950)]),
-      wait(5200)
+      Promise.all([authPromise, wait(reducedMotion() ? 380 : 1050)]),
+      wait(3600)
     ]);
     await hidePreloader(preloader);
   } else {
-    await Promise.race([authPromise, wait(1900)]);
+    await Promise.race([authPromise, wait(1600)]);
   }
 
-  try { sessionStorage.setItem(PRELOADER_KEY, "1"); } catch {}
+  try { localStorage.setItem(PRELOADER_KEY, "1"); } catch {}
 
   const user = store.getUser();
   if (user.authed) {
-    if (sessionStorage.getItem(PENDING_KEY) === "1") {
-      openProfileStudio({ mode: "onboarding" });
-      return true;
-    }
+    if (openPendingProfileIfAny(user)) return true;
     unlockBodyIfIdle();
     return true;
   }
