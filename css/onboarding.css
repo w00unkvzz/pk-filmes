@@ -141,7 +141,7 @@ body.w00-onboarding-active #app { pointer-events: none; }
   height: 56px;
   padding: 0 16px;
   border: 1px solid rgba(255, 255, 255, .14);
-  border-radius: 8px;
+  border-radius: 0;
   outline: 0;
   color: #fff;
   background: rgba(18, 14, 26, .92);
@@ -166,7 +166,7 @@ body.w00-onboarding-active #app { pointer-events: none; }
   height: 54px;
   margin-top: 2px;
   border: 0;
-  border-radius: 8px;
+  border-radius: 0;
   color: #fff;
   background: var(--accent, #7c3aed);
   box-shadow: 0 12px 28px rgba(124, 58, 237, .28);
